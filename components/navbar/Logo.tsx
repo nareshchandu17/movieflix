@@ -5,14 +5,12 @@ const Logo = () => {
   return (
     <Link
       href="/"
-      className="flex justify-center items-center w-28 md:w-32 text-sm md:text-base my-5 font-extrabold text-center"
+      className="flex justify-center items-center w-32 md:w-36 text-lg md:text-xl my-5 font-extrabold text-center"
     >
-      <div className="bg-primary py-1 px-2 border border-primary ">
-        <p>CINE</p>
+      <div className="bg-gradient-to-br from-red-600 to-red-800 text-transparent bg-clip-text drop-shadow-lg">
+        <p>MOVIEFLIX</p>
       </div>
-      <div className="border border-primary py-1 text-primary px-2 ">
-        <p>WORLD</p>
-      </div>
+      
     </Link>
   );
 };

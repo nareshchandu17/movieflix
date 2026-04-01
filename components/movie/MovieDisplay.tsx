@@ -9,9 +9,12 @@ interface MovieDisplayProps {
   movies?: TMDBMovie[];
   pageid?: string;
   totalPages?: number;
+  hoveredMovieId?: number | null;
+  setHoveredMovieId?: (id: number | null) => void;
+  infiniteScroll?: boolean;
 }
 
-const MovieDisplay= ({ movies, pageid, totalPages = 500 }: MovieDisplayProps) => {
+const MovieDisplay= ({ movies, pageid, totalPages = 500, hoveredMovieId, setHoveredMovieId, infiniteScroll = false }: MovieDisplayProps) => {
   // Use base URL with query params for pagination
   const baseUrl = `/movie`;
   
@@ -23,15 +26,20 @@ const MovieDisplay= ({ movies, pageid, totalPages = 500 }: MovieDisplayProps) =>
             key={movie.id} 
             media={movie} 
             variant="grid"
+            hoveredMovieId={hoveredMovieId}
+            setHoveredMovieId={setHoveredMovieId}
           />
         ))}
       </ResponsiveGrid>
       
-      <PaginationWrapper 
-        pageid={pageid}
-        baseUrl={baseUrl}
-        maxPage={totalPages}
-      />
+      {/* Only show pagination if not using infinite scroll */}
+      {!infiniteScroll && (
+        <PaginationWrapper 
+          pageid={pageid}
+          baseUrl={baseUrl}
+          maxPage={totalPages}
+        />
+      )}
     </>
   );
 };

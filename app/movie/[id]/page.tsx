@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import InfoNotFound from "@/components/not-found/InfoNotFound";
-import MovieInfo from "@/components/movie/MovieInfo";
+import EnhancedMovieInfo from "@/components/movie/EnhancedMovieInfo";
 
 export const metadata: Metadata = {
   title: "Movie | Cineworld",
@@ -24,5 +24,5 @@ export default async function MovieDetailPage({
     return <InfoNotFound />;
   }
 
-  return <MovieInfo id={parsedId} />;
+  return <EnhancedMovieInfo id={parsedId} />;
 }

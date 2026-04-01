@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import TvDisplay from "@/components/series/TvDisplay";
-import MediaFilter from "@/components/filter/MediaFilter";
+import SeriesHero from "@/components/series/SeriesHero";
+import SeriesCarousels from "@/components/series/SeriesCarousels";
 import { TMDBTVShow } from "@/lib/types";
 import { api } from "@/lib/api";
 import { PageLoading, PageEmpty } from "@/components/loading/PageLoading";
@@ -13,6 +13,7 @@ interface SeriesFiltersData {
   year: string;
   sortBy: string;
 }
+
 const SeriesPageClient = () => {
   const [series, setSeries] = useState<TMDBTVShow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,30 +110,28 @@ const SeriesPageClient = () => {
     setCurrentPage(1);
     updateURL(newFilters, 1);
   };
+
   return (
     <>
-      {" "}
-      {/* Filters */}
-      <MediaFilter
-        initialFilters={filters}
-        onFiltersChange={handleFiltersChange}
-        type="tv"
-      />
-      {/* Loading State */}
-      {isLoading && <PageLoading>Loading TV shows, please wait...</PageLoading>}
-      {/* Series Display */}
-      {!isLoading && series.length > 0 && (
-        <TvDisplay
-          series={series}
-          pageid={currentPage.toString()}
-          totalPages={totalPages}
-        />
-      )}
-      {/* Empty State */}
-      {!isLoading && series.length === 0 && (
-        <PageEmpty>No TV shows found</PageEmpty>
-      )}
+      {/* Series Hero Carousel */}
+      <SeriesHero />
+      
+      {/* Series Carousels with Full Bleed Effect */}
+      <div className="relative bg-black">
+        {/* Full bleed container - extends beyond viewport */}
+        <div className="overflow-hidden">
+          <div className="relative w-full">
+            {/* Main content with negative margins for full bleed */}
+            <div className="mx-[-2rem]">
+              <div className="container mx-auto px-4 py-8">
+                <SeriesCarousels />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 };
+
 export default SeriesPageClient;
