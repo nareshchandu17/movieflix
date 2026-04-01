@@ -1,12 +1,9 @@
-import { Metadata } from "next";
-import InfoNotFound from "@/components/not-found/InfoNotFound";
-import TvInfo from "@/components/series/TvInfo";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Series | Cineworld",
-  description:
-    "Browse all series available on Cineworld. Find trending, top-rated, and new releases.",
-};
+import { use } from "react";
+import { ProfileProvider } from "@/contexts/ProfileContext";
+import BingeSeriesInfo from "@/components/series/BingeSeriesInfo";
+import InfoNotFound from "@/components/not-found/InfoNotFound";
 
 interface SeriesDetailsPageProps {
   params: Promise<{
@@ -14,15 +11,19 @@ interface SeriesDetailsPageProps {
   }>;
 }
 
-export default async function SeriesDetailsPage({
+export default function SeriesDetailsPage({
   params,
 }: SeriesDetailsPageProps) {
-  const { id } = await params;
+  const { id } = use(params);
   const parsedId = parseInt(id, 10);
 
   if (isNaN(parsedId) || parsedId <= 0) {
     return <InfoNotFound type="tv" />;
   }
 
-  return <TvInfo id={parsedId} />;
+  return (
+    <ProfileProvider>
+      <BingeSeriesInfo id={parsedId} />
+    </ProfileProvider>
+  );
 }

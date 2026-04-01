@@ -297,6 +297,197 @@ Return ONLY the JSON object, no other text.`;
     }
   }
 
+  /**
+   * Extracts emotional intent from natural language user input
+   */
+  async extractMoodIntent(userInput: string): Promise<{
+    openingEmotion: string;
+    midpointEmotion: string;
+    resolutionEmotion: string;
+    intensityScore: number;
+    cryProbability: number;
+    hopeIndex: number;
+    laughDensity: number;
+    toneRequirement: string;
+  }> {
+    try {
+      this.logger.info("Extracting mood intent", { userInput });
+
+      const prompt = `You are an expert cinematic psychologist. Analyze this user mood/request: "${userInput}"
+      
+      Convert this natural language into a structured emotional arc profile.
+      
+      Requirements:
+      1. openingEmotion, midpointEmotion, resolutionEmotion: Single words describing the desired journey.
+      2. intensityScore: 1-10 (how emotionally intense/heavy)
+      3. cryProbability: 1-10 (likelihood of wanting to cry)
+      4. hopeIndex: 1-10 (level of optimism/hope)
+      5. laughDensity: 1-10 (frequency of comedic relief)
+      6. toneRequirement: One of: "dark-but-hopeful", "purely dark", "warm", "satirical", "absurdist"
+      
+      Return ONLY a JSON object:
+      {
+        "openingEmotion": "word",
+        "midpointEmotion": "word",
+        "resolutionEmotion": "word",
+        "intensityScore": 5,
+        "cryProbability": 2,
+        "hopeIndex": 8,
+        "laughDensity": 4,
+        "toneRequirement": "warm"
+      }`;
+
+      const response = await this.ai.models.generateContent({
+        model: this.MODEL_NAME,
+        contents: prompt,
+      });
+
+      if (!response?.text) {
+        throw new Error("Empty response from Gemini API");
+      }
+
+      const cleanedText = response.text
+        .replace(/^```json\s*/i, "")
+        .replace(/```\s*$/i, "")
+        .trim();
+
+      return JSON.parse(cleanedText);
+    } catch (error) {
+      this.logger.error("Error extracting mood intent", { error: (error as Error).message });
+      // Fallback defaults
+      return {
+        openingEmotion: "neutral",
+        midpointEmotion: "curious",
+        resolutionEmotion: "satisfied",
+        intensityScore: 5,
+        cryProbability: 3,
+        hopeIndex: 5,
+        laughDensity: 5,
+        toneRequirement: "warm"
+      };
+    }
+  }
+
+  /**
+   * Generates a "Why this matches" explanation
+   */
+  async generateMoodExplanation(movieTitle: string, userMood: string): Promise<string> {
+    try {
+      const prompt = `User said: "${userMood}"
+      Recommended Movie: "${movieTitle}"
+      
+      Write a one-line explanation (max 20 words) explaining why "${movieTitle}" perfectly matches the emotional journey the user requested. Be cinematic and empathetic.`;
+
+      const response = await this.ai.models.generateContent({
+        model: this.MODEL_NAME,
+        contents: prompt,
+      });
+
+      return response.text?.trim() || "Matches the emotional resonance of your request.";
+    } catch (error) {
+      return "A perfect emotional match for your current mood.";
+    }
+  }
+  /**
+   * Generates a spoiler-aware catch-up summary
+   */
+  async generateCatchUpSummary(
+    skippedFacts: string[],
+    futureSpoilers: string[],
+    targetLength: "short" | "medium" | "long"
+  ): Promise<string> {
+    try {
+      this.logger.info("Generating catch-up summary", { factsCount: skippedFacts.length });
+
+      const lengthGuidance = {
+        short: "max 40 words, very concise",
+        medium: "max 120 words, detailed but balanced",
+        long: "up to 300 words, comprehensive breakdown"
+      }[targetLength];
+
+      const prompt = `You are a professional narrative curator. 
+      
+      TASK: Generate a ${targetLength} catch-up summary for a user based on these events they missed:
+      SKIPPED EVENTS:
+      ${skippedFacts.map(f => `- ${f}`).join("\n")}
+      
+      STRICT SPOILER PROTECTION: 
+      Do NOT mention, reference, or hint at ANY of the following future events/spoilers:
+      ${futureSpoilers.map(s => `- ${s}`).join("\n")}
+      
+      REQUIREMENTS:
+      1. Length: ${lengthGuidance}.
+      2. Tone: Cinematic, engaging, and clear.
+      3. Focus on plot-critical character shifts and information reveals.
+      4. Ensure the summary serves as a perfect bridge to the next scene.
+      
+      Return ONLY the summary text, no other formatting.`;
+
+      const response = await this.ai.models.generateContent({
+        model: this.MODEL_NAME,
+        contents: prompt,
+      });
+
+      return response.text?.trim() || "Information successfully processed. You're ready to continue.";
+    } catch (error) {
+      this.logger.error("Error generating catch-up summary", { error: (error as Error).message });
+      return "Briefly: Key plot developments occurred involving main characters. You are now up to date.";
+    }
+  }
+
+  /**
+   * Analyzes a character's arc based on their logs
+   */
+  async analyzeCharacterArc(
+    name: string,
+    logs: any[],
+    inflectionPoints: any[]
+  ): Promise<{ dna: string; summary: string; evolutionTags: string[] }> {
+    try {
+      this.logger.info("Analyzing character arc", { name });
+
+      const prompt = `You are a professional literary analyst and screenwriter.
+      
+      TASK: Analyze the narrative arc of the character "${name}" based on these logs:
+      LOGS:
+      ${JSON.stringify(logs.map(l => ({ 
+        time: l.timestamp, 
+        emotion: l.emotionalState, 
+        alignment: l.moralAlignment,
+        motivation: l.motivation
+      })))}
+      
+      INFLECTION POINTS:
+      ${JSON.stringify(inflectionPoints.map(p => ({ 
+        type: p.type, 
+        catalyst: p.catalyst, 
+        description: p.description 
+      })))}
+      
+      REQUIREMENTS:
+      1. DNA: A concise, poetic "DNA" summary (max 20 words) representing their core essence.
+      2. Summary: A detailed breakdown (max 200 words) of their journey and final state.
+      3. Evolution Tags: 3-5 tags describing their path (e.g., "From Nihilism to Sacrifice").
+      
+      Return as a JSON object with keys: "dna", "summary", "evolutionTags".`;
+
+      const response = await this.ai.models.generateContent({
+        model: this.MODEL_NAME,
+        contents: prompt,
+      });
+
+      const text = response.text?.trim() || "{}";
+      const cleanJson = text.replace(/```json|```/g, "").trim();
+      return JSON.parse(cleanJson);
+    } catch (error) {
+      this.logger.error("Error analyzing character arc", { error: (error as Error).message });
+      return {
+        dna: "A complex soul shaped by circumstance.",
+        summary: "The character's journey is defined by significant shifts in motivation and morality.",
+        evolutionTags: ["Undetermined"]
+      };
+    }
+  }
 }
 
 // Singleton instance

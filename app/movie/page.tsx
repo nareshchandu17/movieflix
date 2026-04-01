@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
 import PageTitle from "@/components/title/PageTitle";
-import MoviePageClient from "@/components/movie/MoviePageClient";
+import EnhancedMoviePageClient from "@/components/movie/EnhancedMoviePageClient";
 import {PageLoading} from "@/components/loading/PageLoading";
 
 export const metadata: Metadata = {
@@ -18,7 +18,7 @@ export default function MoviePage() {
       />
 
       <Suspense fallback={<PageLoading>Loading movies...</PageLoading>}>
-        <MoviePageClient />
+        <EnhancedMoviePageClient />
       </Suspense>
     </div>
   );

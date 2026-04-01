@@ -5,9 +5,7 @@ import {
   Clock,
   Users,
   Tv,
-  Film,
 } from "lucide-react";
-import WatchlistButton from "@/components/watchlist/WatchlistButton";
 import { TMDBMovie, TMDBTVShow } from "@/lib/types";
 
 interface MediaMetaProps {
@@ -30,7 +28,7 @@ interface MediaMetaProps {
  * MediaMeta - Modern metadata component for movies and TV shows
  * Features responsive design with beautiful icons and glass morphism
  */
-const MediaMeta= ({
+const MediaMeta = ({
   type,
   title,
   year,
@@ -48,21 +46,11 @@ const MediaMeta= ({
     <div className={`space-y-6 ${className}`}>
       {/* Header Section */}
       <div className="glass-container space-y-4 relative">
-        {/* Media Type Badge and Watchlist Button */}
-        <div className="flex items-center justify-between">
-          <div
-            className="flex items-center gap-2 bg-primary/20 text-primary px-3 py-1.5 
-                        rounded-full text-xs font-semibold border border-primary/30"
-          >
-            {type === "movie" ? (
-              <Film className="w-4 h-4" />
-            ) : (
-              <Tv className="w-4 h-4" />
-            )}
+        {/* Media Type Badge */}
+        <div className="flex items-center space-x-4">
+          <div className="px-3 py-1 bg-primary/10 text-primary border border-primary/30 rounded-full text-sm font-medium">
             {type === "movie" ? "Movie" : "TV Series"}
           </div>
-          
-          <WatchlistButton media={media} variant="default" />
         </div>
 
         {/* Title */}
@@ -106,11 +94,11 @@ const MediaMeta= ({
 
           {rating && (
             <div className="flex items-center gap-2">
-              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-              <span className="font-bold text-white">{rating.toFixed(1)}</span>
+              <Star className="w-4 h-4 text-red-500 fill-current" />
+              <span className="font-bold text-white">{rating?.toFixed(1)}</span>
               {ratingCount && (
                 <span className="text-sm text-gray-400">
-                  ({ratingCount.toLocaleString()})
+                  ({ratingCount?.toLocaleString()})
                 </span>
               )}
             </div>
