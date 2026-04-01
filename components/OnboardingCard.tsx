@@ -65,7 +65,7 @@ export default function OnboardingCard({ onComplete }: OnboardingCardProps) {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Welcome to CineWorld! 🎬");
+        toast.success("Welcome to MovieFlix! 🎬");
         
         // Update the session to reflect onboarding completion
         await update();

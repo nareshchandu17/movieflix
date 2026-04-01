@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         const uploadStream = cloudinary.uploader.upload_stream(
           { 
             resource_type: 'video', 
-            folder: 'cineworld/reactions',
+            folder: 'MovieFlix/reactions',
             format: 'mp4',
             quality: 'auto',
             fetch_format: 'auto'

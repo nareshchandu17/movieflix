@@ -115,7 +115,7 @@ export function RoomSettingsModal({ roomId, isOpen, onClose }: RoomSettingsModal
 
             {/* Footer */}
             <div className="px-8 py-4 bg-white/5 border-t border-white/5 flex items-center justify-center">
-              <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em]">Cineworld Secure Session</p>
+              <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em]">MovieFlix Secure Session</p>
             </div>
           </motion.div>
         </div>

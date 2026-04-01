@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "Footer Demo | Cineworld",
+  title: "Footer Demo | MovieFlix",
   description: "Premium 3D Animated Footer Demo",
 };
 
