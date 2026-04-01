@@ -1,16 +1,17 @@
-import Header from "@/components/navbar/Header";
 import "./globals.css";
 import { Inter } from "next/font/google";
-import Footer from "@/components/footer/Footer";
 import { ReactNode } from "react";
-import { Toaster } from "sonner";
-import { cn } from "@/lib/utils";
+import ClientLayout from "./ClientLayout";
+import { RoomProvider } from "@/contexts/RoomContext";
+import { SearchProvider } from "@/contexts/SearchContext";
+import { WatchHistoryProvider } from "@/contexts/WatchHistoryContext";
+import { Providers } from "./providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "CineWorld",
-  description: "A World of Cinema",
+  title: "MovieFlix",
+  description: "Your ultimate movie and series destination",
 };
 
 interface RootLayoutProps {
@@ -20,11 +21,16 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
-      <body className={cn(inter.className, "app-bg-enhanced")}>
-        <Header />
-        {children}
-        <Footer />
-        <Toaster position="top-right" richColors />
+      <body className={inter.className + " app-bg-enhanced"}>
+        <Providers>
+          <RoomProvider>
+            <SearchProvider>
+              <WatchHistoryProvider>
+                <ClientLayout>{children}</ClientLayout>
+              </WatchHistoryProvider>
+            </SearchProvider>
+          </RoomProvider>
+        </Providers>
       </body>
     </html>
   );

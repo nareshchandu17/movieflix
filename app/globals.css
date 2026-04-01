@@ -32,14 +32,14 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 0 0% 7.8%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 0 0% 7.8%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 0 0% 7.8%;
     --popover-foreground: 210 40% 98%;
     --primary: 47 96% 53%;
-    --primary-foreground: 222.2 84% 4.9%;
+    --primary-foreground: 0 0% 7.8%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
@@ -57,13 +57,140 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
+}
 
+@layer base {
   * {
     @apply border-border;
   }
-  
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .text-shadow-lg {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+  
+  .text-shadow-red {
+    text-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
+  }
+  
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .glow-red {
+    box-shadow: 0 0 60px rgba(229, 9, 20, 0.4);
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+  
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+  
+  /* Netflix-style smooth horizontal scrolling */
+  .horizontal-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Better mobile touch scrolling */
+  .touch-scroll {
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+  }
+  
+  /* Navigation arrow styling */
+  .nav-arrow {
+    backdrop-filter: blur(8px);
+    background: rgba(var(--theme-primary-rgb), 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .nav-arrow:hover {
+    background: rgba(var(--light-primary-rgb), 1);
+    transform: scale(1.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Section hover for chevron buttons only */
+  .section-hover:hover .chevron-btn-left,
+  .section-hover:hover .chevron-btn-right {
+    opacity: 1;
+  }
+
+  /* Enhanced app background with better responsiveness */
+  .app-bg-enhanced {
+    @apply min-h-screen;
+    background-color: #000000;
+    background-attachment: fixed;
+    background-size: 100% 100%;
+  }
+  
+  /* Mobile optimized background */
+  @media (max-width: 768px) {
+    .app-bg-enhanced {
+      background-attachment: scroll;
+      background-size: cover;
+    }
+  }
+  
+  /* Reusable component classes */
+  .glass-container {
+    @apply bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 p-4 sm:p-6;
+  }
+  
+  .filter-label-xs {
+    @apply text-xs font-medium text-gray-300 mb-1;
+  }
+  
+  .filter-label-sm {
+    @apply text-sm font-medium text-gray-300 whitespace-nowrap;
+  }
+  
+  .footer-link {
+    @apply text-gray-300 hover:text-primary text-sm transition-all duration-200 hover:scale-105 relative;
+  }
+  
+  .smooth-transition {
+    @apply transition-all duration-200;
   }
 }
 
@@ -109,7 +236,8 @@
 
   /* Enhanced app background with better responsiveness */
   .app-bg-enhanced {
-    @apply min-h-screen bg-gradient-to-br from-black via-gray-900 to-black;
+    @apply min-h-screen;
+    background-color: #000000;
     background-attachment: fixed;
     background-size: 100% 100%;
   }
@@ -158,4 +286,185 @@
       outline: 2px solid ButtonText !important;
       outline-offset: 2px !important;
     }
+  }
+
+  /* Custom utility classes for Watch Party */
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  }
+
+  .glass-subtle {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent;
+  }
+
+  .glow-primary-sm {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .font-display {
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  /* Grain overlay for taste-dna page */
+  .grain-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0; /* Changed from 1 to 0 to prevent interference with scrolling */
+    opacity: 0.5;
+    background-image: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 1px,
+        rgba(255, 255, 255, 0.03) 1px,
+        rgba(255, 255, 255, 0.03) 2px
+      );
+  }
+
+  /* Dark background for taste-dna */
+  .bg-dark-200 {
+    background-color: #07070a;
+  }
+
+  /* Prevent scroll jumping during animations */
+  html {
+    scroll-behavior: auto;
+  }
+  
+  body {
+    overflow-x: hidden; /* Prevent horizontal scroll jumping */
+  }
+  
+  /* Ensure proper scroll container for taste-dna */
+  .taste-dna-container {
+    position: relative;
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* Pulse glow animation for DNA ladder rungs */
+  @keyframes pulse-glow {
+    0%, 100% { 
+      opacity: 0.6;
+      filter: brightness(1);
+    }
+    50% { 
+      opacity: 1;
+      filter: brightness(1.2);
+    }
+  }
+
+  /* My List page specific styles */
+  .gradient-mesh {
+    background: 
+      radial-gradient(ellipse at top left, rgba(120, 50, 150, 0.3) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(229, 9, 20, 0.2) 0%, transparent 50%),
+      radial-gradient(ellipse at center, rgba(50, 100, 200, 0.15) 0%, transparent 50%);
+  }
+
+  .glass-light {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  .card-glow {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .card-glow-hover {
+    box-shadow: 0 0 30px rgba(229, 9, 20, 0.3);
+  }
+
+  .ai-glow {
+    box-shadow: 0 0 40px rgba(229, 9, 20, 0.2);
+  }
+
+  .shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  /* Full-bleed hero section styles */
+  .hero-full-bleed {
+    width: 100vw !important;
+    margin-left: calc(50% - 50vw) !important;
+    margin-right: calc(50% - 50vw) !important;
+    position: relative !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* Custom scrollbar styles - remove white background */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: rgba(255, 255, 255, 0.7);
+    background-clip: content-box;
+  }
+
+  /* Firefox scrollbar styles */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  }
+
+  /* Dark theme scrollbar */
+  .dark ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+    background-clip: content-box;
+  }
+
+  .dark * {
+    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.1);
   }

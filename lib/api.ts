@@ -8,11 +8,13 @@ import {
   TMDBTVDetail,
   TMDBSeasonDetail,
   TMDBEpisodeDetail,
+  TMDBPerson,
+  TMDBCredits,
 } from "./types";
 
 // Support both legacy API_KEY and new ACCESS_TOKEN for backward compatibility
 const ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN;
-const API_KEY = process.env.API_KEY;
+const API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 
 // Validate environment configuration
@@ -507,6 +509,89 @@ export const api = {
       { headers: getHeaders() }
     );
     return data as T extends "movie" ? TMDBMovieResponse : TMDBTVResponse;
+  },
+
+  // Get credits (cast and crew)
+  async getCredits(
+    mediaType: "movie" | "tv",
+    id: number
+  ): Promise<TMDBCredits> {
+    checkAccessToken();
+    return await fetchAPI<TMDBCredits>(`${BASE_URL}/${mediaType}/${id}/credits`, {
+      headers: getHeaders(),
+    });
+  },
+
+  // Get combined credits for person (movies and TV shows)
+  async getCombinedCredits(
+    mediaType: "person",
+    id: number
+  ): Promise<any> {
+    checkAccessToken();
+    return await fetchAPI<any>(`${BASE_URL}/${mediaType}/${id}/combined_credits`, {
+      headers: getHeaders(),
+    });
+  },
+
+  // Get person details
+  async getPersonDetails(id: number): Promise<TMDBPerson> {
+    checkAccessToken();
+    
+    // Validate that the ID is a positive integer
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new Error(`Invalid person ID: ${id}. ID must be a positive integer.`);
+    }
+    
+    try {
+      return await fetchAPI<TMDBPerson>(`${BASE_URL}/person/${id}`, {
+        headers: getHeaders(),
+      });
+    } catch (error) {
+      const error_ = error as Error & { status?: number; code?: string };
+      
+      // Throw a specific error for 404 not found
+      if (error_.status === 404) {
+        const notFoundError = new Error('Person not found') as Error & { 
+          status: number; 
+          code: string;
+        };
+        notFoundError.status = 404;
+        notFoundError.code = 'NOT_FOUND';
+        throw notFoundError;
+      }
+      
+      // Re-throw other errors as-is
+      throw error;
+    }
+  },
+
+  // Get similar movies/TV shows
+  async getSimilar(
+    mediaType: "movie" | "tv",
+    id: number,
+    page = 1
+  ): Promise<TMDBTrendingResponse> {
+    checkAccessToken();
+    const searchParams = new URLSearchParams({
+      page: page.toString(),
+    });
+    return await fetchAPI<TMDBTrendingResponse>(
+      `${BASE_URL}/${mediaType}/${id}/similar?${searchParams}`,
+      {
+        headers: getHeaders(),
+      }
+    );
+  },
+
+  // Get videos (trailers, clips, etc.)
+  async getVideos(
+    mediaType: "movie" | "tv",
+    id: number
+  ): Promise<any> {
+    checkAccessToken();
+    return await fetchAPI<any>(`${BASE_URL}/${mediaType}/${id}/videos`, {
+      headers: getHeaders(),
+    });
   },
 
   // Health check utility

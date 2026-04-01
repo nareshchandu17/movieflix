@@ -60,7 +60,7 @@ function PaginationLink({
         }),
         "relative backdrop-blur-md border transition-all duration-300 hover:scale-105",
         isActive 
-          ? "bg-gradient-to-r from-yellow-400/90 to-yellow-600/90 border-yellow-500/50 text-white hover:text-white shadow-lg hover:from-yellow-300/95 hover:to-yellow-600/95" 
+          ? "bg-gradient-to-r from-red-500/90 to-red-700/90 border-red-600/50 text-white hover:text-white shadow-lg hover:from-red-400/95 hover:to-red-700/95" 
           : "bg-gray-900/50 border-gray-700/50 text-white hover:text-white hover:bg-gray-800/70 hover:border-gray-600/80 shadow-md",
         className
       )}

@@ -30,7 +30,7 @@ const MobileMenu = () => {
               { href: "/", label: "Home" },
               { href: "/movie", label: "Movies" },
               { href: "/series", label: "Series" },
-              { href: "/watchlist", label: "Watchlist" },
+              { href: "/my-list", label: "My List" },
             ].map((item) => (
               <Link
                 key={item.href}
