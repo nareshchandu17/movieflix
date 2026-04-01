@@ -1,8 +1,8 @@
-# 🎬 CINEWORLD Subscription System
+# 🎬 MovieFlix Subscription System
 
 ## 📋 Overview
 
-Complete subscription management system with mock payment flow for CINEWORLD streaming platform. Features Basic (free) and Premium tiers with access control, payment processing, and user management.
+Complete subscription management system with mock payment flow for MovieFlix streaming platform. Features Basic (free) and Premium tiers with access control, payment processing, and user management.
 
 ---
 
@@ -134,7 +134,7 @@ scripts/
 ### **1. Setup Database**
 ```bash
 # Make sure MongoDB is running
-mongosh "cineworld-nextjs"
+mongosh "MovieFlix-nextjs"
 ```
 
 ### **2. Seed Plans**
@@ -162,7 +162,7 @@ npm run dev
 ### **Environment Variables**
 Add to `.env.local`:
 ```env
-MONGODB_URI=mongodb://localhost:27017/cineworld-nextjs
+MONGODB_URI=mongodb://localhost:27017/MovieFlix-nextjs
 NEXTAUTH_SECRET=your-secret-key
 JWT_SECRET=your-jwt-secret
 ```
@@ -373,4 +373,4 @@ For issues or questions:
 
 ---
 
-**Built with ❤️ for CINEWORLD - Next Generation Streaming Platform**
+**Built with ❤️ for MovieFlix - Next Generation Streaming Platform**

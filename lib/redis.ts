@@ -11,7 +11,7 @@ const redis = new Redis({
   lazyConnect: true,
   keepAlive: 30000,
   family: 4,
-  keyPrefix: 'cineworld:',
+  keyPrefix: 'MovieFlix:',
   connectTimeout: 10000,
   commandTimeout: 5000,
 });

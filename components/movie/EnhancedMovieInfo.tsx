@@ -808,7 +808,7 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
     
     const url = window.location.href;
     const title = movieData.title;
-    const text = `Check out "${title}" on Cineworld!`;
+    const text = `Check out "${title}" on MovieFlix!`;
     
     let shareUrl = '';
     

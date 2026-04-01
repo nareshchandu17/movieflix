@@ -4,7 +4,7 @@ import NewAndPopularClient from "../../components/newpopular/NewAndPopularClient
 import { PageLoading } from "../../components/loading/PageLoading";
 
 export const metadata: Metadata = {
-  title: "New & Popular | Cineworld",
+  title: "New & Popular | MovieFlix",
   description: "Discover the hottest movies and TV shows trending worldwide, curated with advanced algorithms for the ultimate viewing experience.",
 };
 

@@ -115,7 +115,7 @@ export const BillingHistory = mongoose.models.BillingHistory || mongoose.model('
 // Database connection
 export const connectDB = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/cineworld';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/MovieFlix';
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB');
   } catch (error) {

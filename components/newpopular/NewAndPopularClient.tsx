@@ -819,11 +819,11 @@ const NewAndPopularClient = () => {
               <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-700 rounded-xl flex items-center justify-center">
                 <Play className="w-6 h-8 text-white" />
               </div>
-              <h3 className="text-3xl font-bold">CINEWORLD</h3>
+              <h3 className="text-3xl font-bold">MovieFlix</h3>
             </div>
             <p className="text-gray-400 mb-4">Your premium entertainment destination</p>
             <div className="flex justify-center gap-6 text-sm text-gray-500">
-              <span>© 2024 CINEWORLD</span>
+              <span>© 2024 MovieFlix</span>
               <span>•</span>
               <span>Elite Streaming Experience</span>
             </div>
