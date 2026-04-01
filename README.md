@@ -2,7 +2,6 @@
 
 > **Your Premium Netflix-Style Streaming Experience** - A modern OTT platform with AI-powered insights and cinematic browsing
 
-![MovieFlix Banner](https://via.placeholder.com/1200x400/1a1a2e/16213e?text=MovieFlix+-+Premium+Streaming+Platform)
 
 ---
 
@@ -42,22 +41,6 @@
 - **Progressive Web App** - Install on any device
 - **Offline Mode** - Download content for offline viewing
 - **Multi-Device Sync** - Seamless experience across all devices
-
----
-
-## 📸 Screenshots
-
-### 🏠 Homepage
-![Homepage](https://via.placeholder.com/800x450/1a1a2e/ffffff?text=Homepage+-+Dynamic+Content+Discovery)
-
-### 🎬 Movie Details
-![Movie Page](https://via.placeholder.com/800x450/1a1a2e/ffffff?text=Movie+Details+-+Rich+Metadata+&+Trailers)
-
-### 📺 Series Browser
-![Series Page](https://via.placeholder.com/800x450/1a1a2e/ffffff?text=Series+Browser+-+Episode+Guide+&+Seasons)
-
-### 🤖 AI Insights Panel
-![AI Insights](https://via.placeholder.com/800x450/1a1a2e/ffffff?text=AI+Insights+-+Smart+Recommendations)
 
 ---
 
@@ -235,27 +218,7 @@ CMD ["npm", "start"]
 
 ---
 
-## 🗺️ Future Roadmap
 
-### Phase 1: Enhanced Features
-- [ ] **Live Streaming** - Real-time event broadcasting
-- [ ] **Offline Downloads** - Progressive Web App with offline support
-- [ ] **Multi-Language Support** - Internationalization (i18n)
-- [ ] **Advanced Analytics** - Viewer engagement metrics
-
-### Phase 2: Platform Expansion
-- [ ] **Mobile Apps** - React Native iOS/Android applications
-- [ ] **Smart TV Apps** - Roku, Apple TV, Android TV
-- [ ] **Gaming Integration** - Console applications
-- [ ] **Voice Commands** - Alexa/Google Assistant integration
-
-### Phase 3: AI & Machine Learning
-- [ ] **Content Recommendation Engine** - ML-powered suggestions
-- [ ] **Automated Content Tagging** - AI-generated metadata
-- [ ] **Predictive Analytics** - Churn prediction and user insights
-- [ ] **Content Generation** - AI-assisted trailer creation
-
----
 
 ## 🤝 Contributing Guidelines
 
@@ -293,7 +256,7 @@ We welcome contributions from the community! Here's how you can help:
 
 ### Bug Reports
 
-- Use the [Issues](https://github.com/your-username/movieflix-nextjs/issues) page
+- Use the [Issues](https://github.com/nareshchandu17/movieflix-nextjs/issues) page
 - Provide detailed reproduction steps
 - Include browser/OS information
 - Add screenshots if applicable
@@ -307,7 +270,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ```
 MIT License
 
-Copyright (c) 2024 MovieFlix
+Copyright (c) 2026 MovieFlix
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -325,7 +288,7 @@ copies or substantial portions of the Software.
 ## 👨‍💻 Author & Credits
 
 ### Lead Developer
-**[Your Name](https://github.com/your-username)** - Full-stack developer passionate about creating exceptional streaming experiences.
+**[Nareshchandu](https://github.com/nareshchandu17)** - Full-stack developer passionate about creating exceptional streaming experiences.
 
 ### Special Thanks
 - **TMDB** - For providing the movie database API
@@ -335,16 +298,7 @@ copies or substantial portions of the Software.
 - **Framer Motion** - For beautiful animations
 
 ### Community Contributors
-- Thanks to all [contributors](https://github.com/your-username/movieflix-nextjs/graphs/contributors) who have helped make this project better!
-
----
-
-## 📞 Support & Contact
-
-- **📧 Email**: support@movieflix.com
-- **🐦 Twitter**: [@movieflix](https://twitter.com/movieflix)
-- **💬 Discord**: [Join our community](https://discord.gg/movieflix)
-- **🐛 Issues**: [Report bugs](https://github.com/your-username/movieflix-nextjs/issues)
+- Thanks to all [contributors](https://github.com/nareshchandu17/movieflix-nextjs/graphs/contributors) who have helped make this project better!
 
 ---
 
