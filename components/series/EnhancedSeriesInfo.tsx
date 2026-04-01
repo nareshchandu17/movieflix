@@ -527,7 +527,7 @@ const EnhancedSeriesInfo = ({ id }: EnhancedSeriesInfoProps) => {
     
     const url = window.location.href;
     const title = seriesData.name;
-    const text = `Check out "${title}" series on Cineworld!`;
+    const text = `Check out "${title}" series on MovieFlix!`;
     
     let shareUrl = '';
     

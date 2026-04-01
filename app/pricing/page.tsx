@@ -310,7 +310,7 @@ export default function PricingPage() {
           className="mt-12 text-center"
         >
           <p className="text-gray-500 mb-4">
-            Questions? Contact us at <Link href="/support" className="text-blue-400 hover:underline">support@cineworld.com</Link>
+            Questions? Contact us at <Link href="/support" className="text-blue-400 hover:underline">support@MovieFlix.com</Link>
           </p>
           <div className="flex justify-center gap-8">
             <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">

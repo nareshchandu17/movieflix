@@ -5,9 +5,9 @@ import EnhancedMoviePageClient from "@/components/movie/EnhancedMoviePageClient"
 import {PageLoading} from "@/components/loading/PageLoading";
 
 export const metadata: Metadata = {
-  title: "All Movies | Cineworld",
+  title: "All Movies | MovieFlix",
   description:
-    "Browse all movies available on Cineworld. Find trending, top-rated, and new releases.",
+    "Browse all movies available on MovieFlix. Find trending, top-rated, and new releases.",
 };
 
 export default function MoviePage() {
