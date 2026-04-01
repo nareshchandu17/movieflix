@@ -61,7 +61,7 @@ export function GoogleAuthModal({ isOpen, onClose }: GoogleAuthModalProps) {
             </div>
 
             <h2 className="text-2xl font-bold text-white mb-2 tracking-wide text-center">
-              Welcome to <span className="bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">CineWorld</span>
+              Welcome to <span className="bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">MovieFlix</span>
             </h2>
             <p className="text-white/50 text-sm mb-8 text-center max-w-xs">
               Sign in with your Google account to track history, watch movies, and continue seamlessly.
@@ -89,7 +89,7 @@ export function GoogleAuthModal({ isOpen, onClose }: GoogleAuthModalProps) {
               )}
             </button>
             <p className="mt-6 text-xs text-white/30 text-center px-4">
-              By continuing, you agree to CineWorld's Terms of Service and Privacy Policy.
+              By continuing, you agree to MovieFlix's Terms of Service and Privacy Policy.
             </p>
           </motion.div>
         </div>

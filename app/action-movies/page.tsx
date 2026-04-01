@@ -2,10 +2,10 @@ import { Metadata } from "next";
 import PaginatedMediaPage from "@/components/info/PaginatedMediaPage";
 
 export const metadata: Metadata = {
-  title: "Popular Action Movies | Cineworld",
+  title: "Popular Action Movies | MovieFlix",
   description: "Browse the most popular action movies. High-octane thrillers and blockbusters await.",
   openGraph: {
-    title: "Popular Action Movies | Cineworld",
+    title: "Popular Action Movies | MovieFlix",
     description: "Discover the best action movies with advanced filtering and pagination.",
     type: "website",
   },
