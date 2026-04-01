@@ -58,8 +58,8 @@ const config: Config = {
   				foreground: 'hsl(var(--card-foreground))'
   			},
   			'bg-black': '#0E0E0E',
-  			'theme-primary': '#FDE402',
-  			'light-primary': '#A69C40',
+  			'theme-primary': '#EF4444',
+  			'light-primary': '#F87171',
   			white: '#ffffff',
   			grey: '#1D1B1B',
   			'light-white': '#6D6B6B',

@@ -1,4 +1,5 @@
 interface SectionHeaderProps {
+  title: string;
   children: React.ReactNode;
   className?: string;
 }

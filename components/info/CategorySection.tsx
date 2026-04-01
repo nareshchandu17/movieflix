@@ -4,6 +4,7 @@ import Link from "next/link";
 import { TMDBMovie, TMDBTVShow } from "@/lib/types";
 import { useCategoryData } from "@/lib/hooks";
 import MediaCard from "../display/MediaCard";
+import EnhancedMediaCard from "../display/EnhancedMediaCard";
 import SectionHeader from "../layout/SectionHeader";
 import { Button } from "../ui/button";
 import { ChevronRight, ChevronLeft } from "lucide-react";
@@ -61,23 +62,17 @@ const CategorySection = ({
     }
   };
 
-  if (isLoading) {
+  if (hasError) {
     return (
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold mb-6 text-white">{title}</h2>
-        <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-4 scrollbar-hide horizontal-scroll pl-4 sm:pl-0">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="flex-shrink-0">
-              <div className="w-[160px] sm:w-[180px] md:w-[200px] aspect-[2/3] bg-gray-800 animate-pulse rounded-lg" />
-            </div>
-          ))}
-          <div className="flex-shrink-0 w-4 sm:w-6"></div>
+      <div className="w-full">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 text-center max-w-md">
+          <p className="text-red-400 text-lg">{error}</p>
         </div>
       </div>
     );
   }
 
-  const showEmptyState = hasError || results.length === 0;
+  const showEmptyState = results.length === 0;
 
   let displayData: (TMDBMovie | TMDBTVShow)[];
 
@@ -92,74 +87,61 @@ const CategorySection = ({
   }
 
   return (
-    <div className="mb-12">
-      <SectionHeader className="mb-6">
-        <h2 className="text-2xl font-bold text-white">{title}</h2>
-        <Link href={seeAllHref}>
-          <Button
-            variant="ghost"
-            className="text-theme-primary hover:text-theme-primary hover:bg-gray-700/20 transition-colors"
-          >
-            See All <ChevronRight className="ml-1 h-4 w-4" />
-          </Button>
+    <div className="mb-12 bg-black">
+      <SectionHeader title={title}>
+        <div>
+          <h2 className="text-3xl font-bold text-white mb-2">{title}</h2>
+        </div>
+        <Link href={seeAllHref} className="flex items-center gap-2 text-red-500 hover:text-red-400 transition-colors duration-300 group">
+          <span className="text-sm font-medium">See All</span>
+          <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
         </Link>
       </SectionHeader>
 
       {showEmptyState ? (
         <div className="flex items-center justify-center h-32 text-gray-400">
-          {hasError ? (
-            <div className="text-center">
-              <p className="text-lg mb-2">
-                Failed to load {mediaType === "movie" ? "movies" : "TV shows"}
-              </p>
-              <p className="text-sm">
-                Please check your internet connection and try again
-              </p>
-            </div>
-          ) : (
-            <p className="text-lg">
-              No {mediaType === "movie" ? "movies" : "TV shows"} available at
-              the moment.
-            </p>
-          )}
+          <p className="text-lg">
+            No {mediaType === "movie" ? "movies" : "TV shows"} available at
+            the moment.
+          </p>
+          <p className="text-sm">
+            Please check your internet connection and try again
+          </p>
         </div>
       ) : (
-        <div className="relative section-hover">
-          {/* Left Arrow Button with gradient background - Hidden on mobile, visible on desktop */}
-          <div className="absolute left-0 top-0 bottom-4 w-16 bg-gradient-to-r from-bg-black via-bg-black/80 to-transparent z-20 hidden md:block pointer-events-none"></div>
-          <button
-            onClick={scrollLeft}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 hidden md:flex items-center justify-center w-10 h-10 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full shadow-lg transition-all duration-300 opacity-0 hover:scale-110 chevron-btn-left border border-white/20"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-5 h-5 text-white" />
-          </button>
+        <div className="relative left-0 right-1/2 -mr-[5vw] w-[calc(100vw+2rem)]">
+          <div className="relative section-hover">
+            <button
+              onClick={scrollLeft}
+              className="absolute left-6 top-1/2 -translate-y-1/2 z-30 hidden md:flex items-center justify-center w-10 h-10 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full shadow-lg transition-all duration-300 opacity-0 hover:scale-110 chevron-btn-left border border-white/20"
+              aria-label="Scroll left"
+            >
+            
+            </button>
 
-          {/* Right Arrow Button with gradient background - Hidden on mobile, visible on desktop */}
-          <div className="absolute right-0 top-0 bottom-4 w-16 bg-gradient-to-l from-bg-black via-bg-black/80 to-transparent z-20 hidden md:block pointer-events-none"></div>
-          <button
-            onClick={scrollRight}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 hidden md:flex items-center justify-center w-10 h-10 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full shadow-lg transition-all duration-300 opacity-0 hover:scale-110 chevron-btn-right border border-white/20"
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-5 h-5 text-white" />
-          </button>
+            <div
+              onClick={scrollRight}
+              className="absolute right-6 top-1/2 -translate-y-1/2 z-30 hidden md:flex items-center justify-center w-10 h-10 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full shadow-lg transition-all duration-300 opacity-0 hover:scale-110 chevron-btn-right border border-white/20"
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="w-5 h-5 text-white" />
+            </div>
 
-          {/* Scroll Container */}
-          <div
-            ref={scrollContainerRef}
-            className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-4 scrollbar-hide horizontal-scroll touch-scroll pl-4 sm:pl-0"
-          >
+            <div
+              ref={scrollContainerRef}
+              className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-4 scrollbar-hide horizontal-scroll touch-scroll px-6"
+            >
             {displayData.slice(0, 10).map((item) => (
               <div
                 key={item.id}
                 className="flex-shrink-0 scroll-snap-align-start"
               >
-                <MediaCard media={item} variant="horizontal" />
+                <EnhancedMediaCard media={item} variant="horizontal" />
               </div>
             ))}
             {/* Add some padding at the end for better mobile scrolling */}
             <div className="flex-shrink-0 w-4 sm:w-6"></div>
+          </div>
           </div>
         </div>
       )}

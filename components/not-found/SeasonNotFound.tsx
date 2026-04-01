@@ -9,9 +9,9 @@ const SeasonNotFound = ({ seasonId }: SeasonNotFoundProps) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center p-4">
       <div className="glass-container text-center max-w-md w-full">
-        <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg
-            className="w-8 h-8 text-yellow-400"
+            className="w-8 h-8 text-red-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

@@ -1,5 +1,22 @@
 // TMDB API Types
 
+export interface TMDBPerson {
+  id: number
+  name: string
+  profile_path: string | null
+  known_for_department: string
+  known_for: Array<{
+    id: number
+    title?: string
+    name?: string
+    poster_path?: string
+  }>
+  biography?: string
+  popularity: number
+  birthday?: string
+  place_of_birth?: string
+}
+
 export interface TMDBMovie {
   id: number
   title: string
@@ -83,6 +100,43 @@ export interface TMDBProductionCompany {
 export interface TMDBProductionCountry {
   iso_3166_1: string
   name: string
+}
+
+export interface TMDBCast {
+  id: number
+  name: string
+  character: string
+  profile_path: string | null
+  order: number
+}
+
+export interface TMDBCrew {
+  id: number
+  name: string
+  job: string
+  department: string
+  profile_path: string | null
+}
+
+export interface TMDBCredits {
+  cast: TMDBCast[]
+  crew: TMDBCrew[]
+}
+
+export interface TMDBVideo {
+  id: string
+  iso_639_1: string
+  iso_3166_1: string
+  key: string
+  name: string
+  site: string
+  size: number
+  type: string
+}
+
+export interface TMDBVideosResponse {
+  id: number
+  results: TMDBVideo[]
 }
 
 export interface TMDBSpokenLanguage {

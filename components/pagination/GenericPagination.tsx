@@ -90,74 +90,65 @@ const GenericPagination = ({
   const pageNumbers = generatePageNumbers();
 
   return (
-    <div className="flex flex-col items-center space-y-6 py-12">
-      {/* Premium Pagination Container */}
-      <div className="relative">
-        <div className="relative p-4">
-          <Pagination>
-            <PaginationContent>
-              {/* Previous Button */}
-              <PaginationItem>
-                {safePage <= 1 ? (
-                  <PaginationPrevious
-                    className="pointer-events-none opacity-40 hover:scale-100"
-                    aria-disabled="true"
-                  />
-                ) : (
-                  <PaginationPrevious href={getPaginationUrl(prevPage)} />
-                )}
-              </PaginationItem>
+    <div className="flex flex-col items-center space-y-4 py-8">
+      <Pagination>
+        <PaginationContent className="flex items-center gap-2">
+          {/* Previous Button */}
+          <PaginationItem>
+            {safePage <= 1 ? (
+              <PaginationPrevious
+                className="pointer-events-none opacity-40 bg-gray-800 border-gray-700 hover:scale-100"
+                aria-disabled="true"
+              />
+            ) : (
+              <PaginationPrevious 
+                href={getPaginationUrl(prevPage)}
+                className="bg-gray-800 border-gray-700 hover:bg-blue-600 hover:border-blue-600 transition-all duration-200 hover:scale-105"
+              />
+            )}
+          </PaginationItem>
 
-              {/* Page Numbers */}
-              {pageNumbers.map((pageNum, index) => (
-                <PaginationItem key={index}>
-                  {pageNum === "ellipsis" ? (
-                    <PaginationEllipsis />
-                  ) : (
-                    <PaginationLink
-                      href={getPaginationUrl(pageNum)}
-                      isActive={pageNum === safePage}
-                      className="min-w-[40px] h-10 rounded-xl font-medium"
-                    >
-                      {pageNum}
-                    </PaginationLink>
-                  )}
-                </PaginationItem>
-              ))}
+          {/* Page Numbers */}
+          {pageNumbers.map((pageNum, index) => (
+            <PaginationItem key={index}>
+              {pageNum === "ellipsis" ? (
+                <PaginationEllipsis className="text-gray-400" />
+              ) : (
+                <PaginationLink
+                  href={getPaginationUrl(pageNum)}
+                  isActive={pageNum === safePage}
+                  className={`min-w-[44px] h-11 rounded-xl font-medium transition-all duration-200 hover:scale-105 ${
+                    pageNum === safePage
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 shadow-lg shadow-blue-500/25"
+                      : "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white hover:border-gray-600"
+                  }`}
+                >
+                  {pageNum}
+                </PaginationLink>
+              )}
+            </PaginationItem>
+          ))}
 
-              {/* Next Button */}
-              <PaginationItem>
-                {safePage >= maxPage ? (
-                  <PaginationNext
-                    className="pointer-events-none opacity-40 hover:scale-100"
-                    aria-disabled="true"
-                  />
-                ) : (
-                  <PaginationNext href={getPaginationUrl(nextPage)} />
-                )}
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      </div>
+          {/* Next Button */}
+          <PaginationItem>
+            {safePage >= maxPage ? (
+              <PaginationNext
+                className="pointer-events-none opacity-40 bg-gray-800 border-gray-700 hover:scale-100"
+                aria-disabled="true"
+              />
+            ) : (
+              <PaginationNext 
+                href={getPaginationUrl(nextPage)}
+                className="bg-gray-800 border-gray-700 hover:bg-blue-600 hover:border-blue-600 transition-all duration-200 hover:scale-105"
+              />
+            )}
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
 
-      {/* Enhanced Page Info */}
-      <div className="flex items-center space-x-4 text-sm">
-        <div className="backdrop-blur-md bg-gray-900/40 border border-gray-700/40 rounded-xl px-4 py-2">
-          <span className="text-gray-300">
-            Page{" "}
-            <span className="font-bold text-white bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              {safePage}
-            </span>{" "}
-            of <span className="font-medium text-gray-100">{maxPage}</span>
-          </span>
-        </div>
-        <span className="hidden sm:inline text-gray-500">•</span>
-        <div className="hidden sm:inline backdrop-blur-md bg-gray-900/30 border border-gray-700/30 rounded-xl px-4 py-2">
-          <span className="text-gray-400">
-            {maxPage.toLocaleString()} total pages
-          </span>
-        </div>
+      {/* Simple Page Info */}
+      <div className="text-gray-400 text-sm">
+        Page {safePage} of {maxPage}
       </div>
     </div>
   );

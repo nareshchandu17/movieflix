@@ -1,84 +1,167 @@
-import React from "react";
-import Link from "next/link";
-import { AiFillGithub } from "react-icons/ai";
-import { Heart } from "lucide-react";
-import Logo from "../navbar/Logo";
+import React from 'react';
+import { Youtube, Instagram, Twitter, Linkedin, Play } from 'lucide-react';
+import { motion } from 'motion/react';
 
 const Footer = () => {
-  return (
-    <footer className="w-full bg-black/80 backdrop-blur-md border-t border-gray-800/50 shadow-2xl shadow-black/20 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Main Footer Content */}
-        <div className="flex flex-col md:flex-row items-center justify-between space-y-6 md:space-y-0">
-          {/* Logo Section */}
-          <div className="flex flex-col items-center md:items-start">
-            <div className="transform scale-75">
-              <Logo />
-            </div>
-            <p className="text-gray-400 text-xs mt-2 text-center md:text-left">
-              Your ultimate movie & series destination
-            </p>
-          </div>
+  const currentYear = new Date().getFullYear();
 
-          {/* Quick Links */}
-          <div className="flex flex-col items-center">
-            <div className="flex flex-wrap justify-center gap-6 mb-4">
-              {[
-                { href: "/", label: "Home" },
-                { href: "/movie", label: "Movies" },
-                { href: "/series", label: "Series" },
-                { href: "/watchlist", label: "Watchlist" },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="relative footer-link group"
+  const footerLinks = {
+    browse: [
+      { name: 'Movies', href: '#' },
+      { name: 'Series', href: '#' },
+      { name: 'Trending', href: '#' },
+      { name: 'New Releases', href: '#' },
+      { name: 'Top Rated', href: '#' },
+      { name: 'Coming Soon', href: '#' },
+    ],
+    genres: [
+      { name: 'Action', href: '#' },
+      { name: 'Drama', href: '#' },
+      { name: 'Crime & Mystery', href: '#' },
+      { name: 'Horror', href: '#' },
+      { name: 'Anime', href: '#' },
+      { name: 'Documentaries', href: '#' },
+    ],
+    support: [
+      { name: 'Help Center', href: '#' },
+      { name: 'Contact Us', href: '#' },
+      { name: 'FAQ', href: '#' },
+      { name: 'Privacy Policy', href: '#' },
+      { name: 'Terms of Service', href: '#' },
+    ],
+  };
+
+  const socialIcons = [
+    { Icon: Youtube, href: '#', label: 'YouTube' },
+    { Icon: Instagram, href: '#', label: 'Instagram' },
+    { Icon: Twitter, href: '#', label: 'Twitter' },
+    { Icon: Linkedin, href: '#', label: 'LinkedIn' },
+  ];
+
+  return (
+    <footer id="movieflix-footer" className="relative w-full bg-black text-zinc-400 py-20 px-6 md:px-12 lg:px-24 overflow-hidden select-none">
+      {/* Layer 2: Footer Content */}
+      <div className="relative z-10 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
+
+          {/* Column 1: Brand Section */}
+          <div className="flex flex-col space-y-6">
+            <div className="flex items-center space-x-2 text-white">
+              <div className="bg-red-600 p-1.5 rounded-md">
+                <Play className="w-6 h-6 fill-current" />
+              </div>
+              <span className="text-2xl font-bold tracking-tighter uppercase">MovieFlix</span>
+            </div>
+            <p className="text-sm leading-relaxed max-w-xs">
+              Unlimited movies, series, and stories from around the world. Experience the future of cinema today.
+            </p>
+            <div className="flex space-x-4">
+              {socialIcons.map(({ Icon, href, label }) => (
+                <motion.a
+                  key={label}
+                  href={href}
+                  whileHover={{ y: -4, color: '#ffffff' }}
+                  className="p-2 bg-zinc-900 rounded-full transition-colors hover:bg-zinc-800"
+                  aria-label={label}
                 >
-                  {item.label}
-                  <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></div>
-                </Link>
+                  <Icon className="w-5 h-5" />
+                </motion.a>
               ))}
             </div>
-
-            {/* Copyright */}
-            <div className="flex items-center gap-2 text-center text-gray-400 text-sm">
-              <span>Made with</span>
-              <Heart
-                className="h-4 w-4 text-red-500 fill-current animate-pulse"
-                aria-hidden="true"
-              />
-              <span>© {new Date().getFullYear()} Cineworld</span>
-            </div>
           </div>
 
-          {/* Social Links */}
-          <div className="flex flex-col items-center md:items-end">
-            <Link
-              href="https://github.com/alanvarghesepaul22/CINEWORLD-NextJS"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group"
-            >
-              <div className="p-3 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur-sm border border-gray-700/50 hover:border-gray-600/70 transition-all duration-300 hover:scale-110">
-                <AiFillGithub className="text-2xl text-gray-300 group-hover:text-white transition-colors duration-200" />
-              </div>
-            </Link>
-            <p className="text-gray-500 text-xs mt-2 text-center md:text-right">
-              Open Source Project
-            </p>
+          {/* Column 2: Browse */}
+          <div className="flex flex-col space-y-4">
+            <h3 className="text-white font-bold uppercase tracking-widest text-xs">Browse</h3>
+            <ul className="flex flex-col space-y-2">
+              {footerLinks.browse.map((link) => (
+                <li key={link.name}>
+                  <motion.a
+                    href={link.href}
+                    whileHover={{ x: 4, color: '#ffffff' }}
+                    className="text-sm transition-colors block w-fit"
+                  >
+                    {link.name}
+                  </motion.a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 3: Genres */}
+          <div className="flex flex-col space-y-4">
+            <h3 className="text-white font-bold uppercase tracking-widest text-xs">Genres</h3>
+            <ul className="flex flex-col space-y-2">
+              {footerLinks.genres.map((link) => (
+                <li key={link.name}>
+                  <motion.a
+                    href={link.href}
+                    whileHover={{ x: 4, color: '#ffffff' }}
+                    className="text-sm transition-colors block w-fit"
+                  >
+                    {link.name}
+                  </motion.a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 4: Support */}
+          <div className="flex flex-col space-y-4">
+            <h3 className="text-white font-bold uppercase tracking-widest text-xs">Support</h3>
+            <ul className="flex flex-col space-y-2">
+              {footerLinks.support.map((link) => (
+                <li key={link.name}>
+                  <motion.a
+                    href={link.href}
+                    whileHover={{ x: 4, color: '#ffffff' }}
+                    className="text-sm transition-colors block w-fit"
+                  >
+                    {link.name}
+                  </motion.a>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        {/* Bottom Border */}
-        <div className="mt-8 pt-6 border-t border-gray-800/50">
-          <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
-            <p className="text-gray-500 text-xs">
-              Powered by TMDB API • Next.js 15 • Tailwind CSS
-            </p>
-            <p className="text-gray-500 text-xs">
-              All movie data provided by The Movie Database
-            </p>
+        {/* Bottom Bar */}
+        <div className="mt-20 pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 text-xs">
+          <p> {currentYear} MovieFlix. All rights reserved.</p>
+          <div className="flex space-x-6">
+            <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
+            <a href="#" className="hover:text-white transition-colors">Ad Choices</a>
+            <a href="#" className="hover:text-white transition-colors">Accessibility</a>
           </div>
+        </div>
+      </div>
+
+      {/* Layer 1: Decorative Background Brand - Moved below content */}
+      <div
+        className="relative mt-12 w-full pointer-events-none z-0 select-none flex justify-center overflow-hidden"
+        aria-hidden="true"
+      >
+        <div className="flex">
+          {"MovieFlix".split("").map((char, index) => (
+            <motion.span
+              key={index}
+              style={{
+                WebkitTextFillColor: "black",
+                WebkitTextStroke: "1px rgba(63, 63, 70, 0.3)",
+                maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,1))",
+                WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,1))",
+                display: 'inline-block',
+              }}
+              whileHover={{
+                filter: "drop-shadow(0 0 15px rgba(220, 38, 38, 0.8))",
+                scale: 1.05,
+                transition: { duration: 0.2 }
+              }}
+              className="text-[16vw] font-black leading-none tracking-tight text-center uppercase whitespace-nowrap cursor-default pointer-events-auto transition-all"
+            >
+              {char}
+            </motion.span>
+          ))}
         </div>
       </div>
     </footer>

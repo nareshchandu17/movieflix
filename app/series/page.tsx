@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
-import PageTitle from "@/components/title/PageTitle";
 import SeriesPageClient from "@/components/series/SeriesPageClient";
 import {PageLoading} from "@/components/loading/PageLoading";
 
@@ -12,14 +11,7 @@ export const metadata: Metadata = {
 
 export default function SeriesPage() {
   return (
-    <div className="app-bg-enhanced mt-24">
-      <PageTitle
-        segments={[
-          { text: "TV Shows &" },
-          { text: " Series", isPrimary: true },
-        ]}
-      />
-
+    <div className="app-bg-enhanced">
       <Suspense fallback={<PageLoading>Loading TV shows...</PageLoading>}>
         <SeriesPageClient />
       </Suspense>

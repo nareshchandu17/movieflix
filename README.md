@@ -1,9 +1,9 @@
-# Welcome to CineWorld! The World of Cinema.
-CineWorld is a modern movie and TV show discovery website built with TypeScript, Next.js 15, and Tailwind CSS, featuring TMDB API integration.
+# Welcome to MovieFlix! Your Ultimate Movie Destination.
+MovieFlix is a modern movie and TV show discovery website built with TypeScript, Next.js 15, and Tailwind CSS, featuring TMDB API integration.
 
 ## Overview
 
-Cineworld is a dynamic and immersive movie and TV show discovery platform that brings you information about an extensive collection of films and TV shows from various genres. Powered by React, Next.js 15, TypeScript, and Tailwind CSS, Cineworld offers an unparalleled user experience with modern UI components, responsive design, and smooth animations.
+MovieFlix is a dynamic and immersive movie and TV show discovery platform that brings you information about an extensive collection of films and TV shows from various genres. Powered by React, Next.js 15, TypeScript, and Tailwind CSS, MovieFlix offers an unparalleled user experience with modern UI components, responsive design, and smooth animations.
 
 ## Screenshots
 ![Screenshot 2023-07-13 230452](https://github.com/alanvarghesepaul22/CINEWORLD-NextJS/assets/86376232/965879a8-9604-4b77-a83c-026f594a2e21)
@@ -62,7 +62,7 @@ npm install
 npm run dev
 ```
 
-5. Open your browser and navigate to `http://localhost:3000` to access Cineworld.
+5. Open your browser and navigate to `http://localhost:3000` to access MovieFlix.
 
 ## Tech Stack
 
@@ -113,12 +113,12 @@ We welcome contributions from the open-source community! If you find a bug, have
 
 ## Acknowledgments
 
-- Our gratitude to [TMDB](https://www.themoviedb.org/) for providing the incredible API that powers Cineworld.
+- Our gratitude to [TMDB](https://www.themoviedb.org/) for providing the incredible API that powers MovieFlix.
 
 - A big thank you to the developers of React, Next.js, and Tailwind CSS for creating these fantastic frameworks that made this project possible.
 
 ---
 
-We hope you enjoy exploring Cineworld as much as we enjoyed creating it! Your feedback and support mean the world to us. Feel free to reach out with any questions or suggestions.
+We hope you enjoy exploring MovieFlix as much as we enjoyed creating it! Your feedback and support mean the world to us. Feel free to reach out with any questions or suggestions.
 
 Happy movie streaming! 🍿🎥

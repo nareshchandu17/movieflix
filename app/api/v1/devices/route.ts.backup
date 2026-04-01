@@ -1,0 +1,396 @@
+import { NextRequest, NextResponse } from 'next/server';
+import connectDB from '@/lib/db';
+import Device from '@/lib/models/Device';
+import User from '@/models/User';
+import { AuthManager } from '@/lib/auth-v2';
+import { withProfile, validateBody } from '@/lib/auth-middleware';
+import { SecurityUtils } from '@/lib/security-v2';
+
+// Helper function to extract device info from request
+function getDeviceInfo(req: NextRequest) {
+  const userAgent = req.headers.get('user-agent') || '';
+  const acceptLanguage = req.headers.get('accept-language') || '';
+  const acceptHeader = req.headers.get('accept') || '';
+  
+  // Parse user agent
+  let deviceType = 'web';
+  let browser = 'unknown';
+  let os = 'unknown';
+  let platform = 'unknown';
+  
+  if (userAgent.includes('Mobile') || userAgent.includes('Android') || userAgent.includes('iPhone')) {
+    deviceType = 'mobile';
+  } else if (userAgent.includes('Tablet') || userAgent.includes('iPad')) {
+    deviceType = 'tablet';
+  } else if (userAgent.includes('TV') || userAgent.includes('SmartTV') || userAgent.includes('Roku')) {
+    deviceType = 'tv';
+  } else if (userAgent.includes('Windows') || userAgent.includes('Mac') || userAgent.includes('Linux')) {
+    deviceType = 'desktop';
+  }
+  
+  // Parse browser
+  if (userAgent.includes('Chrome')) browser = 'Chrome';
+  else if (userAgent.includes('Firefox')) browser = 'Firefox';
+  else if (userAgent.includes('Safari')) browser = 'Safari';
+  else if (userAgent.includes('Edge')) browser = 'Edge';
+  
+  // Parse OS
+  if (userAgent.includes('Windows')) os = 'Windows';
+  else if (userAgent.includes('Mac')) os = 'macOS';
+  else if (userAgent.includes('Linux')) os = 'Linux';
+  else if (userAgent.includes('Android')) os = 'Android';
+  else if (userAgent.includes('iOS')) os = 'iOS';
+  
+  // Parse platform
+  if (userAgent.includes('Windows')) platform = 'Windows';
+  else if (userAgent.includes('Mac')) platform = 'macOS';
+  else if (userAgent.includes('Linux')) platform = 'Linux';
+  else if (userAgent.includes('Android')) platform = 'Android';
+  else if (userAgent.includes('iOS')) platform = 'iOS';
+  
+  return {
+    userAgent,
+    platform,
+    browser,
+    os,
+    language: acceptLanguage.split(',')[0]?.split(';')[0] || 'en',
+    acceptHeader
+  };
+}
+
+// Helper function to generate device ID
+function generateDeviceId(): string {
+  const timestamp = Date.now().toString(36);
+  const randomStr = Math.random().toString(36).substring(2, 15);
+  return `${timestamp}${randomStr}`;
+}
+
+// Helper function to get client IP
+function getClientIP(req: NextRequest): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0] ||
+         req.headers.get('x-real-ip') ||
+         req.ip ||
+         'unknown';
+}
+
+// GET /api/v1/devices - Get user's devices
+export const GET = withProfile(async (req: NextRequest) => {
+  try {
+    await connectDB();
+    
+    const { searchParams } = new URL(req.url);
+    const includeInactive = searchParams.get('includeInactive') === 'true';
+    
+    // Verify user exists
+    const user = await User.findById(req.profile.userId);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Check device limit based on subscription
+    const deviceLimit = user.profilesLimit || 5;
+    const devices = await Device.getUserDevices(req.profile.userId, includeInactive);
+    
+    const enrichedDevices = devices.map(device => ({
+      ...device.toJSON(),
+      isCurrent: device.deviceId === req.profile.deviceId,
+      isOnline: device.isOnline(),
+      capabilities: device.capabilities,
+      preferences: device.preferences
+    }));
+    
+    return NextResponse.json({
+      success: true,
+      devices: enrichedDevices,
+      count: enrichedDevices.length,
+      deviceLimit,
+      message: `Found ${enrichedDevices.length} devices`
+    });
+    
+  } catch (error) {
+    console.error('Failed to get devices:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to get devices' },
+      { status: 500 }
+    );
+  }
+});
+
+// POST /api/v1/devices/register - Register a new device
+export const POST = withProfile(
+  validateBody({
+    type: 'object',
+    required: ['deviceName'],
+    properties: {
+      deviceName: { type: 'string' },
+      deviceType: { type: 'string', enum: ['mobile', 'tablet', 'web', 'tv', 'desktop'] }
+    }
+  }),
+  async (req: NextRequest) => {
+    try {
+      await connectDB();
+      
+      const { deviceName, deviceType } = req.validatedBody;
+      const deviceInfo = getDeviceInfo(req);
+      
+      // Generate or retrieve device ID
+      let deviceId = req.headers.get('x-device-id');
+      
+      if (!deviceId) {
+        deviceId = generateDeviceId();
+      }
+      
+      // Validate device name
+      const nameValidation = SecurityUtils.validateProfileName(deviceName);
+      if (!nameValidation.isValid) {
+        return NextResponse.json(
+          { success: false, error: nameValidation.error },
+          { status: 400 }
+        );
+      }
+      
+      // Verify user exists and check device limit
+      const user = await User.findById(req.profile.userId);
+      if (!user) {
+        return NextResponse.json(
+          { success: false, error: 'User not found' },
+          { status: 404 }
+        );
+      }
+      
+      const deviceLimit = user.profilesLimit || 5;
+      const existingDevices = await Device.getUserDevices(req.profile.userId);
+      
+      if (existingDevices.length >= deviceLimit) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `Device limit reached (${deviceLimit} devices). Please remove a device to register a new one.` 
+          },
+          { status: 400 }
+        );
+      }
+      
+      // Get location info
+      const ip = getClientIP(req);
+      const location = {
+        ip,
+        country: req.headers.get('x-country') || 'Unknown',
+        city: req.headers.get('x-city') || 'Unknown',
+        region: req.headers.get('x-region') || 'Unknown'
+      };
+      
+      // Detect capabilities
+      const capabilities = {
+        supports4K: deviceType === 'tv' || deviceType === 'desktop',
+        supportsHDR: deviceInfo.acceptHeader.includes('video/mp4') || deviceInfo.acceptHeader.includes('video/webm'),
+        maxBitrate: deviceType === 'tv' ? '4k' : '1080p'
+      };
+      
+      // Register or update device
+      const device = await Device.registerDevice(req.profile.userId, {
+        deviceId,
+        deviceName: deviceName.trim(),
+        deviceType: deviceType || 'web',
+        deviceDetails: {
+          ...deviceInfo,
+          ...location
+        },
+        capabilities
+      });
+      
+      // Update JWT to include deviceId
+      const newToken = AuthManager.createProfileToken(
+        req.profile.userId,
+        req.profile.profileId,
+        req.profile.profileName,
+        req.profile.isKids,
+        deviceId
+      );
+      
+      const response = NextResponse.json({
+        success: true,
+        device: device.toJSON(),
+        token: newToken,
+        message: 'Device registered successfully'
+      });
+      
+      // Set new token cookie
+      response.cookies.set('access_token', newToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60,
+        path: '/'
+      });
+      
+      return response;
+      
+    } catch (error) {
+      console.error('Failed to register device:', error);
+      return NextResponse.json(
+        { success: false, error: 'Failed to register device' },
+        { status: 500 }
+      );
+    }
+  }
+));
+
+// DELETE /api/v1/devices/:deviceId - Deactivate a device
+export const DELETE = withProfile(async (req: NextRequest) => {
+  try {
+    await connectDB();
+    
+    const { deviceId } = req.query;
+    
+    if (!deviceId) {
+      return NextResponse.json(
+        { success: false, error: 'Device ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    // Verify user owns the device
+    const device = await Device.findOne({ 
+      userId: req.profile.userId, 
+      deviceId,
+      isActive: true 
+    });
+    
+    if (!device) {
+      return NextResponse.json(
+        { success: false, error: 'Device not found or access denied' },
+        { status: 404 }
+      );
+    }
+    
+    // Deactivate device
+    await Device.deactivateDevice(req.profile.userId, deviceId);
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Device deactivated successfully'
+    });
+    
+  } catch (error) {
+    console.error('Failed to deactivate device:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to deactivate device' },
+      { status: 500 }
+    );
+  }
+});
+
+// PUT /api/v1/devices/:deviceId - Update device preferences
+export const PUT = withProfile(
+  validateBody({
+    type: 'object',
+    properties: {
+      autoplay: { type: 'boolean' },
+      subtitles: { type: 'boolean' },
+      language: { type: 'string' },
+      quality: { type: 'string', enum: ['auto', 'low', 'medium', 'high', 'ultra'] }
+    }
+  }),
+  async (req: NextRequest) => {
+    try {
+      await connectDB();
+      
+      const { deviceId } = req.query;
+      const preferences = req.validatedBody;
+      
+      if (!deviceId) {
+        return NextResponse.json(
+          { success: false, error: 'Device ID is required' },
+          { status: 400 }
+        );
+      }
+      
+      // Verify user owns the device
+      const device = await Device.findOne({ 
+        userId: req.profile.userId, 
+        deviceId,
+        isActive: true 
+      });
+      
+      if (!device) {
+        return NextResponse.json(
+          { success: false, error: 'Device not found or access denied' },
+          { status: 404 }
+        );
+      }
+      
+      // Update preferences
+      device.preferences = {
+        ...device.preferences,
+        ...preferences
+      };
+      
+      await device.save();
+      
+      return NextResponse.json({
+        success: true,
+        device: device.toJSON(),
+        message: 'Device preferences updated'
+      });
+      
+    } catch (error) {
+      console.error('Failed to update device preferences:', error);
+      return NextResponse.json(
+        { success: false, error: 'Failed to update device preferences' },
+        { status: 500 }
+      );
+    }
+  });
+
+// PATCH /api/v1/devices/:deviceId/ping - Update device last seen (for WebSocket)
+export const PATCH = withProfile(async (req: NextRequest) => {
+  try {
+    await connectDB();
+    
+    const { deviceId } = req.query;
+    const { socketId } = req.body;
+    
+    if (!deviceId) {
+      return NextResponse.json(
+        { success: false, error: 'Device ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    // Verify user owns the device
+    const device = await Device.findOne({ 
+      userId: req.profile.userId, 
+      deviceId,
+      isActive: true 
+    });
+    
+    if (!device) {
+      return NextResponse.json(
+        { success: false, error: 'Device not found or access denied' },
+        { status: 404 }
+      );
+    }
+    
+    // Update session info
+    await Device.updateSessionInfo(deviceId, {
+      socketId,
+      connectionCount: (device.sessionInfo?.connectionCount || 0) + 1
+    });
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Device ping received'
+    });
+    
+  } catch (error) {
+    console.error('Failed to ping device:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to ping device' },
+      { status: 500 }
+    );
+  }
+});

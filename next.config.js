@@ -1,49 +1,63 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    images: {
-        remotePatterns: [
-          {
-            protocol: 'https',
-            hostname: 'image.tmdb.org',
-            port: '',
-            pathname: '/**',
-          },
-          {
-            protocol: 'https',
-            hostname: 'imgur.com',
-            port: '',
-            pathname: '/**',
-          },
-          {
-            protocol: 'https',
-            hostname: 'i.imgur.com',
-            port: '',
-            pathname: '/**',
-          },
-          {
-            protocol: 'https',
-            hostname: 'arc.io',
-            port: '',
-            pathname: '/**',
-          },
-        ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'image.tmdb.org',
+        pathname: '/**',
       },
-      env: {
-        API_KEY: process.env.API_KEY,
-        TMDB_ACCESS_TOKEN: process.env.TMDB_ACCESS_TOKEN,
+      {
+        protocol: 'https',
+        hostname: 'imgur.com',
+        pathname: '/**',
       },
-      webpack: (config, { dev }) => {
-        // Optimize webpack cache for better stability
-        if (dev) {
-          config.cache = {
-            type: 'filesystem',
-            buildDependencies: {
-              config: [__filename],
-            },
-          };
-        }
-        return config;
+      {
+        protocol: 'https',
+        hostname: 'i.imgur.com',
+        pathname: '/**',
       },
-}
+      {
+        protocol: 'https',
+        hostname: 'arc.io',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.ytimg.com',
+        pathname: '/**',
+      },
+    ],
+  },
 
-module.exports = nextConfig
+  env: {
+    API_KEY: process.env.API_KEY,
+    TMDB_ACCESS_TOKEN: process.env.TMDB_ACCESS_TOKEN,
+  },
+
+  turbopack: {
+    root: __dirname,
+  }, 
+
+  // Handle Socket.IO requests to prevent 404 errors
+  async rewrites() {
+    return [
+      {
+        source: '/socket.io/:path*',
+        destination: '/socket.io/:path*',
+      },
+    ];
+  },
+};
+
+module.exports = nextConfig;
