@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Play, TrendingUp, Calendar, Bell, Plus, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, TrendingUp, Info, Plus, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { TMDBMovie } from "@/lib/types";
-import { api } from "@/lib/api";
+import { api as tmdbApi } from "@/lib/api";
 
 interface Top10IndiaProps {
   title?: string;
@@ -15,65 +15,32 @@ interface Top10IndiaProps {
 export default function Top10India({ title = "Top 10 in India Today" }: Top10IndiaProps) {
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
-  // Fetch top Indian movies
   useEffect(() => {
     const fetchTopIndianMovies = async () => {
       try {
         setLoading(true);
-        
-        // Get Indian movies with high metrics
         const responses = await Promise.all([
-          api.discover('movie', { 
-            with_original_language: 'hi', // Hindi movies
-            with_genres: '18,36,10751', // Drama, History, Family
-            sortBy: 'popularity.desc', 
-            page: 1 
-          }),
-          api.discover('movie', { 
-            with_original_language: 'te', // Telugu movies
-            with_genres: '28,12', // Action, Adventure
-            sortBy: 'vote_average.desc', 
-            page: 1 
-          }),
-          api.discover('movie', { 
-            with_original_language: 'ta', // Tamil movies
-            with_genres: '18,53', // Drama, Thriller
-            sortBy: 'vote_count.desc', 
-            page: 1 
-          }),
-          api.discover('movie', { 
-            with_original_language: 'ml', // Malayalam movies
-            with_genres: '28,35', // Action, Comedy
-            sortBy: 'popularity.desc', 
-            page: 1 
-          })
+          tmdbApi.discover('movie', { language: 'hi', sortBy: 'popularity.desc', page: 1 }),
+          tmdbApi.discover('movie', { language: 'te', sortBy: 'vote_average.desc', page: 1 }),
+          tmdbApi.discover('movie', { language: 'ta', sortBy: 'vote_count.desc', page: 1 }),
         ]);
 
-        // Combine all Indian movies
         const allMovies = [
           ...(responses[0].results as TMDBMovie[] || []),
           ...(responses[1].results as TMDBMovie[] || []),
           ...(responses[2].results as TMDBMovie[] || []),
-          ...(responses[3].results as TMDBMovie[] || [])
         ];
 
-        // Remove duplicates and sort by combined metrics
         const uniqueMovies = Array.from(
           new Map(allMovies.map(movie => [movie.id, movie])).values()
-        ).sort((a, b) => {
-          // Combined score: popularity + vote_average * 1000 + vote_count
-          const scoreA = (a.popularity || 0) + (a.vote_average || 0) * 1000 + (a.vote_count || 0);
-          const scoreB = (b.popularity || 0) + (b.vote_average || 0) * 1000 + (b.vote_count || 0);
-          return scoreB - scoreA;
-        }).slice(0, 12);
+        ).sort((a, b) => (b.popularity || 0) - (a.popularity || 0)).slice(0, 10);
 
         setMovies(uniqueMovies);
       } catch (error) {
         console.error('Failed to fetch top Indian movies:', error);
-        setMovies([]);
       } finally {
         setLoading(false);
       }
@@ -82,167 +49,120 @@ export default function Top10India({ title = "Top 10 in India Today" }: Top10Ind
     fetchTopIndianMovies();
   }, []);
 
-  const nextSlide = useCallback(() => {
-    if (movies.length > 0) {
-      setCurrentIndex((prev) => (prev + 1) % Math.ceil(movies.length / 6));
-    }
-  }, [movies.length]);
-
-  const prevSlide = useCallback(() => {
-    if (movies.length > 0) {
-      setCurrentIndex((prev) => (prev - 1 + Math.ceil(movies.length / 6)) % Math.ceil(movies.length / 6));
-    }
-  }, [movies.length]);
-
-  const updateScrollButtons = useCallback(() => {
-    if (!scrollRef.current) return;
-    const scrollLeft = scrollRef.current.scrollLeft;
-    const maxScrollLeft = scrollRef.current.scrollWidth - scrollRef.current.clientWidth;
-  }, []);
-
-  const scrollToIndex = (index: number) => {
+  const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
-      const cardWidth = 280 + 16; // card width + gap
-      scrollRef.current.scrollTo({
-        left: index * cardWidth * 6,
+      const scrollAmount = window.innerWidth * 0.8;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
       });
     }
   };
 
-  if (loading) {
-    return (
-      <div className="relative">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-8 bg-orange-600 rounded-full" />
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
-          <span className="text-sm text-orange-400">High Engagement</span>
-        </div>
-
-        <div className="relative group">
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth py-4 px-6">
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="flex-shrink-0 snap-start"
-                style={{ width: '280px' }}
-              >
-                <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
-                  <div className="w-full h-full bg-gray-800 animate-pulse" />
-                </div>
-                <div className="mt-3 space-y-2">
-                  <div className="h-4 bg-gray-700 rounded animate-pulse" />
-                  <div className="h-3 bg-gray-700 rounded w-3/4 animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (movies.length === 0) {
-    return null;
-  }
+  if (!loading && movies.length === 0) return null;
 
   return (
-    <div className="relative">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-1 h-8 bg-orange-600 rounded-full" />
-        <h2 className="text-2xl font-bold text-white">{title}</h2>
-        <span className="text-sm text-orange-400">High Engagement</span>
+    <div className="relative group/section py-6">
+      {/* Header with consistent left alignment */}
+      <div className="px-4 sm:px-6 md:px-12 lg:px-20 mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl md:text-2xl font-bold text-white/90 flex items-center gap-2 group cursor-pointer">
+            {title}
+            <ChevronRight className="w-5 h-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-orange-500" />
+          </h2>
+          <span className="hidden sm:block text-[10px] md:text-xs font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20 uppercase tracking-widest">
+            India Top 10
+          </span>
+        </div>
       </div>
 
-      <div className="relative group">
-        <div
-          ref={scrollRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-6"
-          onScroll={updateScrollButtons}
-          style={{ scrollPaddingLeft: "3rem" }}
-        >
-          {movies.map((movie, index) => (
-            <motion.div
-              key={movie.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="flex-shrink-0 snap-start"
-              style={{ width: '280px' }}
-            >
-              <div className="relative aspect-[2/3] rounded-lg overflow-hidden group/card cursor-pointer"
-                   onClick={() => useRouter().push(`/movie/${movie.id}`)}>
-                <Image
-                  src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/placeholder-movie.jpg'}
-                  alt={movie.title}
-                  fill
-                  className="object-cover transition-transform duration-300 group-hover/card:scale-105"
-                  sizes="280px"
-                />
-
-                {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className="w-16 h-16 bg-orange-600 rounded-full flex items-center justify-center"
-                  >
-                    <TrendingUp className="w-6 h-6 text-white" />
-                  </motion.div>
-                </div>
-
-                {/* Rank Badge */}
-                <div className="absolute top-2 left-2 bg-orange-600 text-white text-xs px-2 py-1 rounded-md font-bold">
-                  #{index + 1}
-                </div>
-
-                {/* Engagement Metrics */}
-                <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded-md">
-                  <div className="flex flex-col items-end gap-1 text-xs">
-                    <div className="flex items-center gap-1 text-yellow-400">
-                      <span className="text-white font-semibold">{movie.vote_average?.toFixed(1)}</span>
-                      <span className="text-gray-400">★</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-orange-400">
-                      <TrendingUp className="w-3 h-3" />
-                      <span>{movie.popularity?.toFixed(0)}</span>
-                    </div>
-                    <div className="text-gray-400 text-xs">
-                      {movie.vote_count?.toLocaleString()} votes
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Movie Info */}
-              <div className="mt-3">
-                <h3 className="text-white font-semibold text-sm line-clamp-2 leading-tight">
-                  {movie.title}
-                </h3>
-                <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    <span>{movie.original_language?.toUpperCase() || 'EN'}</span>
-                  </div>
-                  <span>{movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A'}</span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Navigation Arrows */}
+      <div className="relative">
         <button
-          onClick={prevSlide}
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-orange-600 hover:border-orange-600 z-10"
+          onClick={() => scroll('left')}
+          className="absolute left-0 top-0 bottom-0 w-12 md:w-16 bg-black/60 backdrop-blur-md z-40 opacity-0 group-hover/section:opacity-100 transition-opacity duration-300 flex items-center justify-center text-white"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-8 h-8" />
         </button>
 
-        <button
-          onClick={nextSlide}
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-orange-600 hover:border-orange-600 z-10"
+        <div
+          ref={scrollRef}
+          className="flex gap-12 md:gap-16 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory px-4 sm:px-6 md:px-12 lg:px-20"
+          style={{ scrollPaddingLeft: '8rem' }}
         >
-          <ChevronRight className="w-5 h-5" />
+          {loading ? (
+            Array(5).fill(0).map((_, i) => (
+              <div key={i} className="flex-shrink-0 w-[180px] md:w-[220px] aspect-[2/3] bg-white/5 animate-pulse rounded-lg" />
+            ))
+          ) : (
+            movies.map((movie, index) => (
+              <motion.div
+                key={movie.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                className="flex-shrink-0 flex items-end snap-start group/card relative"
+              >
+                {/* Large Rank Number - Netflix Style */}
+                <div className="absolute -left-10 md:-left-12 bottom-0 z-0">
+                   <span className="text-[120px] md:text-[180px] font-black leading-none text-transparent select-none"
+                         style={{ WebkitTextStroke: '2px rgba(255,255,255,0.2)', transition: 'all 0.5s ease' }}>
+                    {index + 1}
+                  </span>
+                </div>
+
+                {/* Hotstar Style Portrait Card */}
+                <div 
+                  className="relative w-[140px] md:w-[180px] aspect-[2/2.8] rounded-lg overflow-hidden cursor-pointer transition-all duration-500 group-hover/card:scale-105 group-hover/card:shadow-[0_0_30px_rgba(249,115,22,0.3)] border border-white/5 group-hover/card:border-orange-500/50 z-10"
+                  onClick={() => router.push(`/movie/${movie.id}`)}
+                >
+                  <Image
+                    src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '/placeholder-movie.jpg'}
+                    alt={movie.title}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover/card:scale-110"
+                    sizes="(max-width: 768px) 140px, 180px"
+                  />
+                  
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                       <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                        <Play className="w-3 h-3 text-white fill-white ml-0.5" />
+                      </div>
+                      <div className="flex-1" />
+                      <button className="w-8 h-8 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/40 transition-colors">
+                        <Plus className="w-4 h-4 text-white" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Top 10 Corner Ribbon or Badge */}
+                  <div className="absolute top-0 left-0 bg-orange-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-br shadow-lg">
+                    TOP 10
+                  </div>
+                </div>
+
+                {/* Movie Meta - Positioned with a bit of offset to avoid overlapping with number legibly */}
+                <div className="absolute -bottom-14 left-0 right-0 px-1 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
+                  <h3 className="text-white/90 font-medium text-xs line-clamp-1">
+                    {movie.title}
+                  </h3>
+                  <div className="flex items-center gap-2 text-[10px] text-zinc-500 mt-1">
+                    <span>{movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A'}</span>
+                    <span className="w-1 h-1 bg-zinc-700 rounded-full" />
+                    <span className="uppercase">{movie.original_language || 'EN'}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))
+          )}
+        </div>
+
+        <button
+          onClick={() => scroll('right')}
+          className="absolute right-0 top-0 bottom-0 w-12 md:w-16 bg-black/60 backdrop-blur-md z-40 opacity-0 group-hover/section:opacity-100 transition-opacity duration-300 flex items-center justify-center text-white"
+        >
+          <ChevronRight className="w-8 h-8" />
         </button>
       </div>
     </div>

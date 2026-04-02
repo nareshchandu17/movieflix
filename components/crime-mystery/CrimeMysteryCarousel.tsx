@@ -45,13 +45,13 @@ const CrimeMysteryCarousel = () => {
         
         // Process all responses
         responses.forEach((response, index) => {
-          let movies = [];
+          let movies: TMDBMovie[] = [];
           if (index === 4) { // Trending response
-            movies = response.results.filter(movie => 
-              movie.genre_ids.includes(80) || movie.genre_ids.includes(9643)
+            movies = response.results.filter((item): item is TMDBMovie => 
+              'title' in item && (item.genre_ids.includes(80) || item.genre_ids.includes(9643))
             );
-          } else { // Other responses
-            movies = response.results;
+          } else { // Other responses - these should already be TMDBMovie[] from getMedia
+            movies = response.results as TMDBMovie[];
           }
           
           const moviesWithMediaType = movies.map(movie => ({ 
@@ -138,7 +138,14 @@ const CrimeMysteryCarousel = () => {
     <div className="w-full">
       <div className="relative group">
         {/* Section Header */}
-        <div className="flex items-center justify-between mb-6">
+        
+
+        {/* Scroll Container with Left Padding */}
+        <div className="px-4 sm:px-6 md:px-12 lg:px-20">
+          <div className="relative group">
+            {/* Navigation Buttons */}
+
+            <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-3xl font-bold text-white mb-2">Crime & Mystery</h2>
             <p className="text-gray-400">Latest crime thrillers and mystery films</p>
@@ -151,11 +158,6 @@ const CrimeMysteryCarousel = () => {
             <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
           </Link>
         </div>
-
-        {/* Scroll Container with Left Padding */}
-        <div className="relative left-0 right-1/2 -mr-[50vw] w-[calc(100vw+2rem)]">
-          <div className="relative group">
-            {/* Navigation Buttons */}
             <button
               onClick={() => scroll("left")}
               className="absolute left-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition-all duration-300 opacity-0 group-hover:opacity-100 z-20 border border-white/10 hover:border-red-500/50"
@@ -175,7 +177,7 @@ const CrimeMysteryCarousel = () => {
             {/* Scroll Container */}
             <div
               ref={carouselRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-6"
+              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-0"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {crimeMysteryMovies.map((movie, index) => (
@@ -242,6 +244,7 @@ const CrimeMysteryCarousel = () => {
                   </div>
                 </motion.div>
               ))}
+              <div className="flex-shrink-0 w-12 md:w-20" />
             </div>
           </div>
         </div>

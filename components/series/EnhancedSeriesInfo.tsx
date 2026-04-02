@@ -1,14 +1,15 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { TMDBTVDetail, TMDBCast, TMDBTVShow } from "@/lib/types";
 import { api } from "@/lib/api";
 import { Play, Share2, Download, Plus, ChevronLeft, ChevronRight, Star, Calendar, Clock, ThumbsUp, MessageCircle, Film, Globe, DollarSign, TrendingUp, AlertTriangle, Heart, BarChart3, Zap, Users, Eye, Shield, ThumbsDown, Reply, Flag, Clapperboard, Info, Coins, Bot, Moon, RotateCcw, LayoutGrid, Tv } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import "@/styles/movie-insights.css";
+import CollectionPopup from "../collections/CollectionPopup";
 
 interface EnhancedSeriesInfoProps {
   id: number;
@@ -37,9 +38,21 @@ const EnhancedSeriesInfo = ({ id }: EnhancedSeriesInfoProps) => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [scenes, setScenes] = useState<Array<{url: string, title: string, duration: string, description: string, videoId: string, thumbnail: string}>>([]);
-  const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [shareButtonPosition, setShareButtonPosition] = useState({ top: 0, left: 0 });
+
+  // Collection Popup State
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | undefined>(undefined);
+  const plusButtonRef = useRef<HTMLButtonElement>(null);
+
+  const handleAddClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (plusButtonRef.current) {
+      setAnchorRect(plusButtonRef.current.getBoundingClientRect());
+    }
+    setIsPopupOpen(!isPopupOpen);
+  };
 
   // Calculate series insights based on TMDB data
   const calculateSeriesInsights = (series: TMDBTVDetail) => {
@@ -503,11 +516,6 @@ const EnhancedSeriesInfo = ({ id }: EnhancedSeriesInfoProps) => {
     return sceneDatabase["drama"];
   };
 
-  // Check if series is in watchlist
-  useEffect(() => {
-    const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
-    setIsInWatchlist(watchlist.some((item: any) => item.id === id));
-  }, [id]);
 
   // Close share menu when clicking outside
   useEffect(() => {
@@ -560,33 +568,6 @@ const EnhancedSeriesInfo = ({ id }: EnhancedSeriesInfoProps) => {
     setShowShareMenu(false);
   };
 
-  // Watchlist functionality
-  const handleWatchlistToggle = () => {
-    const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
-    
-    if (isInWatchlist) {
-      // Remove from watchlist
-      const updatedWatchlist = watchlist.filter((item: any) => item.id !== id);
-      localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
-      setIsInWatchlist(false);
-      toast.success('Removed from watchlist');
-    } else {
-      // Add to watchlist
-      const seriesItem = {
-        id: id,
-        title: seriesData?.name,
-        poster: seriesData?.poster_path,
-        backdrop: seriesData?.backdrop_path,
-        vote_average: seriesData?.vote_average,
-        first_air_date: seriesData?.first_air_date,
-        addedAt: new Date().toISOString()
-      };
-      const updatedWatchlist = [...watchlist, seriesItem];
-      localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
-      setIsInWatchlist(true);
-      toast.success('Added to watchlist!');
-    }
-  };
 
   if (isLoading) {
     return (
@@ -754,15 +735,12 @@ const EnhancedSeriesInfo = ({ id }: EnhancedSeriesInfoProps) => {
                       <Download className="w-5 h-5" />
                       Download
                     </button>
-                    <button
-                      onClick={handleWatchlistToggle}
-                      className={`p-3 rounded-lg transition-colors ${
-                        isInWatchlist 
-                          ? 'bg-green-600 hover:bg-green-700' 
-                          : 'bg-white/10 hover:bg-white/20 backdrop-blur-sm'
-                      }`}
+                    <button 
+                      ref={plusButtonRef}
+                      onClick={(e) => handleAddClick(e)}
+                      className="p-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition-colors"
                     >
-                      <Plus className={`w-5 h-5 ${isInWatchlist ? 'text-white' : 'text-white'}`} />
+                      <Plus className="w-5 h-5" />
                     </button>
                     <button className="p-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition-colors">
                       <Share2 className="w-5 h-5" />
@@ -773,6 +751,20 @@ const EnhancedSeriesInfo = ({ id }: EnhancedSeriesInfoProps) => {
             </div>
           </div>
         </div>
+
+        {/* Collection Popup */}
+        <AnimatePresence>
+          {isPopupOpen && seriesData && (
+            <CollectionPopup
+              media={{
+                ...seriesData,
+                genre_ids: seriesData.genres?.map(g => g.id) || [],
+              } as any}
+              onClose={() => setIsPopupOpen(false)}
+              anchorRect={anchorRect}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Premium Cinematic Information Hub */}

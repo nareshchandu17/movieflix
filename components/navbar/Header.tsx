@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, User, Settings, Sparkles, PlayCircle, Loader2 } from "lucide-react";
+import { LogOut, User, Settings, Sparkles, PlayCircle, Loader2, Download, Dna } from "lucide-react";
 import Logo from "./Logo";
 import MobileMenu from "./MobileMenu";
 import SmartSearchNew from "@/components/search/SmartSearch";
@@ -19,6 +19,13 @@ const Header = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { isSearching } = useSearch();
   const isSignedIn = status === "authenticated";
+
+  // Debug logging
+  useEffect(() => {
+    console.log("Header - Session status:", status);
+    console.log("Header - Session data:", session);
+    console.log("Header - isSignedIn:", isSignedIn);
+  }, [status, session, isSignedIn]);
 
   const lastScrollY = useRef(0);
 
@@ -109,7 +116,7 @@ const Header = () => {
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition group w-full text-left"
                   >
                     <span className="text-white/80 group-hover:text-red-500 transition-colors duration-300">
-
+                      <Dna size={16} />
                     </span>
                     <span className="text-white/80 group-hover:text-red-400 transition-colors duration-300">
                       Your Taste DNA
@@ -131,6 +138,7 @@ const Header = () => {
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition group"
                   >
                     <span className="text-white/80 group-hover:text-red-500 transition-colors duration-300">
+                      <Download size={16} />
                     </span>
                     <span className="text-white/80 group-hover:text-red-400 transition-colors duration-300">
                       Downloads
@@ -144,18 +152,7 @@ const Header = () => {
                       <User size={16} />
                     </span>
                     <span className="text-white/80 group-hover:text-red-400 transition-colors duration-300">
-                      Account
-                    </span>
-                  </Link>
-                  <Link
-                    href="/settings"
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition group"
-                  >
-                    <span className="text-white/80 group-hover:text-red-500 transition-colors duration-300">
-                      <Settings size={16} />
-                    </span>
-                    <span className="text-white/80 group-hover:text-red-400 transition-colors duration-300">
-                      Settings
+                      Account & Profile
                     </span>
                   </Link>
 

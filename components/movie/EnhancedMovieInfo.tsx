@@ -39,7 +39,6 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [scenes, setScenes] = useState<Array<{url: string, title: string, duration: string, description: string, videoId: string, thumbnail: string}>>([]);
-  const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [shareButtonPosition, setShareButtonPosition] = useState({ top: 0, left: 0 });
   const [fanReactions, setFanReactions] = useState<any[]>([]);
@@ -784,11 +783,6 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
     return sortedScenes;
   };
 
-  // Check if movie is in watchlist
-  useEffect(() => {
-    const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
-    setIsInWatchlist(watchlist.some((item: any) => item.id === id));
-  }, [id]);
 
   // Close share menu when clicking outside
   useEffect(() => {
@@ -841,33 +835,6 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
     setShowShareMenu(false);
   };
 
-  // Watchlist functionality
-  const handleWatchlistToggle = () => {
-    const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
-    
-    if (isInWatchlist) {
-      // Remove from watchlist
-      const updatedWatchlist = watchlist.filter((item: any) => item.id !== id);
-      localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
-      setIsInWatchlist(false);
-      toast.success('Removed from watchlist');
-    } else {
-      // Add to watchlist
-      const movieItem = {
-        id: id,
-        title: movieData?.title,
-        poster: movieData?.poster_path,
-        backdrop: movieData?.backdrop_path,
-        vote_average: movieData?.vote_average,
-        release_date: movieData?.release_date,
-        addedAt: new Date().toISOString()
-      };
-      const updatedWatchlist = [...watchlist, movieItem];
-      localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
-      setIsInWatchlist(true);
-      toast.success('Added to watchlist!');
-    }
-  };
 
   if (isLoading) {
     return (
@@ -1250,24 +1217,13 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
                       </span>
                     </div>
                     
-                    {/* Watchlist Button */}
+                    {/* Watchlist Button - Visual Only */}
                     <div className="relative group">
-                      <button 
-                        onClick={handleWatchlistToggle}
-                        className={`p-3 backdrop-blur-md border rounded-full transition-all duration-300 ${
-                          isInWatchlist 
-                            ? 'bg-red-500/20 border-red-500/40 hover:bg-red-500/30' 
-                            : 'bg-[rgba(255,255,255,0.1)] border-white/20 hover:bg-[rgba(255,255,255,0.2)]'
-                        }`}
-                      >
-                        {isInWatchlist ? (
-                          <span className="text-red-400 text-sm font-bold">✓</span>
-                        ) : (
-                          <Plus className="w-5 h-5" />
-                        )}
+                      <button className="p-3 bg-[rgba(255,255,255,0.1)] backdrop-blur-md border border-white/20 hover:bg-[rgba(255,255,255,0.2)] rounded-full transition-all duration-300">
+                        <Plus className="w-5 h-5" />
                       </button>
                       <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        {isInWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}
+                        Add to Watchlist
                       </span>
                     </div>
                   </div>
