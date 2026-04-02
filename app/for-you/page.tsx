@@ -75,10 +75,10 @@ export default function ForYouPage() {
         backdrop: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1920_and_h800_multi_faces${movie.backdrop_path}` : '/api/placeholder/1920/800',
         rating: movie.vote_average,
         year: new Date(movie.release_date).getFullYear(),
-        duration: `${Math.floor(Math.random() * 60 + 90)}m`,
+        duration: `${Math.floor((movie.id % 60) + 90)}m`, // Deterministic based on movie ID
         genre: movie.genre_ids?.[0] ? getGenreName(movie.genre_ids[0]) : 'Unknown',
         description: movie.overview || 'No description available.',
-        matchPercentage: Math.floor(Math.random() * 30 + 70), // Simulated AI match
+        matchPercentage: Math.floor((movie.id % 30) + 70), // Deterministic based on movie ID
         aiReason: "Based on your viewing history and preferences"
       }));
     } catch (error) {
@@ -115,14 +115,14 @@ export default function ForYouPage() {
       }
     ];
 
-    const randomExplanation = explanations[Math.floor(Math.random() * explanations.length)];
+    const randomExplanation = explanations[Math.floor((Date.now() / 1000) % explanations.length)]; // Deterministic based on time
     const recommendations = await fetchMovies();
 
     return {
       ...randomExplanation,
       recommendations: recommendations.slice(0, 10).map(rec => ({
         ...rec,
-        matchPercentage: Math.floor(Math.random() * 20 + 80),
+        matchPercentage: Math.floor((parseInt(rec.id) % 20) + 80), // Deterministic based on movie ID
         aiReason: "Similar tone and themes"
       }))
     };

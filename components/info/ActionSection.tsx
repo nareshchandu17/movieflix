@@ -139,6 +139,7 @@ const ActionSection = () => {
           ))}
           {/* Add some padding at the end for better mobile scrolling */}
           <div className="flex-shrink-0 w-4 sm:w-6"></div>
+          <div className="flex-shrink-0 w-12 md:w-20" />
         </div>
       </div>
     </div>

@@ -17,6 +17,7 @@ export default function ContinueWatchingSeries({ title = "Continue Watching" }: 
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Mock data for continue watching series
   useEffect(() => {
@@ -129,7 +130,7 @@ export default function ContinueWatchingSeries({ title = "Continue Watching" }: 
               style={{ width: '320px' }}
             >
               <div className="relative aspect-video rounded-lg overflow-hidden group/card cursor-pointer"
-                   onClick={() => useRouter().push(`/series/${show.id}`)}>
+                   onClick={() => router.push(`/series/${show.id}`)}>
                 <Image
                   src={show.poster_path || "https://i.imgur.com/wjVuAGb.png"}
                   alt={show.name}

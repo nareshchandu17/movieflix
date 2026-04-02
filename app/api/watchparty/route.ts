@@ -196,7 +196,7 @@ export async function PATCH(request: NextRequest) {
 // GET /api/watchparty/[roomCode] - Get watch party details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { roomCode: string } }
+  { params }: { params: Promise<{ roomCode: string }> }
 ) {
   try {
     await connectDB();
@@ -206,7 +206,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { roomCode } = params;
+    const { roomCode } = await params;
     
     const watchParty = await WatchParty.findOne({
       roomCode,

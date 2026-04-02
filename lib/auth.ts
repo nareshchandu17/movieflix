@@ -29,7 +29,7 @@ export const authOptions: AuthOptions = {
             name: user.name,
             email: user.email,
             avatar: user.image,
-            onboardingCompleted: false, // New users must complete onboarding
+            onboardingCompleted: true, // New users no longer need to complete onboarding
             lastLogin: new Date(),
           });
           user.id = newUser._id.toString();
@@ -88,7 +88,7 @@ export const authOptions: AuthOptions = {
   },
 
   pages: {
-    signIn: "/login",
+    // Retain default sign in behavior
   },
 
   secret: process.env.NEXTAUTH_SECRET,

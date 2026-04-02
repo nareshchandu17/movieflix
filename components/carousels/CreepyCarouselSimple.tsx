@@ -153,8 +153,13 @@ const CreepyCarouselSimple = ({ className = "" }: CreepyCarouselSimpleProps) => 
 
   return (
     <div className={`relative ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      
+
+      {/* Movies Carousel - Full Bleed (matching other carousels) */}
+      <div className="px-4 sm:px-6 md:px-12 lg:px-20">
+        <div className="relative group">
+          {/* Header */}
+         <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Skull className="w-6 h-6 text-red-600" />
@@ -168,14 +173,10 @@ const CreepyCarouselSimple = ({ className = "" }: CreepyCarouselSimpleProps) => 
         
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-          <span className="text-red-400 text-sm">Live Now</span>
+            <span className="text-red-400 text-sm">Live Now</span>
+          </div>
         </div>
-      </div>
 
-      {/* Movies Carousel - Full Bleed (matching other carousels) */}
-      <div className="relative left-0 right-1/2 -mr-[50vw] w-[calc(100vw+2rem)]">
-        <div className="relative group">
-          {/* Navigation Buttons */}
           <button
             onClick={() => {
               const container = document.querySelector('.creepy-carousel-container');
@@ -207,14 +208,14 @@ const CreepyCarouselSimple = ({ className = "" }: CreepyCarouselSimpleProps) => 
           </button>
 
           {/* Scroll Container */}
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth creepy-carousel-container py-4 px-6" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth creepy-carousel-container py-4 px-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {movies.map((movie, index) => (
               <motion.div
                 key={`${movie.id}-${index}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.05 }}
-                className="snap-start flex-shrink-0 cursor-pointer group"
+                className="snap-start flex-shrink-0 cursor-pointer"
                 onClick={() => handlePlay(movie.id)}
                 style={{ width: '220px' }}
               >
@@ -224,19 +225,19 @@ const CreepyCarouselSimple = ({ className = "" }: CreepyCarouselSimpleProps) => 
                   <img
                     src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
                     alt={movie.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://via.placeholder.com/220x330/1a1a1a/ffffff?text=No+Image';
                     }}
                   />
 
                   {/* Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300">
                     {/* Play Button */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <Button
                         size="sm"
-                        className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-0 group-hover:scale-100"
+                        className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full opacity-0 hover:opacity-100 transition-all duration-300 transform scale-0 hover:scale-100"
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePlay(movie.id);
@@ -266,7 +267,7 @@ const CreepyCarouselSimple = ({ className = "" }: CreepyCarouselSimpleProps) => 
 
                 {/* Movie Info */}
                 <div className="mt-2">
-                  <h3 className="text-white text-sm font-medium line-clamp-1 group-hover:text-red-400 transition-colors">
+                  <h3 className="text-white text-sm font-medium line-clamp-1 hover:text-red-400 transition-colors">
                     {movie.title}
                   </h3>
                   <p className="text-gray-400 text-xs">
@@ -289,11 +290,10 @@ const CreepyCarouselSimple = ({ className = "" }: CreepyCarouselSimpleProps) => 
                 </Button>
               </motion.div>
             ))}
+            <div className="flex-shrink-0 w-12 md:w-20" />
           </div>
         </div>
-      </div>
-
-      {/* Warning Footer */}
+        {/* Warning Footer */}
       <div className="mt-6 bg-red-900/20 border border-red-500/30 rounded-lg p-4">
         <div className="flex items-center gap-3">
           <AlertTriangle className="w-5 h-5 text-red-500" />
@@ -305,6 +305,9 @@ const CreepyCarouselSimple = ({ className = "" }: CreepyCarouselSimpleProps) => 
           </div>
         </div>
       </div>
+      </div>
+
+      
     </div>
   );
 };

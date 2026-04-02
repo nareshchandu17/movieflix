@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import WatchHistory from "@/models/WatchHistory";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 // GET user's watch history
 export async function GET(req: NextRequest) {
