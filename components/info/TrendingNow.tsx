@@ -17,9 +17,9 @@ interface TrendingNowProps {
   timeWindow?: "day" | "week";
 }
 
-const TrendingNow = ({ 
-  title = "Trending Now", 
-  timeWindow = "day" 
+const TrendingNow = ({
+  title = "Trending Now",
+  timeWindow = "day"
 }: TrendingNowProps) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState<TrendingItem[]>([]);
@@ -98,13 +98,18 @@ const TrendingNow = ({
   return (
     <div className="w-full">
       <div className="relative group">
-        {/* Section Header */} 
-        <SectionHeader title={title}>
+        {/* Section Header */}
+        
+        {/* Normal Container (like A) */}
+          <div className="px-4 sm:px-6 md:px-12 lg:px-20">
+          <div className="relative group">
+
+            <SectionHeader title={title}>
           <div>
             <h2 className="text-3xl font-bold text-white mb-2">{title}</h2>
             <p className="text-gray-400">The hottest movies and shows everyone's watching</p>
           </div>
-          <Link 
+          <Link
             href="/trending"
             className="flex items-center gap-2 text-red-500 hover:text-red-400 transition-colors duration-300 group"
           >
@@ -112,10 +117,6 @@ const TrendingNow = ({
             <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
           </Link>
         </SectionHeader>
-
-        {/* Full-Bleed Scroll Container */}
-        <div className="relative left-0 right-1/2 -mr-[5vw] w-[calc(100vw+2rem)]">
-          <div className="relative group">
             {/* Navigation Buttons */}
             <button
               onClick={scrollLeft}
@@ -136,47 +137,47 @@ const TrendingNow = ({
             {/* Scroll Container */}
             <div
               ref={scrollContainerRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-6"
+              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-0"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-          {isLoading ? (
-            // Skeleton Loaders
-            Array.from({ length: 8 }).map((_, index) => (
-              <div
-                key={`skeleton-${index}`}
-                className="flex-shrink-0 snap-start"
-                style={{
-                  width: `${cardWidth}px`,
-                }}
-              >
-                <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
-                  <div className="w-full h-full bg-gray-800 animate-pulse" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3 space-y-2">
-                    <div className="w-3/4 h-4 bg-gray-700 animate-pulse rounded" />
-                    <div className="w-1/2 h-3 bg-gray-700 animate-pulse rounded" />
+              {isLoading ? (
+                // Skeleton Loaders
+                Array.from({ length: 8 }).map((_, index) => (
+                  <div
+                    key={`skeleton-${index}`}
+                    className="flex-shrink-0 snap-start"
+                    style={{
+                      width: `${cardWidth}px`,
+                    }}
+                  >
+                    <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
+                      <div className="w-full h-full bg-gray-800 animate-pulse" />
+                      <div className="absolute bottom-0 left-0 right-0 p-3 space-y-2">
+                        <div className="w-3/4 h-4 bg-gray-700 animate-pulse rounded" />
+                        <div className="w-1/2 h-3 bg-gray-700 animate-pulse rounded" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            data.map((item) => (
-              <div
-                key={`${item.media_type}-${item.id}`}
-                className="flex-shrink-0 snap-start"
-                style={{
-                  width: `${cardWidth}px`,
-                }}
-              >
-                <EnhancedMediaCard
-                  media={item}
-                  variant="horizontal"
-                />
-              </div>
-            ))
-          )}
+                ))
+              ) : (
+                data.map((item) => (
+                  <div
+                    key={`${item.media_type}-${item.id}`}
+                    className="flex-shrink-0 snap-start"
+                    style={{
+                      width: `${cardWidth}px`,
+                    }}
+                  >
+                    <EnhancedMediaCard
+                      media={item}
+                      variant="horizontal"
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
       </div>
     </div>
   );

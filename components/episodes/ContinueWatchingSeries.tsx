@@ -2,21 +2,25 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Play, Clock, Calendar, Plus, BarChart3 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Clock, Info, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { TMDBMovie, api } from "@/lib/types";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { api as tmdbApi } from "@/lib/api";
 
-interface Episode {
+interface ContinueWatchingItem {
   id: string;
   title: string;
-  episode: number;
-  season: number;
-  duration: number;
+  episodeNumber?: number;
+  seasonNumber?: number;
   progress: number;
-  thumbnail: string;
-  showId: number;
+  duration: number;
+  backdropPath: string | null;
+  posterPath: string | null;
+  type: 'movie' | 'series' | 'episode';
+  contentId: string;
+  seriesId?: string;
+  overview?: string;
 }
 
 interface ContinueWatchingSeriesProps {
@@ -24,232 +28,193 @@ interface ContinueWatchingSeriesProps {
 }
 
 export default function ContinueWatchingSeries({ title = "Continue Watching" }: ContinueWatchingSeriesProps) {
-  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [items, setItems] = useState<ContinueWatchingItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const { preferences } = useUserPreferences();
 
-  // Mock data for continue watching episodes
+  const fetchMetadata = useCallback(async () => {
+    if (!preferences?.watchHistory && !preferences?.episodeProgress) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Combine watch history and episode progress
+      // For now, let's focus on the most recent 10 items
+      const history = [...(preferences.watchHistory || [])]
+        .sort((a, b) => new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime())
+        .slice(0, 10);
+
+      const resolvedItems = await Promise.all(
+        history.map(async (item) => {
+          try {
+            const type = item.contentType === 'series' || item.contentType === 'episode' ? 'tv' : 'movie';
+            const fetchId = parseInt(item.metadata?.seriesId || item.contentId);
+            
+            if (isNaN(fetchId)) return null;
+
+            // Use explicit checks to satisfy TMDB API overloads
+            const data = type === 'movie' 
+              ? await tmdbApi.getDetails('movie', fetchId)
+              : await tmdbApi.getDetails('tv', fetchId);
+            
+            return {
+              id: item.contentId,
+              title: (data as any).title || (data as any).name || item.metadata?.title || "Untitled",
+              episodeNumber: item.metadata?.episode,
+              seasonNumber: item.metadata?.season,
+              progress: item.progress,
+              duration: item.duration || 100,
+              backdropPath: data.backdrop_path,
+              posterPath: data.poster_path,
+              type: item.contentType,
+              contentId: item.contentId,
+              seriesId: item.metadata?.seriesId,
+              overview: data.overview
+            } as ContinueWatchingItem;
+          } catch (err) {
+            console.error(`Error fetching metadata for ${item.contentId}:`, err);
+            return null;
+          }
+        })
+      );
+
+      const filteredItems = resolvedItems.filter((item): item is ContinueWatchingItem => item !== null && item.progress < 95);
+
+      setItems(filteredItems);
+    } catch (error) {
+      console.error("Failed to fetch continue watching metadata:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [preferences]);
+
   useEffect(() => {
-    const mockEpisodes: Episode[] = [
-      {
-        id: "ep1",
-        title: "The Dark Knight Rises",
-        episode: 4,
-        season: 1,
-        duration: 45,
-        progress: 75,
-        thumbnail: "/placeholder-episode.jpg",
-        showId: 123
-      },
-      {
-        id: "ep2",
-        title: "Joker's Wild Card",
-        episode: 3,
-        season: 1,
-        duration: 52,
-        progress: 45,
-        thumbnail: "/placeholder-episode2.jpg",
-        showId: 124
-      },
-      {
-        id: "ep3",
-        title: "The Final Chapter",
-        episode: 2,
-        season: 1,
-        duration: 48,
-        progress: 20,
-        thumbnail: "/placeholder-episode3.jpg",
-        showId: 125
-      },
-      {
-        id: "ep4",
-        title: "Breaking Point",
-        episode: 1,
-        season: 2,
-        duration: 50,
-        progress: 90,
-        thumbnail: "/placeholder-episode4.jpg",
-        showId: 126
-      }
-    ];
-    
-    setEpisodes(mockEpisodes);
-    setLoading(false);
-  }, []);
+    fetchMetadata();
+  }, [fetchMetadata]);
 
-  const nextSlide = useCallback(() => {
-    if (episodes.length > 0) {
-      setCurrentIndex((prev) => (prev + 1) % Math.ceil(episodes.length / 4));
-    }
-  }, [episodes.length]);
-
-  const prevSlide = useCallback(() => {
-    if (episodes.length > 0) {
-      setCurrentIndex((prev) => (prev - 1 + Math.ceil(episodes.length / 4)) % Math.ceil(episodes.length / 4));
-    }
-  }, [episodes.length]);
-
-  const updateScrollButtons = useCallback(() => {
-    if (!scrollRef.current) return;
-    const scrollLeft = scrollRef.current.scrollLeft;
-    const maxScrollLeft = scrollRef.current.scrollWidth - scrollRef.current.clientWidth;
-  }, []);
-
-  const scrollToIndex = (index: number) => {
+  const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
-      const cardWidth = 320 + 16; // card width + gap
-      scrollRef.current.scrollTo({
-        left: index * cardWidth * 4,
+      const scrollAmount = window.innerWidth * 0.8;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
       });
     }
   };
 
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
-
-  const getRemainingTime = (duration: number, progress: number) => {
-    const remaining = Math.round((duration * (100 - progress)) / 100);
-    return formatTime(remaining);
-  };
-
-  if (loading) {
-    return (
-      <div className="relative">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-8 bg-blue-600 rounded-full" />
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
-        </div>
-
-        <div className="relative group">
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth py-4 px-6">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="flex-shrink-0 snap-start"
-                style={{ width: '320px' }}
-              >
-                <div className="relative aspect-video rounded-lg overflow-hidden">
-                  <div className="w-full h-full bg-gray-800 animate-pulse" />
-                </div>
-                <div className="mt-3 space-y-2">
-                  <div className="h-4 bg-gray-700 rounded animate-pulse w-3/4" />
-                  <div className="h-3 bg-gray-700 rounded animate-pulse w-1/2" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (episodes.length === 0) {
-    return null;
-  }
+  if (!loading && items.length === 0) return null;
 
   return (
-    <div className="relative">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-1 h-8 bg-blue-600 rounded-full" />
-        <h2 className="text-2xl font-bold text-white">{title}</h2>
+    <div className="relative group/section py-4">
+      {/* Title with consistent left alignment */}
+      <div className="px-4 sm:px-6 md:px-12 lg:px-20 mb-6">
+        <h2 className="text-xl md:text-2xl font-semibold text-white/90 hover:text-white transition-colors cursor-pointer flex items-center gap-2 group">
+          {title}
+          <ChevronRight className="w-5 h-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-blue-500" />
+        </h2>
       </div>
 
-      <div className="relative group">
-        <div
-          ref={scrollRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-6"
-          onScroll={updateScrollButtons}
-          style={{ scrollPaddingLeft: "3rem" }}
-        >
-          {episodes.map((episode, index) => (
-            <motion.div
-              key={episode.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="flex-shrink-0 snap-start"
-              style={{ width: '320px' }}
-            >
-              <div className="relative aspect-video rounded-lg overflow-hidden group/card cursor-pointer"
-                   onClick={() => useRouter().push(`/watch/${episode.showId}`)}>
-                <Image
-                  src={episode.thumbnail}
-                  alt={episode.title}
-                  fill
-                  className="object-cover transition-transform duration-300 group-hover/card:scale-105"
-                  sizes="320px"
-                />
-
-                {/* Progress Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-600">
-                    <div 
-                      className="h-full bg-blue-600 transition-all duration-300"
-                      style={{ width: `${episode.progress}%` }}
-                    />
-                  </div>
-                  <div className="absolute bottom-2 left-2 text-white text-xs bg-black/60 backdrop-blur-sm px-2 py-1 rounded">
-                    Episode {episode.episode}
-                  </div>
-                  <div className="absolute bottom-2 right-2 text-white text-xs bg-black/60 backdrop-blur-sm px-2 py-1 rounded">
-                    {getRemainingTime(episode.duration, episode.progress)} remaining
-                  </div>
-                </div>
-
-                {/* Play Button Overlay */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center"
-                  >
-                    <Play className="w-6 h-6 text-white ml-1" />
-                  </motion.div>
-                </div>
-
-                {/* Episode Info */}
-                <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-md font-bold">
-                  S{episode.season}:E{episode.episode}
-                </div>
-              </div>
-
-              {/* Episode Details */}
-              <div className="mt-3">
-                <h3 className="text-white font-semibold text-sm line-clamp-2 leading-tight mb-1">
-                  {episode.title}
-                </h3>
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span>{formatTime(episode.duration)}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <BarChart3 className="w-3 h-3" />
-                    <span>{episode.progress}% complete</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
+      <div className="relative">
         {/* Navigation Arrows */}
         <button
-          onClick={prevSlide}
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-blue-600 hover:border-blue-600 z-10"
+          onClick={() => scroll('left')}
+          className="absolute left-0 top-0 bottom-0 w-12 md:w-16 bg-black/40 hover:bg-black/60 backdrop-blur-md z-40 opacity-0 group-hover/section:opacity-100 transition-opacity duration-300 flex items-center justify-center text-white border-r border-white/5"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-8 h-8" />
         </button>
 
-        <button
-          onClick={nextSlide}
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-blue-600 hover:border-blue-600 z-10"
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory px-4 sm:px-6 md:px-12 lg:px-20"
+          style={{ scrollPaddingLeft: '5rem' }}
         >
-          <ChevronRight className="w-5 h-5" />
+          {loading ? (
+            Array(4).fill(0).map((_, i) => (
+              <div key={i} className="flex-shrink-0 w-[280px] md:w-[400px] aspect-video bg-white/5 animate-pulse rounded-xl" />
+            ))
+          ) : (
+            items.map((item) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex-shrink-0 w-[280px] md:w-[400px] snap-start relative group/card"
+              >
+                {/* Netflix Style Progress Card */}
+                <div 
+                  className="relative aspect-video rounded-xl overflow-hidden cursor-pointer bg-zinc-900 border border-white/5 shadow-2xl transition-all duration-500 hover:border-blue-500/50 hover:shadow-blue-500/10"
+                  onClick={() => router.push(`/watch/${item.id}`)}
+                >
+                  <Image
+                    src={item.backdropPath ? `https://image.tmdb.org/t/p/w780${item.backdropPath}` : '/placeholder-backdrop.jpg'}
+                    alt={item.title}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover/card:scale-110 opacity-70 group-hover/card:opacity-90"
+                  />
+                  
+                  {/* Overlay Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60 group-hover/card:opacity-40 transition-opacity" />
+
+                  {/* Play Icon */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-all duration-300 translate-y-4 group-hover/card:translate-y-0">
+                    <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-600/40">
+                      <Play className="w-6 h-6 text-white ml-1 fill-white" />
+                    </div>
+                  </div>
+
+                  {/* Content Info Bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-2 group-hover/card:translate-y-0 transition-transform duration-300">
+                    <div className="flex flex-col gap-1">
+                      <h3 className="text-white font-bold text-sm md:text-base line-clamp-1">
+                        {item.title}
+                      </h3>
+                      {item.type !== 'movie' && item.episodeNumber && (
+                        <p className="text-blue-400 text-xs font-bold uppercase tracking-wider">
+                          S{item.seasonNumber} : E{item.episodeNumber}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Progress Bar Container */}
+                    <div className="mt-3 h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${item.progress}%` }}
+                        className="h-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.8)]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Info on Hover (Premium Detail) */}
+                <div className="mt-3 flex items-center justify-between px-1 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
+                  <div className="flex items-center gap-3">
+                    <button className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
+                      <Plus className="w-4 h-4 text-white" />
+                    </button>
+                    <button className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
+                      <Info className="w-4 h-4 text-white" />
+                    </button>
+                  </div>
+                  <span className="text-xs text-zinc-400 font-medium">
+                    {100 - item.progress}% left
+                  </span>
+                </div>
+              </motion.div>
+            ))
+          )}
+        </div>
+
+        <button
+          onClick={() => scroll('right')}
+          className="absolute right-0 top-0 bottom-0 w-12 md:w-16 bg-black/40 hover:bg-black/60 backdrop-blur-md z-40 opacity-0 group-hover/section:opacity-100 transition-opacity duration-300 flex items-center justify-center text-white border-l border-white/5"
+        >
+          <ChevronRight className="w-8 h-8" />
         </button>
       </div>
     </div>

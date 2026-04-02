@@ -7,6 +7,8 @@ import { Play, Plus, ThumbsUp, ChevronRight, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import CollectionPopup from "../collections/CollectionPopup";
+import { AnimatePresence } from "framer-motion";
 
 // Type guard function
 function isTVShow(item: TMDBMovie | TMDBTVShow): item is TMDBTVShow {
@@ -29,6 +31,10 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
   const href = isTV ? `/series/${media.id}` : `/movie/${media.id}`;
   const titleVal = isTV ? media.name : media.title;
 
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | undefined>(undefined);
+  const plusButtonRef = useRef<HTMLButtonElement>(null);
+
   const handleCardClick = () => {
     router.push(href);
   };
@@ -41,7 +47,10 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
 
   const handleAddClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Handle add to watchlist
+    if (plusButtonRef.current) {
+      setAnchorRect(plusButtonRef.current.getBoundingClientRect());
+    }
+    setIsPopupOpen(!isPopupOpen);
   };
 
   const poster_path = media.poster_path
@@ -115,6 +124,7 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
                     Play Now
                   </Button>
                   <Button 
+                    ref={plusButtonRef}
                     size="sm" 
                     variant="outline" 
                     className="border-white/30 hover:bg-white/10 hover:text-white hover:border-white/30 w-8 h-8 p-0 flex items-center justify-center"
@@ -125,6 +135,16 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
                 </div>
               </div>
             </div>
+
+            <AnimatePresence>
+              {isPopupOpen && (
+                <CollectionPopup
+                  media={media}
+                  onClose={() => setIsPopupOpen(false)}
+                  anchorRect={anchorRect}
+                />
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
       );
@@ -176,6 +196,7 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
                     Play Now
                   </Button>
                   <Button 
+                    ref={plusButtonRef}
                     size="sm" 
                     variant="outline" 
                     className="border-white/30 hover:bg-white/10 hover:text-white hover:border-white/30 w-8 h-8 p-0 flex items-center justify-center"
@@ -186,6 +207,16 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
                 </div>
               </div>
             </div>
+
+            <AnimatePresence>
+              {isPopupOpen && (
+                <CollectionPopup
+                  media={media}
+                  onClose={() => setIsPopupOpen(false)}
+                  anchorRect={anchorRect}
+                />
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
       );

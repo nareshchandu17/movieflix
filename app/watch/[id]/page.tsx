@@ -28,10 +28,7 @@ async function getMovieData(id: string) {
 export default async function WatchPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   
-  // Redirect to login if not authenticated
-  if (!session) {
-    redirect("/login");
-  }
+  // Allow guest access - no mandatory redirection to /login
 
   // Unwrap params Promise in Next.js 15+
   const { id } = await params;

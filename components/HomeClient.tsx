@@ -27,7 +27,7 @@ import HiddenGemsCarousel from "@/components/special/HiddenGemsCarousel";
 import QuickWatchCarousel from "@/components/special/QuickWatchCarousel";
 import BingeWorthySeriesCarousel from "@/components/special/BingeWorthySeriesCarousel";
 import CreepyCarouselSimple from "@/components/carousels/CreepyCarouselSimple";
-import OnboardingCard from "@/components/OnboardingCard";
+// Removed OnboardingCard import
 
 export default function HomePage() {
   return <HomeClient />;
@@ -35,18 +35,12 @@ export default function HomePage() {
 
 function HomeClient() {
   const { data: session, status } = useSession();
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [lastWatchedMovie, setLastWatchedMovie] = useState<{ name: string; id: string } | null>(null);
 
   useEffect(() => {
     if (status === "loading") return;
 
-    // Only show onboarding if user is authenticated AND hasn't completed onboarding
-    if (status === "authenticated" && session?.user && !session.user.onboardingCompleted) {
-      setShowOnboarding(true);
-    } else {
-      setShowOnboarding(false);
-    }
+    // Onboarding UI is no longer needed
 
     // Get last watched movie from localStorage
     const lastWatched = localStorage.getItem('lastWatchedMovie');
@@ -63,34 +57,20 @@ function HomeClient() {
     }
   }, [session, status]);
 
-  const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
-    // The session should be updated by the API, no need to reload
-  };
+
 
   return (
     <div className="bg-[#000000] relative">
-      {showOnboarding && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-md"
-            onClick={() => setShowOnboarding(false)}
-          />
-
-          <div className="relative z-10 w-full max-w-md">
-            <OnboardingCard onComplete={handleOnboardingComplete} />
-          </div>
-        </div>
-      )}
+      {/* Onboarding overlay removed */}
 
       {/* Hero Section - Full viewport width, no container constraints */}
       <div className="relative w-full">
         <Hero />
       </div>
 
-      <div className="relative z-10 pt-8">
-        <div className="container mx-auto px-4">
-          <div className="space-y-12">
+      <div className="relative z-10 pt-8 pb-24 overflow-x-hidden">
+        {/* All content aligned to a consistent left margin, but allows carousels to bleed right */}
+        <div className="space-y-12 lg:space-y-20">
             <TimeBasedDiscovery />
             <NewReleasesCarousel />
             <ContinueWatchingSeries />
@@ -126,7 +106,6 @@ function HomeClient() {
             <BingeWorthySeriesCarousel />
             <AnimeCarousel />
             <HorrorCarousel />
-          </div>
         </div>
       </div>
     </div>

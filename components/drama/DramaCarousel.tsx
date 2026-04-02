@@ -136,7 +136,13 @@ const DramaCarousel = () => {
   return (
     <div className="w-full">
       <div className="relative group">
-        {/* Section Header */}
+        
+
+        {/* Full-Bleed Scroll Container */}
+        <div className="px-4 sm:px-6 md:px-12 lg:px-20">
+          <div className="relative group">
+            
+            {/* Section Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-3xl font-bold text-white mb-2">Drama</h2>
@@ -150,11 +156,6 @@ const DramaCarousel = () => {
             <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
           </Link>
         </div>
-
-        {/* Full-Bleed Scroll Container */}
-        <div className="relative left-0 right-1/2 -mr-[50vw] w-[calc(100vw+2rem)]">
-          <div className="relative group">
-            {/* Navigation Buttons */}
             <button
               onClick={() => scroll("left")}
               className="absolute left-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition-all duration-300 opacity-0 group-hover:opacity-100 z-20 border border-white/10 hover:border-red-500/50"
@@ -174,7 +175,7 @@ const DramaCarousel = () => {
             {/* Scroll Container */}
             <div
               ref={carouselRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-6"
+              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-0"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {dramaMovies.map((movie, index) => (
@@ -241,6 +242,7 @@ const DramaCarousel = () => {
                   </div>
                 </motion.div>
               ))}
+              <div className="flex-shrink-0 w-12 md:w-20" />
             </div>
           </div>
         </div>

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import "@/styles/movie-insights.css";
+import CollectionPopup from "../collections/CollectionPopup";
 
 interface BingeSeriesInfoProps {
   id: number;
@@ -195,8 +196,6 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
   const [similarSeries, setSimilarSeries] = useState<TMDBTVShow[]>([]);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
-  const [isInWatchlist, setIsInWatchlist] = useState(false);
-  const { userPreferences, addToWatchlist, removeFromWatchlist, isInWatchlist: checkInWatchlist, updateEpisodeProgress } = useProfileContext();
   const [lastWatchedEpisode, setLastWatchedEpisode] = useState<{ season: number; episode: number; progress: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSeasonLoading, setIsSeasonLoading] = useState(false);
@@ -233,6 +232,19 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
   const [episodeSortOrder, setEpisodeSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
   const episodesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Collection Popup State
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | undefined>(undefined);
+  const plusButtonRef = useRef<HTMLButtonElement>(null);
+
+  const handleAddClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (plusButtonRef.current) {
+      setAnchorRect(plusButtonRef.current.getBoundingClientRect());
+    }
+    setIsPopupOpen(!isPopupOpen);
+  };
 
   // Calculate series insights based on TMDB data
   const calculateSeriesInsights = (series: TMDBTVDetail) => {
@@ -533,8 +545,8 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
 
   // Handle episode play
   const handleEpisodePlay = (episode: TMDBEpisodeDetail) => {
-    // Update episode progress
-    updateEpisodeProgress(id, selectedSeason, episode.episode_number, 0);
+    // Update episode progress functionality removed
+    // updateEpisodeProgress(id, selectedSeason, episode.episode_number, 0);
 
     // Navigate to player or start playing
     toast.success(`Starting ${episode.name}`);
@@ -684,37 +696,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
     return sceneDatabase["drama"] || [];
   };
 
-  // Check if series is in watchlist
-  useEffect(() => {
-    const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
-    setIsInWatchlist(watchlist.some((item: any) => item.id === id));
-  }, [id]);
 
-  // Watchlist functionality
-  const handleWatchlistToggle = () => {
-    const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
-    
-    if (isInWatchlist) {
-      const updatedWatchlist = watchlist.filter((item: any) => item.id !== id);
-      localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
-      setIsInWatchlist(false);
-      toast.success('Removed from watchlist');
-    } else {
-      const seriesItem = {
-        id: id,
-        title: seriesData?.name,
-        poster: seriesData?.poster_path,
-        backdrop: seriesData?.backdrop_path,
-        vote_average: seriesData?.vote_average,
-        first_air_date: seriesData?.first_air_date,
-        addedAt: new Date().toISOString()
-      };
-      const updatedWatchlist = [...watchlist, seriesItem];
-      localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
-      setIsInWatchlist(true);
-      toast.success('Added to watchlist!');
-    }
-  };
 
   if (isLoading) {
     return (
@@ -882,15 +864,12 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                       <Download className="w-5 h-5" />
                       Download
                     </button>
-                    <button
-                      onClick={handleWatchlistToggle}
-                      className={`p-3 rounded-lg transition-colors ${
-                        isInWatchlist 
-                          ? 'bg-green-600 hover:bg-green-700' 
-                          : 'bg-white/10 hover:bg-white/20 backdrop-blur-sm'
-                      }`}
+                    <button 
+                      ref={plusButtonRef}
+                      onClick={(e) => handleAddClick(e)}
+                      className="p-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition-colors"
                     >
-                      <Plus className={`w-5 h-5 ${isInWatchlist ? 'text-white' : 'text-white'}`} />
+                      <Plus className="w-5 h-5" />
                     </button>
                     <button className="p-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition-colors">
                       <Share2 className="w-5 h-5" />
@@ -901,6 +880,20 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
             </div>
           </div>
         </div>
+
+        {/* Collection Popup */}
+        <AnimatePresence>
+          {isPopupOpen && seriesData && (
+            <CollectionPopup
+              media={{
+                ...seriesData,
+                genre_ids: seriesData.genres?.map(g => g.id) || [],
+              } as any}
+              onClose={() => setIsPopupOpen(false)}
+              anchorRect={anchorRect}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Auto-binge Countdown Overlay */}

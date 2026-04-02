@@ -5,9 +5,7 @@ import { redirect } from "next/navigation";
 export default async function Home() {
   const session = await getServerSession(authOptions) as any;
 
-  if (!session) {
-    redirect("/login");
-  }
+  // Allow guest access - no mandatory redirection to /login
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center">

@@ -121,29 +121,29 @@ const BingeWorthySeriesCarousel = () => {
   return (
     <div className="w-full">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-red-500/30">
-            <PlayCircle className="w-6 h-6 text-red-400" />
-          </div>
+      <div className="px-4 sm:px-6 md:px-12 lg:px-20">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-3xl font-bold text-white mb-2">Binge Worthy Series</h2>
-            <p className="text-gray-400">Perfect for your binge engine - Can't stop watching!</p>
+            <p className="text-gray-400">Addictive shows that will keep you watching all night</p>
           </div>
+          <Link 
+            href="/tv?category=binge-worthy"
+            className="flex items-center gap-2 text-red-500 hover:text-red-400 transition-colors duration-300 group"
+          >
+            <span className="text-sm font-medium">See All</span>
+            <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+          </Link>
         </div>
-        
-        <Link 
-          href="/binge-worthy"
-          className="flex items-center gap-2 text-red-500 hover:text-red-400 transition-colors duration-300 group"
-        >
-          <span className="text-sm font-medium">Start Binging</span>
-          <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-        </Link>
       </div>
+      
 
       {/* Full-Bleed Scroll Container */}
-      <div className="relative left-0 right-1/2 -mr-[50vw] w-[calc(100vw+2rem)]">
+      <div className="px-4 sm:px-6 md:px-12 lg:px-20">
         <div className="relative group">
+
+          
+      
           {/* Navigation Buttons */}
           <button
             onClick={() => scroll("left")}
@@ -164,7 +164,7 @@ const BingeWorthySeriesCarousel = () => {
           {/* Scroll Container */}
           <div
             ref={carouselRef}
-            className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-6"
+            className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-0"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {loading ? (
@@ -190,6 +190,7 @@ const BingeWorthySeriesCarousel = () => {
                 </div>
               ))
             )}
+            <div className="flex-shrink-0 w-12 md:w-20" />
           </div>
         </div>
       </div>

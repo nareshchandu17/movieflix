@@ -15,10 +15,7 @@ export async function middleware(req: any) {
   const isLogoutRoute = pathname.startsWith("/logout");
   const isPublicRoute = isAuthPage || isApiRoute || isLogoutRoute;
 
-  // Redirect unauthenticated users to login (except for public routes)
-  if (!token && !isPublicRoute) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
+  // Allow access - no mandatory redirection to /login
 
   // Redirect authenticated users away from login
   if (token && isAuthPage) {

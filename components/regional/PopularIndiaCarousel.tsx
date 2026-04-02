@@ -167,42 +167,44 @@ const PopularIndiaCarousel = () => {
   return (
     <div className="w-full">
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500/20 via-green-500/20 to-blue-500/20 border border-orange-500/30">
-            <Globe className="w-6 h-6 text-orange-400" />
+      <div className="px-4 sm:px-6 md:px-12 lg:px-20">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500/20 via-green-500/20 to-blue-500/20 border border-orange-500/30">
+              <Globe className="w-6 h-6 text-orange-400" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold text-white mb-2">Popular in India</h2>
+              <p className="text-gray-400">Discover Telugu, Hindi & English movies from Indian cinema</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-3xl font-bold text-white mb-2">Popular in India</h2>
-            <p className="text-gray-400">Discover Telugu, Hindi & English movies from Indian cinema</p>
+          
+          <div className="flex items-center gap-4">
+            <Link 
+              href="/telugu"
+              className="flex items-center gap-2 text-orange-500 hover:text-orange-400 transition-colors duration-300 group"
+            >
+              <span className="text-sm font-medium">Telugu</span>
+              <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+            </Link>
+            <Link 
+              href="/hindi"
+              className="flex items-center gap-2 text-green-500 hover:text-green-400 transition-colors duration-300 group"
+            >
+              <span className="text-sm font-medium">Hindi</span>
+              <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+            </Link>
+            <Link 
+              href="/english"
+              className="flex items-center gap-2 text-blue-500 hover:text-blue-400 transition-colors duration-300 group"
+            >
+              <span className="text-sm font-medium">English</span>
+              <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+            </Link>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <Link 
-            href="/telugu"
-            className="flex items-center gap-2 text-orange-500 hover:text-orange-400 transition-colors duration-300 group"
-          >
-            <span className="text-sm font-medium">Telugu</span>
-            <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-          </Link>
-          <Link 
-            href="/hindi"
-            className="flex items-center gap-2 text-green-500 hover:text-green-400 transition-colors duration-300 group"
-          >
-            <span className="text-sm font-medium">Hindi</span>
-            <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-          </Link>
-          <Link 
-            href="/english"
-            className="flex items-center gap-2 text-blue-500 hover:text-blue-400 transition-colors duration-300 group"
-          >
-            <span className="text-sm font-medium">English</span>
-            <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-          </Link>
         </div>
       </div>
-
+      
       {/* Full-Bleed Scroll Container */}
       <div className="relative left-0 right-1/2 -mr-[50vw] w-[calc(100vw+2rem)]">
         <div className="relative group">
