@@ -17,6 +17,7 @@ export default function BingeWorthySeries({ title = "Binge-Worthy Series" }: Bin
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Fetch binge-worthy series (multiple seasons, high ratings, strong completion)
   useEffect(() => {
@@ -132,7 +133,7 @@ export default function BingeWorthySeries({ title = "Binge-Worthy Series" }: Bin
               style={{ width: '280px' }}
             >
               <div className="relative aspect-video rounded-lg overflow-hidden group/card cursor-pointer"
-                   onClick={() => useRouter().push(`/series/${show.id}`)}>
+                   onClick={() => router.push(`/series/${show.id}`)}>
                 <Image
                   src={show.poster_path ? `https://image.tmdb.org/t/p/w500${show.poster_path}` : '/placeholder-series.jpg'}
                   alt={show.name}

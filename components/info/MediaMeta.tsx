@@ -5,8 +5,14 @@ import {
   Clock,
   Users,
   Tv,
+  Plus,
+  Bookmark,
 } from "lucide-react";
 import { TMDBMovie, TMDBTVShow } from "@/lib/types";
+import { useState, useRef } from "react";
+import { AnimatePresence } from "framer-motion";
+import CollectionPopup from "../collections/CollectionPopup";
+import { Button } from "../ui/button";
 
 interface MediaMetaProps {
   type: "movie" | "tv";
@@ -42,6 +48,18 @@ const MediaMeta = ({
   media,
   className = "",
 }: MediaMetaProps) => {
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | undefined>(undefined);
+  const plusButtonRef = useRef<HTMLButtonElement>(null);
+
+  const handleAddClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (plusButtonRef.current) {
+      setAnchorRect(plusButtonRef.current.getBoundingClientRect());
+    }
+    setIsPopupOpen(!isPopupOpen);
+  };
+
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Header Section */}
@@ -53,10 +71,22 @@ const MediaMeta = ({
           </div>
         </div>
 
-        {/* Title */}
-        <h1 className="text-3xl xl:text-4xl font-bold text-white leading-tight">
-          {title}
-        </h1>
+        {/* Title and Add Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="text-3xl xl:text-4xl font-bold text-white leading-tight">
+            {title}
+          </h1>
+          
+          <Button
+            ref={plusButtonRef}
+            onClick={(e) => handleAddClick(e)}
+            variant="outline"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white/5 border-white/10 hover:bg-white/10 text-white rounded-xl h-12 px-6 transition-all"
+          >
+            <Plus className="w-5 h-5 text-primary" />
+            <span className="font-semibold">Save to Collection</span>
+          </Button>
+        </div>
 
         {/* Quick Stats Row */}
         <div className="flex flex-wrap items-center gap-4 text-gray-300">
@@ -130,6 +160,17 @@ const MediaMeta = ({
             <p className="text-gray-300 leading-relaxed text-sm">{overview}</p>
           </div>
         )}
+
+        {/* Collection Popup */}
+        <AnimatePresence>
+          {isPopupOpen && (
+            <CollectionPopup
+              media={media}
+              onClose={() => setIsPopupOpen(false)}
+              anchorRect={anchorRect}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

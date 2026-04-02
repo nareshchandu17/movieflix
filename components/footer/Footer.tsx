@@ -151,9 +151,10 @@ const Footer = () => {
                 maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,1))",
                 WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,1))",
                 display: 'inline-block',
+                filter: "drop-shadow(0 0 15px rgba(220, 38, 38, 0.8))",
               }}
               whileHover={{
-                filter: "drop-shadow(0 0 15px rgba(220, 38, 38, 0.8))",
+                
                 scale: 1.05,
                 transition: { duration: 0.2 }
               }}

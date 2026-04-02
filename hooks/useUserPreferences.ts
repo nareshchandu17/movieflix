@@ -96,7 +96,9 @@ export function useUserPreferences(): UseUserPreferencesReturn {
       // Get current user token
       const token = localStorage.getItem('access_token');
       if (!token) {
-        throw new Error('No authentication token found');
+        console.warn('User is browsing as guest (no token found)');
+        setLoading(false);
+        return; // Don't throw error, just return early
       }
 
       const response = await fetch('/api/user/preferences', {
@@ -118,14 +120,14 @@ export function useUserPreferences(): UseUserPreferencesReturn {
       console.error('Error fetching user preferences:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch preferences');
       
-      // If authentication error, redirect to login
+      // If authentication error, handle gracefully
       if (err instanceof Error && err.message.includes('token')) {
-        router.push('/login');
+        console.warn('User authentication error - browsing as guest');
       }
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, []);
 
   // Add to watchlist
   const addToWatchlist = useCallback(async (
@@ -135,7 +137,10 @@ export function useUserPreferences(): UseUserPreferencesReturn {
   ) => {
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) throw new Error('No authentication token found');
+      if (!token) {
+        console.warn('Cannot add to watchlist - user not authenticated');
+        return;
+      }
 
       const response = await fetch('/api/user/preferences', {
         method: 'POST',
@@ -170,7 +175,10 @@ export function useUserPreferences(): UseUserPreferencesReturn {
   const removeFromWatchlist = useCallback(async (contentId: string) => {
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) throw new Error('No authentication token found');
+      if (!token) {
+        console.warn('Cannot remove from watchlist - user not authenticated');
+        return;
+      }
 
       const response = await fetch('/api/user/preferences', {
         method: 'DELETE',
@@ -213,7 +221,10 @@ export function useUserPreferences(): UseUserPreferencesReturn {
   ) => {
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) throw new Error('No authentication token found');
+      if (!token) {
+        console.warn('Cannot add to watch history - user not authenticated');
+        return;
+      }
 
       const response = await fetch('/api/user/preferences', {
         method: 'POST',
@@ -256,7 +267,10 @@ export function useUserPreferences(): UseUserPreferencesReturn {
   ) => {
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) throw new Error('No authentication token found');
+      if (!token) {
+        console.warn('Cannot update episode progress - user not authenticated');
+        return;
+      }
 
       const response = await fetch('/api/user/preferences', {
         method: 'POST',
@@ -307,7 +321,10 @@ export function useUserPreferences(): UseUserPreferencesReturn {
   const updateSettings = useCallback(async (newSettings: Partial<UserSettings>) => {
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) throw new Error('No authentication token found');
+      if (!token) {
+        console.warn('Cannot update settings - user not authenticated');
+        return;
+      }
 
       const response = await fetch('/api/user/preferences', {
         method: 'PUT',
