@@ -301,7 +301,7 @@ const SeriesHero = () => {
 
   if (loading) {
     return (
-      <div className="relative w-full h-[65vh] min-h-[500px] bg-gradient-to-br from-slate-900 to-black overflow-hidden">
+      <div className="relative w-full h-screen min-h-[600px] bg-gradient-to-br from-slate-900 to-black overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
           <PageLoading>Loading series...</PageLoading>
         </div>
@@ -311,7 +311,7 @@ const SeriesHero = () => {
 
   if (slides.length === 0) {
     return (
-      <div className="relative w-full h-[65vh] min-h-[500px] bg-gradient-to-br from-slate-900 to-black overflow-hidden">
+      <div className="relative w-full h-screen min-h-[600px] bg-gradient-to-br from-slate-900 to-black overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <Tv className="w-16 h-16 text-gray-600 mx-auto mb-4" />
@@ -334,20 +334,12 @@ const SeriesHero = () => {
         }
       `}</style>
       
-      <div className="relative w-full h-[85vh] min-h-[600px] bg-gradient-to-br from-slate-900 to-black overflow-hidden">
+      <div className="relative w-full h-screen min-h-[600px] bg-gradient-to-br from-slate-900 to-black overflow-hidden">
         {/* Top Gradient Overlay - Header blend effect */}
         <div 
           className="absolute top-0 left-0 w-full h-[120px] z-20 pointer-events-none"
           style={{
             background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.4), rgba(0,0,0,0))'
-          }}
-        />
-        
-        {/* Bottom Cinematic Gradient */}
-        <div 
-          className="absolute bottom-0 left-0 w-full h-[180px] z-10 pointer-events-none"
-          style={{
-            background: 'linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0))'
           }}
         />
         
@@ -399,8 +391,7 @@ const SeriesHero = () => {
                   <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900" />
                 )}
                 
-                {/* Additional gradient overlay for text readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+                {/* Removed additional gradient overlay for cleaner look */}
               </div>
 
               {/* Content overlay */}
@@ -427,11 +418,11 @@ const SeriesHero = () => {
                       </h1>
                       
                       {/* Series metadata */}
-                      <div className="flex flex-wrap items-center gap-4 text-gray-300">
+                      <div className="flex flex-wrap items-center gap-4 text-white">
                         {currentSlide.first_air_date && (
                           <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            <span className="text-sm">
+                            <Calendar className="w-4 h-4 text-white" />
+                            <span className="text-sm text-white font-medium">
                               {new Date(currentSlide.first_air_date).getFullYear()}
                             </span>
                           </div>
@@ -440,7 +431,7 @@ const SeriesHero = () => {
                         {currentSlide.vote_average > 0 && (
                           <div className="flex items-center gap-1">
                             <Star className="w-4 h-4 text-yellow-400" />
-                            <span className="text-sm font-semibold">
+                            <span className="text-sm font-semibold text-white">
                               {currentSlide.vote_average.toFixed(1)}
                             </span>
                           </div>
@@ -448,8 +439,8 @@ const SeriesHero = () => {
                         
                         {currentSlide.genre_ids && currentSlide.genre_ids.length > 0 && (
                           <div className="flex items-center gap-1">
-                            <Tv className="w-4 h-4" />
-                            <span className="text-sm">TV Series</span>
+                            <Tv className="w-4 h-4 text-white" />
+                            <span className="text-sm text-white font-medium">TV Series</span>
                           </div>
                         )}
                       </div>
@@ -457,7 +448,7 @@ const SeriesHero = () => {
 
                     {/* Series overview */}
                     {currentSlide.overview && (
-                      <p className="text-lg text-gray-200 max-w-3xl line-clamp-3 leading-relaxed">
+                      <p className="text-lg text-white max-w-3xl line-clamp-3 leading-relaxed drop-shadow-md">
                         {currentSlide.overview}
                       </p>
                     )}
@@ -476,11 +467,11 @@ const SeriesHero = () => {
                       <Button
                         onClick={() => router.push(`/series/${currentSlide.id}`)}
                         size="lg"
-                        className="p-3 bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 transition-all duration-300"
+                        className="p-3 bg-white hover:bg-gray-200 border-0 transition-all duration-300"
                         aria-label="More info"
                       >
-                        <Info className="w-5 h-5" />
-                        More Info
+                        <Info className="w-5 h-5 text-black" />
+                        <span className="text-black font-semibold ml-2">More Info</span>
                       </Button>
                     </div>
                   </motion.div>

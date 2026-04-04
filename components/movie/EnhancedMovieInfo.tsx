@@ -6,11 +6,12 @@ import { Play, Share2, Download, Plus, ChevronLeft, ChevronRight, Star, Calendar
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import "@/styles/movie-insights.css";
 import { ReactionCarousel } from "../reactions/ReactionCarousel";
 import PremiumReactionClip from "../reaction/PremiumReactionClip";
+import CollectionPopup from "../collections/CollectionPopup";
 
 interface EnhancedMovieInfoProps {
   id: number;
@@ -23,6 +24,9 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
   const [similarMovies, setSimilarMovies] = useState<TMDBMovie[]>([]);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | undefined>(undefined);
+  const plusButtonRef = React.useRef<HTMLButtonElement>(null);
   const [movieInsights, setMovieInsights] = useState({
     audienceLove: 63,
     rewatchValue: 4.2,
@@ -43,6 +47,15 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
   const [shareButtonPosition, setShareButtonPosition] = useState({ top: 0, left: 0 });
   const [fanReactions, setFanReactions] = useState<any[]>([]);
   const [showReactionModal, setShowReactionModal] = useState(false);
+
+  const handleAddClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (plusButtonRef.current) {
+      setAnchorRect(plusButtonRef.current.getBoundingClientRect());
+    }
+    setIsPopupOpen(!isPopupOpen);
+  };
+
 
   // Fetch fan reactions for this movie
   const fetchFanReactions = async (movieId: number) => {
@@ -1217,14 +1230,36 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
                       </span>
                     </div>
                     
-                    {/* Watchlist Button - Visual Only */}
+                    {/* Watchlist Button */}
                     <div className="relative group">
-                      <button className="p-3 bg-[rgba(255,255,255,0.1)] backdrop-blur-md border border-white/20 hover:bg-[rgba(255,255,255,0.2)] rounded-full transition-all duration-300">
+                      <button 
+                        ref={plusButtonRef}
+                        onClick={handleAddClick}
+                        title="add to watchlist"
+                        className="p-3 bg-[rgba(255,255,255,0.1)] backdrop-blur-md border border-white/20 hover:bg-[rgba(255,255,255,0.2)] rounded-full transition-all duration-300">
                         <Plus className="w-5 h-5" />
                       </button>
                       <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                         Add to Watchlist
                       </span>
+                      
+                      <AnimatePresence>
+                        {isPopupOpen && movieData && (
+                          <CollectionPopup
+                            media={{
+                              id: movieData.id,
+                              title: movieData.title,
+                              poster_path: movieData.poster_path,
+                              backdrop_path: movieData.backdrop_path,
+                              overview: movieData.overview,
+                              release_date: movieData.release_date,
+                              vote_average: movieData.vote_average
+                            } as any}
+                            onClose={() => setIsPopupOpen(false)}
+                            anchorRect={anchorRect}
+                          />
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                 </div>

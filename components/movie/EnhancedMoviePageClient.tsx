@@ -5,7 +5,7 @@ import MovieDisplay from "@/components/movie/MovieDisplay";
 import { TMDBMovie } from "@/lib/types";
 import { api } from "@/lib/api";
 import { PageLoading, PageEmpty } from "@/components/loading/PageLoading";
-import { Search, Filter, RotateCcw, ChevronDown, Play, Plus, Info } from "lucide-react";
+import { Search, Filter, RotateCcw, ChevronDown, Play, Plus, Info, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -32,15 +32,122 @@ const EnhancedMoviePageClient = () => {
   const [hoveredMovieId, setHoveredMovieId] = useState<number | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [activePopover, setActivePopover] = useState<string | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const moviesRef = useRef<TMDBMovie[]>([]);
   const currentPageRef = useRef(currentPage);
 
+  // Rotating placeholders for premium OTT feel
+  const placeholders = [
+    "Search movies, actors, genres...",
+    "Search 'Avatar'...",
+    "Search action movies...",
+    "Search Tom Cruise...",
+    "Search sci-fi movies...",
+    "Search Marvel movies...",
+    "Search horror films...",
+    "Search comedy movies...",
+    "Search 2024 releases..."
+  ];
+
+  // Genre data for popover
+  const genres = [
+    { id: "28", name: "Action" },
+    { id: "12", name: "Adventure" },
+    { id: "16", name: "Animation" },
+    { id: "35", name: "Comedy" },
+    { id: "80", name: "Crime" },
+    { id: "99", name: "Documentary" },
+    { id: "18", name: "Drama" },
+    { id: "10751", name: "Family" },
+    { id: "14", name: "Fantasy" },
+    { id: "36", name: "History" },
+    { id: "27", name: "Horror" },
+    { id: "10402", name: "Music" },
+    { id: "9648", name: "Mystery" },
+    { id: "10749", name: "Romance" },
+    { id: "878", name: "Science Fiction" },
+    { id: "53", name: "Thriller" },
+    { id: "10752", name: "War" },
+    { id: "37", name: "Western" }
+  ];
+
+  // Country data for popover
+  const countries = [
+    { id: "US", name: "United States" },
+    { id: "GB", name: "United Kingdom" },
+    { id: "CA", name: "Canada" },
+    { id: "AU", name: "Australia" },
+    { id: "DE", name: "Germany" },
+    { id: "FR", name: "France" },
+    { id: "JP", name: "Japan" },
+    { id: "KR", name: "South Korea" },
+    { id: "IN", name: "India" },
+    { id: "CN", name: "China" },
+    { id: "IT", name: "Italy" },
+    { id: "ES", name: "Spain" },
+    { id: "MX", name: "Mexico" },
+    { id: "BR", name: "Brazil" },
+    { id: "RU", name: "Russia" }
+  ];
+
+  // Rating data for popover
+  const ratings = [
+    { id: "9", name: "9+ Stars" },
+    { id: "8", name: "8+ Stars" },
+    { id: "7", name: "7+ Stars" },
+    { id: "6", name: "6+ Stars" },
+    { id: "5", name: "5+ Stars" }
+  ];
+
+  // Helper functions
+  const getGenreName = (genreId: string) => {
+    const genre = genres.find(g => g.id === genreId);
+    return genre ? genre.name : "Genre";
+  };
+
+  const getCountryName = (countryId: string) => {
+    const country = countries.find(c => c.id === countryId);
+    return country ? country.name : "Country";
+  };
+
+  const getRatingName = (ratingId: string) => {
+    const rating = ratings.find(r => r.id === ratingId);
+    return rating ? rating.name : "Rating";
+  };
+
+  const closePopover = () => setActivePopover(null);
+
   // Update ref when currentPage changes
   useEffect(() => {
     currentPageRef.current = currentPage;
   }, [currentPage]);
+
+  // Rotating placeholder effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+    }, 3500); // Rotate every 3.5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Close popovers when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.popover-container')) {
+        setActivePopover(null);
+      }
+    };
+
+    if (activePopover) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [activePopover]);
 
   const [filters, setFilters] = useState<MovieFiltersData>({
     category: "popular",
@@ -296,11 +403,12 @@ const EnhancedMoviePageClient = () => {
     updateURL(newFilters, 1);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCurrentPage(1);
-    setHasMore(true);
-    updateURL(filters, 1, searchQuery);
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setCurrentPage(1);
+      setHasMore(true);
+      updateURL(filters, 1, searchQuery);
+    }
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -344,210 +452,344 @@ const EnhancedMoviePageClient = () => {
 
   return (
     <>
-      {/* Search Bar and Filters Section - One Line Layout */}
+      {/* Search Bar and Filters Section - Premium OTT Style */}
       <div className="w-full bg-black sticky top-0 z-40 border-b border-gray-800">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center gap-4 flex-wrap">
-            {/* Search Bar */}
-            <div className="flex-1 min-w-[300px] max-w-[600px]">
-              <form onSubmit={handleSearch}>
-                <motion.div 
-                  className="relative group"
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                >
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
-                  
-                  {/* Glow effect background */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500 -z-10"></div>
-                  
-                  {/* Main input with enhanced styling */}
-                  <motion.input
-                    type="text"
-                    placeholder="Search movies..."
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    className={`w-full pl-12 pr-16 py-3 bg-gray-900/80 backdrop-blur-md border rounded-full text-white placeholder-gray-400 focus:outline-none transition-all duration-300 text-sm font-medium ${
-                      isTyping 
-                        ? 'border-blue-400 shadow-lg shadow-blue-400/30 ring-2 ring-blue-400/20' 
-                        : 'border-gray-700 hover:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:shadow-lg focus:shadow-blue-500/25'
-                    }`}
-                    suppressHydrationWarning={true}
-                    animate={{
-                      borderColor: isTyping ? ['#3B82F6', '#8B5CF6', '#EC4899'] : ['#374151', '#374151', '#374151'],
-                    }}
-                    transition={{
-                      duration: isTyping ? 2 : 0,
-                      repeat: isTyping ? Infinity : 0,
-                      ease: "easeInOut"
-                    }}
-                  />
-                  
-                  {/* Animated typing indicator */}
-                  <AnimatePresence>
-                    {isTyping && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        className="absolute right-20 top-1/2 transform -translate-y-1/2 flex gap-1"
-                      >
-                        <motion.div
-                          className="w-1.5 h-1.5 bg-blue-400 rounded-full"
-                          animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                          transition={{ duration: 1, repeat: Infinity, delay: 0 }}
-                        />
-                        <motion.div
-                          className="w-1.5 h-1.5 bg-purple-400 rounded-full"
-                          animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                          transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
-                        />
-                        <motion.div
-                          className="w-1.5 h-1.5 bg-pink-400 rounded-full"
-                          animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                          transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  
-                  {/* Enhanced Search Button */}
-                  <motion.button
-                    type="submit"
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:via-red-700 hover:to-red-800 px-4 py-2 rounded-full text-sm font-semibold text-white shadow-lg shadow-red-500/30 hover:shadow-red-500/60 transition-all duration-300 hover:scale-105"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <span className="relative z-10">Search</span>
-                    {/* Button glow effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/30 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-full"></div>
-                  </motion.button>
-                </motion.div>
-              </form>
-            </div>
+            {/* Premium Search Bar - No Button */}
+            <div className="flex-1 max-w-[45%] min-w-[280px]">
+  <motion.div
+    className="relative group"
+    whileHover={{ scale: 1.01 }}
+    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+  >
+
+    {/* Search Icon */}
+    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 text-gray-400 z-10">
+      <Search className="w-5 h-5" />
+    </div>
+
+    {/* Premium glow background */}
+    <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 via-red-600/30 to-red-500/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500 -z-10"></div>
+
+    {/* Search Input */}
+    <motion.input
+      type="text"
+      placeholder=""
+      value={searchQuery}
+      onChange={handleSearchChange}
+      onKeyDown={handleSearchKeyDown}
+      suppressHydrationWarning
+      className={`w-full pl-12 pr-20 py-3 bg-black border rounded-full text-white placeholder-gray-400 focus:outline-none transition-all duration-300 text-sm font-medium ${
+        isTyping
+          ? "border-blue-400 shadow-lg shadow-blue-400/30 ring-2 ring-blue-400/20"
+          : "border-gray-700 hover:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:shadow-lg focus:shadow-blue-500/25"
+      }`}
+      animate={{
+        borderColor: isTyping
+          ? ["#3B82F6", "#8B5CF6", "#EC4899"]
+          : ["#374151", "#374151", "#374151"],
+      }}
+      transition={{
+        duration: isTyping ? 2 : 0,
+        repeat: isTyping ? Infinity : 0,
+        ease: "easeInOut",
+      }}
+    />
+
+    {/* Rotating Placeholder */}
+    <AnimatePresence mode="wait">
+      {!searchQuery && !isTyping && (
+        <motion.div
+          key={placeholderIndex}
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -5 }}
+          transition={{ duration: 0.3 }}
+          className="absolute left-12 right-20 top-0 bottom-0 flex items-center pointer-events-none text-gray-400 text-sm font-medium"
+        >
+          {placeholders[placeholderIndex]}
+        </motion.div>
+      )}
+    </AnimatePresence>
+
+    
+    {/* Enter Hint */}
+    <AnimatePresence>
+      {!searchQuery && !isTyping && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute right-14 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none"
+        >
+          ⏎
+        </motion.div>
+      )}
+    </AnimatePresence>
+
+  </motion.div>
+</div>
 
             {/* Filter Pills */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap popover-container">
               {/* Type Filter Pill */}
               <div className="relative">
-                <select
-                  value={filters.category}
-                  onChange={(e) => handleFiltersChange({ ...filters, category: e.target.value })}
-                  className="appearance-none bg-gray-800 border border-gray-600 rounded-full px-3 py-1.5 pr-7 text-white text-sm focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-gray-700 transition-colors"
-                  suppressHydrationWarning={true}
+                <motion.button
+                  onClick={() => setActivePopover(activePopover === 'type' ? null : 'type')}
+                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <option value="popular">Type</option>
-                  <option value="popular">Popular</option>
-                  <option value="top_rated">Top Rated</option>
-                  <option value="now_playing">Now Playing</option>
-                  <option value="upcoming">Upcoming</option>
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 pointer-events-none" />
+                  <span>{filters.category === 'popular' ? 'Type' : filters.category === 'top_rated' ? 'Top Rated' : filters.category === 'now_playing' ? 'Now Playing' : 'Upcoming'}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${activePopover === 'type' ? 'rotate-180' : ''}`} />
+                </motion.button>
+
+                {/* Type Popover */}
+                <AnimatePresence>
+                  {activePopover === 'type' && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full mt-2 left-0 w-48 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-xl p-2 z-50"
+                    >
+                      {[
+                        { value: 'popular', label: 'Popular' },
+                        { value: 'top_rated', label: 'Top Rated' },
+                        { value: 'now_playing', label: 'Now Playing' },
+                        { value: 'upcoming', label: 'Upcoming' }
+                      ].map((option) => (
+                        <motion.button
+                          key={option.value}
+                          onClick={() => {
+                            handleFiltersChange({ ...filters, category: option.value });
+                            setActivePopover(null);
+                          }}
+                          className={`w-full px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                            filters.category === option.value
+                              ? 'bg-red-600 text-white'
+                              : 'text-gray-300 hover:bg-zinc-800'
+                          }`}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          {option.label}
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Genre Filter Pill */}
               <div className="relative">
-                <select
-                  value={filters.genre}
-                  onChange={(e) => handleFiltersChange({ ...filters, genre: e.target.value })}
-                  className="appearance-none bg-gray-800 border border-gray-600 rounded-full px-3 py-1.5 pr-7 text-white text-sm focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-gray-700 transition-colors"
-                  suppressHydrationWarning={true}
+                <motion.button
+                  onClick={() => setActivePopover(activePopover === 'genre' ? null : 'genre')}
+                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <option value="">Genre</option>
-                  <option value="28">Action</option>
-                  <option value="12">Adventure</option>
-                  <option value="16">Animation</option>
-                  <option value="35">Comedy</option>
-                  <option value="80">Crime</option>
-                  <option value="99">Documentary</option>
-                  <option value="18">Drama</option>
-                  <option value="10751">Family</option>
-                  <option value="14">Fantasy</option>
-                  <option value="36">History</option>
-                  <option value="27">Horror</option>
-                  <option value="10402">Music</option>
-                  <option value="9648">Mystery</option>
-                  <option value="10749">Romance</option>
-                  <option value="878">Science Fiction</option>
-                  <option value="53">Thriller</option>
-                  <option value="10752">War</option>
-                  <option value="37">Western</option>
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 pointer-events-none" />
+                  <span>{filters.genre ? getGenreName(filters.genre) : 'Genre'}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${activePopover === 'genre' ? 'rotate-180' : ''}`} />
+                </motion.button>
+
+                {/* Genre Popover */}
+                <AnimatePresence>
+                  {activePopover === 'genre' && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full mt-2 left-0 w-80 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-xl p-4 z-50"
+                    >
+                      <div className="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto">
+                        {genres.map((genre) => (
+                          <motion.button
+                            key={genre.id}
+                            onClick={() => {
+                              handleFiltersChange({ ...filters, genre: genre.id });
+                              setActivePopover(null);
+                            }}
+                            className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                              filters.genre === genre.id
+                                ? 'bg-red-600 text-white'
+                                : 'text-gray-300 hover:bg-zinc-800'
+                            }`}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            {filters.genre === genre.id && (
+                              <span className="mr-1">✓</span>
+                            )}
+                            {genre.name}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Year Filter Pill */}
               <div className="relative">
-                <select
-                  value={filters.year}
-                  onChange={(e) => handleFiltersChange({ ...filters, year: e.target.value })}
-                  className="appearance-none bg-gray-800 border border-gray-600 rounded-full px-3 py-1.5 pr-7 text-white text-sm focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-gray-700 transition-colors"
-                  suppressHydrationWarning={true}
+                <motion.button
+                  onClick={() => setActivePopover(activePopover === 'year' ? null : 'year')}
+                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <option value="">Year</option>
-                  {Array.from({ length: 30 }, (_, i) => {
-                    const year = new Date().getFullYear() - i;
-                    return (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    );
-                  })}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 pointer-events-none" />
+                  <span>{filters.year || 'Year'}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${activePopover === 'year' ? 'rotate-180' : ''}`} />
+                </motion.button>
+
+                {/* Year Popover */}
+                <AnimatePresence>
+                  {activePopover === 'year' && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full mt-2 left-0 w-48 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-xl p-2 z-50 max-h-64 overflow-y-auto"
+                    >
+                      {Array.from({ length: 30 }, (_, i) => {
+                        const year = new Date().getFullYear() - i;
+                        return (
+                          <motion.button
+                            key={year}
+                            onClick={() => {
+                              handleFiltersChange({ ...filters, year: year.toString() });
+                              setActivePopover(null);
+                            }}
+                            className={`w-full px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                              filters.year === year.toString()
+                                ? 'bg-red-600 text-white'
+                                : 'text-gray-300 hover:bg-zinc-800'
+                            }`}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            {filters.year === year.toString() && (
+                              <span className="mr-1">✓</span>
+                            )}
+                            {year}
+                          </motion.button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Country Filter Pill */}
               <div className="relative">
-                <select
-                  value={filters.country}
-                  onChange={(e) => handleFiltersChange({ ...filters, country: e.target.value })}
-                  className="appearance-none bg-gray-800 border border-gray-600 rounded-full px-3 py-1.5 pr-7 text-white text-sm focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-gray-700 transition-colors"
-                  suppressHydrationWarning={true}
+                <motion.button
+                  onClick={() => setActivePopover(activePopover === 'country' ? null : 'country')}
+                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <option value="">Country</option>
-                  <option value="US">United States</option>
-                  <option value="GB">United Kingdom</option>
-                  <option value="CA">Canada</option>
-                  <option value="AU">Australia</option>
-                  <option value="DE">Germany</option>
-                  <option value="FR">France</option>
-                  <option value="JP">Japan</option>
-                  <option value="KR">South Korea</option>
-                  <option value="IN">India</option>
-                  <option value="CN">China</option>
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 pointer-events-none" />
+                  <span>{filters.country ? getCountryName(filters.country) : 'Country'}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${activePopover === 'country' ? 'rotate-180' : ''}`} />
+                </motion.button>
+
+                {/* Country Popover */}
+                <AnimatePresence>
+                  {activePopover === 'country' && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full mt-2 left-0 w-56 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-xl p-2 z-50 max-h-64 overflow-y-auto"
+                    >
+                      {countries.map((country) => (
+                        <motion.button
+                          key={country.id}
+                          onClick={() => {
+                            handleFiltersChange({ ...filters, country: country.id });
+                            setActivePopover(null);
+                          }}
+                          className={`w-full px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                            filters.country === country.id
+                              ? 'bg-red-600 text-white'
+                              : 'text-gray-300 hover:bg-zinc-800'
+                          }`}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          {filters.country === country.id && (
+                            <span className="mr-1">✓</span>
+                          )}
+                          {country.name}
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Rating Filter Pill */}
               <div className="relative">
-                <select
-                  value={filters.rating}
-                  onChange={(e) => handleFiltersChange({ ...filters, rating: e.target.value })}
-                  className="appearance-none bg-gray-800 border border-gray-600 rounded-full px-3 py-1.5 pr-7 text-white text-sm focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-gray-700 transition-colors"
-                  suppressHydrationWarning={true}
+                <motion.button
+                  onClick={() => setActivePopover(activePopover === 'rating' ? null : 'rating')}
+                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <option value="">Rating</option>
-                  <option value="9">9+ Stars</option>
-                  <option value="8">8+ Stars</option>
-                  <option value="7">7+ Stars</option>
-                  <option value="6">6+ Stars</option>
-                  <option value="5">5+ Stars</option>
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 pointer-events-none" />
+                  <span>{filters.rating ? getRatingName(filters.rating) : 'Rating'}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${activePopover === 'rating' ? 'rotate-180' : ''}`} />
+                </motion.button>
+
+                {/* Rating Popover */}
+                <AnimatePresence>
+                  {activePopover === 'rating' && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full mt-2 left-0 w-40 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-xl p-2 z-50"
+                    >
+                      {ratings.map((rating) => (
+                        <motion.button
+                          key={rating.id}
+                          onClick={() => {
+                            handleFiltersChange({ ...filters, rating: rating.id });
+                            setActivePopover(null);
+                          }}
+                          className={`w-full px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                            filters.rating === rating.id
+                              ? 'bg-red-600 text-white'
+                              : 'text-gray-300 hover:bg-zinc-800'
+                          }`}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          {filters.rating === rating.id && (
+                            <span className="mr-1">✓</span>
+                          )}
+                          {rating.name}
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Reset Button Pill */}
-              <Button
+              <motion.button
                 onClick={handleReset}
-                variant="outline"
-                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-3 py-1.5 text-sm rounded-full hover:scale-105 transition-all"
-                suppressHydrationWarning={true}
+                className="bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:bg-white/20 hover:text-white px-4 py-2 text-sm rounded-full hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <RotateCcw className="w-3 h-3 mr-1" />
+                <RotateCcw className="w-3.5 h-3.5" />
                 Reset
-              </Button>
+              </motion.button>
             </div>
           </div>
         </div>
@@ -559,6 +801,32 @@ const EnhancedMoviePageClient = () => {
       {/* Movies Display with Infinite Scroll */}
       {!isLoading && movies.length > 0 && (
         <>
+          {/* Results Header */}
+          <div className="container mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-red-500 via-red-600 to-red-700 bg-clip-text text-transparent">
+                All Movies <span className="text-gray-400 font-normal">({movies.length} results)</span>
+              </h2>
+            </div>
+            
+            {/* Sort Dropdown */}
+            <div className="relative group">
+              <select
+                value={filters.sortBy}
+                onChange={(e) => handleFiltersChange({ ...filters, sortBy: e.target.value })}
+                className="appearance-none bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 pr-8 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10"
+                suppressHydrationWarning={true}
+              >
+                <option value="popularity.desc" className="bg-gray-800">Sort: Popularity</option>
+                <option value="vote_average.desc" className="bg-gray-800">Sort: Rating</option>
+                <option value="release_date.desc" className="bg-gray-800">Sort: Release Date</option>
+                <option value="title.asc" className="bg-gray-800">Sort: A-Z</option>
+                <option value="title.desc" className="bg-gray-800">Sort: Z-A</option>
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-white/60 w-4 h-4 pointer-events-none" />
+            </div>
+          </div>
+          
           <MovieDisplay
             movies={movies}
             pageid={currentPage.toString()}
@@ -570,13 +838,7 @@ const EnhancedMoviePageClient = () => {
           
           {/* Load More Trigger */}
           <div ref={loadMoreRef} className="w-full py-8 flex justify-center">
-            {hasMore && (
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-gradient-to-r from-red-400 via-red-500 to-red-600 rounded-full animate-pulse shadow-lg shadow-red-500/50"></div>
-                <div className="w-2 h-2 bg-gradient-to-r from-red-500 via-red-600 to-red-700 rounded-full animate-pulse shadow-lg shadow-red-500/50"></div>
-                <div className="w-2 h-2 bg-gradient-to-r from-red-600 via-red-700 to-red-800 rounded-full animate-pulse shadow-lg shadow-red-500/50"></div>
-              </div>
-            )}
+            {/* Empty - dots removed */}
           </div>
           
           {/* Load More Button (fallback) */}
@@ -586,7 +848,7 @@ const EnhancedMoviePageClient = () => {
                 onClick={loadMore}
                 className="relative bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:via-red-700 hover:to-red-800 text-white px-8 py-3 rounded-full font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-red-500/50 overflow-hidden group"
               >
-                <span className="relative z-10">Load More Movies</span>
+                <span className="relative z-10">Load More</span>
                 {/* Subtle glow effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 {/* Shadow effect */}

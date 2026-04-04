@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import connectDB from "@/lib/db";
+import dbConnect from "@/lib/db/mongodb";
 import Collection from "@/models/Collection";
 import CollectionItem from "@/models/CollectionItem";
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await connectDB();
+    await dbConnect();
 
     const collections = await Collection.find({ userId: session.user.id })
       .sort({ createdAt: 1 })
@@ -41,11 +41,40 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error("Error fetching collections:", error);
+    console.error("❌ Error fetching collections:", error);
+    
+    // Provide more specific error information
+    let errorMessage = "Failed to fetch collections";
+    let statusCode = 500;
+    
+    if (error.message) {
+      if (error.message.includes("Database") || error.message.includes("connection")) {
+        errorMessage = "Database connection error - please try again";
+        statusCode = 503;
+      } else if (error.message.includes("ENOTFOUND") || error.message.includes("ECONNREFUSED")) {
+        errorMessage = "Service temporarily unavailable";
+        statusCode = 503;
+      } else if (error.message.includes("ENOTFOUND")) {
+        errorMessage = "Service temporarily unavailable";
+        statusCode = 503;
+      } else {
+        errorMessage = error.message;
+      }
+    } else if (error && typeof error === 'object') {
+      // Handle empty error object case
+      errorMessage = "Database connection failed - please check MongoDB is running";
+      statusCode = 503;
+    }
+    
     return NextResponse.json({
       success: false,
-      error: "Failed to fetch collections"
-    }, { status: 500 });
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? {
+        originalError: error?.toString(),
+        stack: error?.stack,
+        type: typeof error
+      } : undefined
+    }, { status: statusCode });
   }
 }
 
@@ -66,7 +95,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    await connectDB();
+    await dbConnect();
 
     // Check if collection with same name already exists for this user
     const existingCollection = await Collection.findOne({

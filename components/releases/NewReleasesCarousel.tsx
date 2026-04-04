@@ -68,14 +68,11 @@ export default function NewReleasesCarousel({ title = "New Releases", subtitle =
       {/* Header - Consistent Alignment */}
       <div className="px-4 sm:px-6 md:px-12 lg:px-20 mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-1.5 h-8 bg-green-500 rounded-full shadow-[0_0_15px_rgba(34,197,94,0.5)]" />
           <div>
             <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase">
               {title}
             </h2>
-            <p className="text-green-500/80 text-xs md:text-sm font-bold tracking-widest uppercase">
-              {subtitle}
-            </p>
+           
           </div>
         </div>
       </div>

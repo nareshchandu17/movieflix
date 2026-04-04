@@ -81,10 +81,10 @@ const MediaMeta = ({
             ref={plusButtonRef}
             onClick={(e) => handleAddClick(e)}
             variant="outline"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white/5 border-white/10 hover:bg-white/10 text-white rounded-xl h-12 px-6 transition-all"
+            className="w-12 h-12 rounded-full sm:w-12 sm:rounded-full flex items-center justify-center p-0 bg-white/5 border-white/10 hover:bg-white/10 text-white transition-all flex-shrink-0"
+            title="add to watchlist"
           >
             <Plus className="w-5 h-5 text-primary" />
-            <span className="font-semibold">Save to Collection</span>
           </Button>
         </div>
 

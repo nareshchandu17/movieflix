@@ -9,6 +9,19 @@ gsap.registerPlugin(ScrollTrigger);
 
 interface GenreMapSectionProps {
   className?: string;
+  config?: {
+    duration: number;
+    ease: string;
+    scrub: boolean | number;
+    enabled: boolean;
+  };
+  scrollTriggerConfig?: {
+    scrub: boolean | number;
+    pinSpacing: boolean;
+    invalidateOnRefresh: boolean;
+    preventOverlaps: boolean;
+    fastScrollEnd: boolean;
+  };
 }
 
 const genreData = [
@@ -18,7 +31,17 @@ const genreData = [
   { name: 'Comedy', value: 26, color: '#7B4DFF' },
 ];
 
-export default function GenreMapSection({ className = '' }: GenreMapSectionProps) {
+export default function GenreMapSection({ 
+  className = '',
+  config = { duration: 0.6, ease: 'power2.out', scrub: 0.3, enabled: true },
+  scrollTriggerConfig = {
+    scrub: 0.3,
+    pinSpacing: false,
+    invalidateOnRefresh: true,
+    preventOverlaps: true,
+    fastScrollEnd: true
+  }
+}: GenreMapSectionProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const helixRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLDivElement>(null);
@@ -33,13 +56,24 @@ export default function GenreMapSection({ className = '' }: GenreMapSectionProps
     if (!section) return;
 
     const ctx = gsap.context(() => {
+      // Skip animations if disabled
+      if (!config.enabled) {
+        gsap.set([helixRef.current, headlineRef.current, chartRef.current, legendRef.current], { 
+          opacity: 1, 
+          x: 0, 
+          scale: 1 
+        });
+        setChartAnimated(true);
+        return;
+      }
+
       const scrollTl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: 'top top',
           end: '+=130%',
           pin: true,
-          scrub: 0.6,
+          ...scrollTriggerConfig,
         },
       });
 
@@ -124,12 +158,12 @@ export default function GenreMapSection({ className = '' }: GenreMapSectionProps
   return (
     <section
       ref={sectionRef}
-      className={`relative w-full h-screen overflow-hidden ${className}`}
+      className={`relative w-full h-screen overflow-hidden taste-dna-section section-full-height ${className}`}
     >
-      {/* Background Image */}
+      {/* Background Image with fallback */}
       <div
         ref={bgRef}
-        className="absolute inset-0 w-full h-full"
+        className="absolute inset-0 w-full h-full bg-fallback"
         style={{
           backgroundImage: 'url(/genre_bg.jpg)',
           backgroundSize: 'cover',

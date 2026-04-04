@@ -89,10 +89,9 @@ const GenreSection = ({
   if (loading) {
     return (
       <div className="w-full">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-3xl font-bold text-white mb-2">{title}</h2>
-            <p className="text-gray-400">Loading {title.toLowerCase()} content...</p>
           </div>
           {seeAllHref && (
             <Link 
@@ -134,10 +133,9 @@ const GenreSection = ({
     <div className="w-full">
       <div className="relative group">
         {/* Section Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-3xl font-bold text-white mb-2">{title}</h2>
-            <p className="text-gray-400">Discover the best {title.toLowerCase()} content</p>
           </div>
           {seeAllHref && (
             <Link 

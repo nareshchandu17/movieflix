@@ -229,7 +229,7 @@ const SmartSearch = () => {
         const filterLabel = intent.genreName || intent.moodName || (intent.filter['primary_release_year'] ? `from ${intent.filter['primary_release_year']}` : "your criteria");
         verbalSummary = `Finding content ${filterLabel}.`;
         const searchParams = new URLSearchParams({ ...intent.filter, 'sort_by': 'popularity.desc', 'include_adult': 'false' } as any);
-        const res = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY || ""}&${searchParams}`);
+        const res = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || ""}&${searchParams}`);
         if (res.ok) {
           const data = await res.json();
           rawResults = data.results.map((r: any) => ({ ...r, media_type: 'movie' }));
@@ -238,7 +238,7 @@ const SmartSearch = () => {
         verbalSummary = `Searching for ${searchQuery}.`;
         const [searchResponse, collectionResponse] = await Promise.all([
           api.search(searchQuery),
-          fetch(`https://api.themoviedb.org/3/search/collection?api_key=${process.env.TMDB_API_KEY || ""}&query=${encodeURIComponent(searchQuery)}`).then(r => r.json())
+          fetch(`https://api.themoviedb.org/3/search/collection?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || ""}&query=${encodeURIComponent(searchQuery)}`).then(r => r.json())
         ]);
         rawResults = searchResponse.results;
         if (collectionResponse?.results) {
@@ -255,7 +255,7 @@ const SmartSearch = () => {
 
       let personResults: SearchResult[] = [];
       try {
-        const personRes = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${process.env.TMDB_API_KEY || ""}&query=${encodeURIComponent(searchQuery)}`);
+        const personRes = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || ""}&query=${encodeURIComponent(searchQuery)}`);
         if (personRes.ok) {
           const personData = await personRes.json();
           personResults = (personData.results || []).filter((p: any) => !!p.profile_path).map((p: any) => ({

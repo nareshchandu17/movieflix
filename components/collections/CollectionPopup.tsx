@@ -143,8 +143,7 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
       }
       
       // If there isn't enough space below, show above
-      if (top + 200 > window.innerHeight && anchorRect.top > 250) {
-        top = anchorRect.top - 12; // AnimatePresence handles height or use a constant
+      if (top + 300 > window.innerHeight && anchorRect.top > 300) {
         return { 
           left, 
           bottom: window.innerHeight - anchorRect.top + 12,
