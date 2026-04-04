@@ -30,6 +30,7 @@
 - **Reactions System** - Express your thoughts with emoji reactions
 - **User Profiles** - Personalized accounts with watch history
 - **My List** - Save content for later viewing
+-**reactions**-you are now react to the movie and posted in your profile
 
 ### 🎨 **Premium UI/UX**
 - **Cinematic Design** - Netflix-inspired dark theme with vibrant accents
