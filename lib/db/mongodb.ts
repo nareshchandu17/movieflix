@@ -1,9 +1,11 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/MovieFlix';
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+  console.error(' MONGODB_URI not found in environment variables');
+  console.log(' Using default MongoDB URI: mongodb://localhost:27017/MovieFlix');
+  console.log(' Create a .env.local file with your MONGODB_URI to override this');
 }
 
 /**

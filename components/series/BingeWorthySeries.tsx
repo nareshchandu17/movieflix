@@ -1,60 +1,111 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Play, Star, TrendingUp, Calendar } from "lucide-react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { TMDBTVShow } from "@/lib/types";
+import { useEffect, useState, useRef } from "react";
+import { TMDBTVShow, TMDBTVResponse } from "@/lib/types";
 import { api } from "@/lib/api";
+import { ChevronRight, ChevronLeft, Play, Info, Plus } from "lucide-react";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 
-interface BingeWorthySeriesProps {
-  title?: string;
-}
-
-export default function BingeWorthySeries({ title = "Binge-Worthy Series" }: BingeWorthySeriesProps) {
-  const [series, setSeries] = useState<TMDBTVShow[]>([]);
+const BingeWorthySeriesCarousel = () => {
+  const [bingeWorthy, setBingeWorthy] = useState<TMDBTVShow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [cardWidth, setCardWidth] = useState(240);
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
-  // Fetch binge-worthy series (multiple seasons, high ratings, strong completion)
+  // Known broken image URLs - prevent them from being requested
+  const brokenImageUrls = new Set([
+    "https://image.tmdb.org/t/p/w500/49WJfev0moxR9p96p3YV4vDSYJu.jpg",
+    "https://image.tmdb.org/t/p/w500/ggm1fb19179S9M9pS6v699yv69O.jpg"
+  ]);
+
+  // Get safe image URL with fallback
+  const getSafeImageUrl = (show: TMDBTVShow) => {
+    // Check if poster is in broken list
+    if (show.poster_path && brokenImageUrls.has(`https://image.tmdb.org/t/p/w500${show.poster_path}`)) {
+      // Try backdrop instead
+      if (show.backdrop_path) {
+        return `https://image.tmdb.org/t/p/w500${show.backdrop_path}`;
+      }
+      // Use gradient placeholder
+      return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23dc2626;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%237c2d12;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='600' fill='url(%23grad)' /%3E%3Ctext x='50%25' y='50%25' font-family='Arial, sans-serif' font-size='24' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='middle'%3E${encodeURIComponent(
+        show.name || "Series"
+      )}%3C/text%3E%3C/svg%3E`;
+    }
+    
+    // Return poster if not broken
+    if (show.poster_path) {
+      return `https://image.tmdb.org/t/p/w500${show.poster_path}`;
+    }
+    
+    // Fallback to backdrop
+    if (show.backdrop_path) {
+      return `https://image.tmdb.org/t/p/w500${show.backdrop_path}`;
+    }
+    
+    // Final fallback to gradient
+    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23dc2626;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%237c2d12;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='600' fill='url(%23grad)' /%3E%3Ctext x='50%25' y='50%25' font-family='Arial, sans-serif' font-size='24' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='middle'%3E${encodeURIComponent(
+        show.name || "Series"
+      )}%3C/text%3E%3C/svg%3E`;
+  };
+
   useEffect(() => {
     const fetchBingeWorthy = async () => {
       try {
         setLoading(true);
-        
-        // Get series with high ratings and multiple seasons
-        const responses = await Promise.all([
-          api.getTopRated("tv", 1),
-          api.getPopular("tv", 1),
-          api.discover('tv', { genre: '18', sortBy: 'vote_average.desc', page: 1 }), // High-rated drama
-          api.discover('tv', { genre: '35', sortBy: 'vote_count.desc', page: 1 }) // Popular comedy
-        ]);
+        setError(null);
 
-        // Combine and filter for binge-worthy content
-        const allSeries = [
-          ...(responses[0].results as TMDBTVShow[] || []),
-          ...(responses[1].results as TMDBTVShow[] || []),
-          ...(responses[2].results as TMDBTVShow[] || []),
-          ...(responses[3].results as TMDBTVShow[] || [])
-        ];
+        const pagePromises: Promise<TMDBTVResponse>[] = [];
 
-        // Filter for high-rated series (8+ rating) and sort by engagement
-        const bingeWorthy = allSeries
-          .filter(show => (show.vote_average || 0) >= 8.0)
-          .sort((a, b) => {
-            const scoreA = (a.vote_average || 0) * (a.vote_count || 0) + (a.popularity || 0);
-            const scoreB = (b.vote_average || 0) * (b.vote_count || 0) + (b.popularity || 0);
-            return scoreB - scoreA;
-          })
-          .slice(0, 8);
+        for (let page = 1; page <= 2; page++) {
+          pagePromises.push(
+            api.getMedia("tv", {
+              category: "popular",
+              page,
+              sortBy: "popularity.desc",
+            })
+          );
+        }
 
-        setSeries(bingeWorthy);
-      } catch (error) {
-        console.error('Failed to fetch binge-worthy series:', error);
-        setSeries([]);
+        for (let page = 1; page <= 2; page++) {
+          pagePromises.push(
+            api.getMedia("tv", {
+              category: "top_rated",
+              page,
+              sortBy: "vote_average.desc",
+            })
+          );
+        }
+
+        const responses = await Promise.all(pagePromises);
+
+        const allShows: TMDBTVShow[] = [];
+        responses.forEach((res) => allShows.push(...res.results));
+
+        const uniqueShows = Array.from(
+          new Map(allShows.map((show) => [show.id, show])).values()
+        );
+
+        const bingeWorthyShows = uniqueShows
+          .filter(
+            (show) =>
+              show.vote_average >= 7.5 &&
+              show.popularity > 15 &&
+              show.vote_count >= 100
+          )
+          .sort(
+            (a, b) =>
+              b.vote_average * b.popularity -
+              a.vote_average * a.popularity
+          )
+          .slice(0, 20);
+
+        setBingeWorthy(bingeWorthyShows);
+      } catch (err) {
+        console.error("Error fetching binge-worthy series:", err);
+        setError("Failed to load binge-worthy series");
       } finally {
         setLoading(false);
       }
@@ -63,149 +114,211 @@ export default function BingeWorthySeries({ title = "Binge-Worthy Series" }: Bin
     fetchBingeWorthy();
   }, []);
 
-  const nextSlide = useCallback(() => {
-    if (series.length > 0) {
-      setCurrentIndex((prev) => (prev + 1) % Math.ceil(series.length / 4));
-    }
-  }, [series.length]);
+  useEffect(() => {
+    const updateCardWidth = () => {
+      const width = window.innerWidth;
+      if (width >= 1536) setCardWidth(220);
+      else if (width >= 1280) setCardWidth(200);
+      else if (width >= 1024) setCardWidth(190);
+      else if (width >= 768) setCardWidth(170);
+      else setCardWidth(150);
+    };
 
-  const prevSlide = useCallback(() => {
-    if (series.length > 0) {
-      setCurrentIndex((prev) => (prev - 1 + Math.ceil(series.length / 4)) % Math.ceil(series.length / 4));
-    }
-  }, [series.length]);
+    updateCardWidth();
+    window.addEventListener("resize", updateCardWidth);
+    return () => window.removeEventListener("resize", updateCardWidth);
+  }, []);
 
-  if (loading) {
+  const scroll = (direction: "left" | "right") => {
+    if (!carouselRef.current) return;
+
+    const scrollAmount = cardWidth * 3 + 24;
+
+    carouselRef.current.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
+  };
+
+  if (error) {
     return (
-      <div className="relative">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-8 bg-pink-600 rounded-full" />
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
-        </div>
-
-        <div className="relative group">
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth py-4 px-6">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="flex-shrink-0 snap-start"
-                style={{ width: '280px' }}
-              >
-                <div className="relative aspect-video rounded-lg overflow-hidden">
-                  <div className="w-full h-full bg-gray-800 animate-pulse" />
-                </div>
-                <div className="mt-3 space-y-2">
-                  <div className="h-4 bg-gray-700 rounded animate-pulse" />
-                  <div className="h-3 bg-gray-700 rounded w-3/4 animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="w-full px-[5vw]">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 text-center">
+          <p className="text-red-400">{error}</p>
         </div>
       </div>
     );
   }
 
-  if (series.length === 0) {
-    return null;
-  }
-
   return (
-    <div className="relative">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-1 h-8 bg-pink-600 rounded-full" />
-        <h2 className="text-2xl font-bold text-white">{title}</h2>
-      </div>
+    <div className="w-full">
+      {/* HEADER */}
+  
+        <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold text-white mb-2">
+              Binge Worthy Series
+            </h2>
+            
 
-      <div className="relative group">
-        <div
-          ref={scrollRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-6"
-          style={{ scrollPaddingLeft: "3rem" }}
-        >
-          {series.map((show, index) => (
-            <motion.div
-              key={`${show.id}-${index}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="flex-shrink-0 snap-start"
-              style={{ width: '280px' }}
-            >
-              <div className="relative aspect-video rounded-lg overflow-hidden group/card cursor-pointer"
-                   onClick={() => router.push(`/series/${show.id}`)}>
-                <Image
-                  src={show.poster_path ? `https://image.tmdb.org/t/p/w500${show.poster_path}` : '/placeholder-series.jpg'}
-                  alt={show.name}
-                  fill
-                  className="object-cover transition-transform duration-300 group-hover/card:scale-105"
-                  sizes="280px"
-                />
-
-                {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className="w-16 h-16 bg-pink-600 rounded-full flex items-center justify-center"
-                  >
-                    <Play className="w-6 h-6 text-white ml-1" />
-                  </motion.div>
-                </div>
-
-                {/* Binge Badge */}
-                <div className="absolute top-2 left-2 bg-pink-600 text-white text-xs px-2 py-1 rounded-md font-bold">
-                  BINGE
-                </div>
-
-                {/* Rating & Completion */}
-                <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded-md">
-                  <div className="flex flex-col items-end gap-1 text-xs">
-                    <div className="flex items-center gap-1">
-                      <span className="text-yellow-400">★</span>
-                      <span className="text-white font-semibold">{show.vote_average?.toFixed(1)}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-pink-400">
-                      <TrendingUp className="w-3 h-3" />
-                      <span>{show.popularity?.toFixed(0)}</span>
-                    </div>
-                    <div className="text-green-400 text-xs">
-                      High Completion
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Series Info */}
-              <div className="mt-3">
-                <h3 className="text-white font-semibold text-sm line-clamp-2 leading-tight">
-                  {show.name}
-                </h3>
-                <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
-                  <span>{show.first_air_date ? new Date(show.first_air_date).getFullYear() : 'N/A'}</span>
-                  <span className="text-pink-400 font-semibold">
-                    {show.vote_average && show.vote_average >= 8.5 ? "Must Watch" : "Highly Rated"}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+          <Link
+            href="/tv?category=binge-worthy"
+            className="flex items-center gap-2 text-red-500 hover:text-red-400 transition-all duration-300 hover:scale-105"
+          >
+            <span className="text-sm font-medium">See All</span>
+            <ChevronRight className="w-4 h-4" />
+          </Link>
         </div>
 
-        {/* Navigation Arrows */}
+
+      {/* FULL BLEED CAROUSEL */}
+      <div className="relative">
+        {/* LEFT BUTTON */}
         <button
-          onClick={prevSlide}
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-pink-600 hover:border-pink-600 z-10"
+          onClick={() => scroll("left")}
+          className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 z-30 w-12 h-12 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition-all duration-300 hover:scale-110 border border-white/10 shadow-xl"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-6 h-6" />
         </button>
 
+        {/* RIGHT BUTTON - Full Bleed Position */}
         <button
-          onClick={nextSlide}
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-pink-600 hover:border-pink-600 z-10"
+          onClick={() => scroll("right")}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-30 w-12 h-12 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition-all duration-300 hover:scale-110 border border-white/10 shadow-xl"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-6 h-6" />
         </button>
+
+        {/* SCROLL CONTAINER - Full Bleed Right */}
+        <div
+          ref={carouselRef}
+          className="
+            flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-6
+            
+            /* FULL BLEED */
+            -mx-[5vw] w-[calc(100%+10vw)]
+            
+            /* INTERNAL PADDING */
+            px-[5vw]
+          "
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            scrollPaddingLeft: "5rem",
+          }}
+        >
+          {/* LEFT SPACER */}
+          <div className="flex-shrink-0 w-12 md:w-20" />
+          {loading
+            ? Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-shrink-0 snap-start"
+                  style={{ width: `${cardWidth}px` }}
+                >
+                  <div className="w-full h-[300px] bg-gray-800 rounded-xl animate-pulse" />
+                </div>
+              ))
+            : bingeWorthy.map((show) => (
+                <div
+                  key={show.id}
+                  className="flex-shrink-0 snap-start cursor-pointer"
+                  style={{ width: `${cardWidth}px` }}
+                >
+                  {/* Netflix-Level Premium Card */}
+                  <motion.div
+                    className="relative group"
+                    onHoverStart={() => setHoveredCard(show.id)}
+                    onHoverEnd={() => setHoveredCard(null)}
+                    whileHover={{ y: -8, scale: 1.08, zIndex: 20 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    {/* Card Image */}
+                    <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-gray-800">
+                      <img
+                        src={getSafeImageUrl(show)}
+                        alt={show.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy"
+                      />
+
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                      {/* Binge Badge */}
+                      <div className="absolute top-3 right-3 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full shadow-lg backdrop-blur-sm border border-red-500/30">
+                        🔥 BINGE
+                      </div>
+
+                      {/* Rating Badge */}
+                      <div className="absolute top-3 left-3 px-2 py-1 text-xs font-bold bg-black/60 backdrop-blur-md text-yellow-400 rounded-lg border border-yellow-400/30">
+                        ⭐ {show.vote_average.toFixed(1)}
+                      </div>
+
+                      {/* Hover Overlay */}
+                      <AnimatePresence>
+                        {hoveredCard === show.id && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 20 }}
+                            transition={{ duration: 0.3 }}
+                            className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/70 to-transparent"
+                          >
+                            {/* Title */}
+                            <h3 className="text-white font-bold text-sm mb-2 line-clamp-2">
+                              {show.name}
+                            </h3>
+
+                            {/* Info */}
+                            <div className="flex items-center gap-2 text-gray-300 text-xs mb-3">
+                              <span>{show.first_air_date?.split('-')[0]}</span>
+                              <span>•</span>
+                              <span>{show.vote_count} votes</span>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg flex items-center justify-center gap-1 text-xs font-medium transition-colors"
+                              >
+                                <Play className="w-3 h-3" />
+                                Play
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="flex-1 bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg flex items-center justify-center gap-1 text-xs font-medium transition-colors backdrop-blur-sm"
+                              >
+                                <Info className="w-3 h-3" />
+                                Info
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg flex items-center justify-center transition-colors backdrop-blur-sm"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </motion.button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Subtle Border Glow */}
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-red-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                  </motion.div>
+                </div>
+              ))}
+
+          {/* RIGHT SPACER */}
+          <div className="flex-shrink-0 w-12 md:w-20" />
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default BingeWorthySeriesCarousel;

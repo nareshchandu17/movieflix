@@ -56,7 +56,7 @@ export default function ComingSoon({ title = "Coming Soon" }: ComingSoonProps) {
         id: movie.id.toString(),
         title: movie.title,
         date: movie.release_date,
-        poster: movie.poster_path
+        poster: movie.poster_path ?? undefined
       }];
     });
   };

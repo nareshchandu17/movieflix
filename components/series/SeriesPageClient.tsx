@@ -32,11 +32,11 @@ const SeriesPageClient = () => {
 
   // Initialize from URL params
   useEffect(() => {
-    const page = parseInt(searchParams.get("page") || "1");
-    const category = searchParams.get("category") || "popular";
-    const genre = searchParams.get("genre") || "";
-    const year = searchParams.get("year") || "";
-    const sortBy = searchParams.get("sort") || "popularity.desc";
+    const page = parseInt(searchParams?.get("page") || "1");
+    const category = searchParams?.get("category") || "popular";
+    const genre = searchParams?.get("genre") || "";
+    const year = searchParams?.get("year") || "";
+    const sortBy = searchParams?.get("sort") || "popularity.desc";
 
     setCurrentPage(page);
     setFilters({ category, genre, year, sortBy });

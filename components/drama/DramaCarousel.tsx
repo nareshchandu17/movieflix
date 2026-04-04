@@ -9,242 +9,187 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useSmoothScroll } from "@/lib/utils/smoothScroll";
 
 const DramaCarousel = () => {
-  const [dramaMovies, setDramaMovies] = useState<(TMDBMovie & { media_type: 'movie' })[]>([]);
+  const [movies, setMovies] = useState<(TMDBMovie & { media_type: "movie" })[]>([]);
   const [loading, setLoading] = useState(true);
   const [cardWidth, setCardWidth] = useState(200);
   const carouselRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const handleMovieClick = (movieId: number) => {
-    router.push(`/movie/${movieId}`);
-  };
-
   useEffect(() => {
-    const fetchDramaMovies = async () => {
+    const fetchMovies = async () => {
       try {
-        // Drama genre ID: 18
-        const allDramaMovies: (TMDBMovie & { media_type: 'movie' })[] = [];
-        
-        // Fetch multiple categories for comprehensive collection
-        const fetchPromises = [
-          // Latest drama movies
-          api.getMedia("movie", { category: "popular", genre: "18", sortBy: "popularity.desc" }),
-          // Top rated drama
-          api.getMedia("movie", { category: "top_rated", genre: "18", sortBy: "vote_average.desc" }),
-          // Now playing drama
-          api.getMedia("movie", { category: "now_playing", genre: "18", sortBy: "popularity.desc" }),
-          // Upcoming drama
-          api.getMedia("movie", { category: "upcoming", genre: "18", sortBy: "popularity.desc" }),
+        const promises = [
+          api.getMedia("movie", { category: "popular", genre: "18" }),
+          api.getMedia("movie", { category: "top_rated", genre: "18" }),
+          api.getMedia("movie", { category: "now_playing", genre: "18" }),
+          api.getMedia("movie", { category: "upcoming", genre: "18" }),
         ];
 
-        const responses = await Promise.all(fetchPromises);
-        
-        // Process all responses
-        responses.forEach(response => {
-          const moviesWithMediaType = response.results.map(movie => ({ 
-            ...movie, 
-            media_type: 'movie' as const 
-          }));
-          allDramaMovies.push(...moviesWithMediaType);
+        const responses = await Promise.all(promises);
+
+        const all: (TMDBMovie & { media_type: "movie" })[] = [];
+
+        responses.forEach((res) => {
+          all.push(
+            ...res.results.map((m) => ({
+              ...m,
+              media_type: "movie" as const,
+            }))
+          );
         });
-        
-        // Remove duplicates and sort by combined score (popularity + rating)
-        const uniqueMovies = allDramaMovies.filter((movie, index, self) => 
-          index === self.findIndex((m) => m.id === movie.id)
-        ).map(movie => ({
-          ...movie,
-          score: (movie.popularity || 0) + ((movie.vote_average || 0) * 100) // Combined scoring with fallbacks
-        }))
-        .sort((a, b) => b.score - a.score) // Sort by combined score
-        .slice(0, 250); // Limit to 250 movies
-        
-        setDramaMovies(uniqueMovies);
-      } catch (error) {
-        console.error("Error fetching drama movies:", error);
+
+        const unique = Array.from(
+          new Map(all.map((m) => [m.id, m])).values()
+        )
+          .map((m) => ({
+            ...m,
+            score: (m.popularity || 0) + (m.vote_average || 0) * 100,
+          }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 200);
+
+        setMovies(unique);
+      } catch (e) {
+        console.error(e);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDramaMovies();
+    fetchMovies();
   }, []);
 
-  // Update card width based on window size
   useEffect(() => {
-    const updateCardWidth = () => {
-      const width = window.innerWidth;
-      if (width >= 768) {
-        setCardWidth(200);
-      } else if (width >= 640) {
-        setCardWidth(180);
-      } else {
-        setCardWidth(160);
-      }
+    const update = () => {
+      const w = window.innerWidth;
+      if (w >= 768) setCardWidth(200);
+      else if (w >= 640) setCardWidth(180);
+      else setCardWidth(150);
     };
 
-    updateCardWidth();
-    window.addEventListener('resize', updateCardWidth);
-    return () => window.removeEventListener('resize', updateCardWidth);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
-  const scroll = (direction: "left" | "right") => {
-    if (carouselRef.current) {
-      const scrollAmount = cardWidth * 2 + 16; // Card width * 2 + gap
-
-      carouselRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
+  const scroll = useSmoothScroll(carouselRef, cardWidth, 8);
 
   if (loading) {
     return (
       <div className="w-full">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-3xl font-bold text-white mb-2">Drama</h2>
-            <p className="text-gray-400">Emotional and thought-provoking dramas</p>
-          </div>
+        <div className="px-4 sm:px-6 md:px-12 lg:px-20 mb-6">
+          <h2 className="text-3xl font-bold text-white mb-2">Drama</h2>
         </div>
-        
-        {/* Full-Bleed Scroll Container */}
-        <div className="relative left-0 right-1/2 -mr-[50vw] w-[calc(100vw+2rem)]">
-          <div className="relative group">
-            <div
-              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-6"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="flex-shrink-0 snap-start" style={{ width: `${cardWidth}px` }}>
-                  <div className="relative aspect-[2/3] bg-gray-700 rounded-xl"></div>
-                </div>
-              ))}
-            </div>
-          </div>
+
+        <div className="flex gap-3 overflow-x-auto py-4 pl-4 sm:pl-6 md:pl-12 lg:pl-20 pr-0">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="w-[180px] h-[260px] bg-gray-800 rounded-xl animate-pulse" />
+          ))}
         </div>
       </div>
     );
   }
 
-  if (dramaMovies.length === 0) {
-    return null;
-  }
+  if (!movies.length) return null;
 
   return (
     <div className="w-full">
-      <div className="relative group">
-        
-
-        {/* Full-Bleed Scroll Container */}
-        <div className="px-4 sm:px-6 md:px-12 lg:px-20">
-          <div className="relative group">
-            
-            {/* Section Header */}
-        <div className="flex items-center justify-between mb-6">
+      {/* HEADER */}
+      <div className="px-4 sm:px-6 md:px-12 lg:px-20">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-3xl font-bold text-white mb-2">Drama</h2>
-            <p className="text-gray-400">Emotional and thought-provoking dramas</p>
           </div>
-          <Link 
+
+          <Link
             href="/movie?genre=drama"
-            className="flex items-center gap-2 text-red-500 hover:text-red-400 transition-colors duration-300 group"
+            className="flex items-center gap-2 text-red-500 hover:text-red-400"
           >
             <span className="text-sm font-medium">See All</span>
-            <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+            <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
-            <button
-              onClick={() => scroll("left")}
-              className="absolute left-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition-all duration-300 opacity-0 group-hover:opacity-100 z-20 border border-white/10 hover:border-red-500/50"
-              aria-label="Scroll left"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+      </div>
 
-            <button
-              onClick={() => scroll("right")}
-              className="absolute right-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition-all duration-300 opacity-0 group-hover:opacity-100 z-20 border border-white/10 hover:border-red-500/50"
-              aria-label="Scroll right"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+      {/* FULL BLEED */}
+      <div className="relative">
+        {/* LEFT */}
+        <button
+          onClick={() => scroll("left")}
+          className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/70 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
 
-            {/* Scroll Container */}
-            <div
-              ref={carouselRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-0"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        {/* RIGHT */}
+        <button
+          onClick={() => scroll("right")}
+          className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/70 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        {/* SCROLL */}
+        <div
+          ref={carouselRef}
+          className="flex gap-2 md:gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 pl-4 sm:pl-6 md:pl-12 lg:pl-20 pr-0"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            scrollPaddingLeft: "5rem",
+          }}
+        >
+          {movies.map((movie, i) => (
+            <motion.div
+              key={`${movie.id}-${i}`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex-shrink-0 snap-start cursor-pointer"
+              style={{ width: `${cardWidth}px` }}
+              onClick={() => router.push(`/movie/${movie.id}`)}
             >
-              {dramaMovies.map((movie, index) => (
-                <motion.div
-                  key={`${movie.id}-${index}`}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex-shrink-0 snap-start cursor-pointer"
-                  style={{ width: `${cardWidth}px` }}
-                  onClick={() => handleMovieClick(movie.id)}
-                >
-                  <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
-                    <Image
-                      src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                      alt={movie.title}
-                      fill
-                      className="object-cover transition-transform duration-300 hover:scale-110"
-                    />
-                    
-                    {/* Individual hover overlay with 1-second delay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 transition-all duration-500 delay-150">
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <h3 className="text-white font-semibold text-sm line-clamp-2 mb-2">{movie.title}</h3>
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="flex items-center gap-1">
-                            <Star className="w-3 h-3 text-yellow-400" />
-                            <span className="text-white text-xs">{movie.vote_average.toFixed(1)}</span>
-                          </div>
-                          {movie.release_date && (
-                            <span className="text-white/70 text-xs">
-                              {new Date(movie.release_date).getFullYear()}
-                            </span>
-                          )}
-                        </div>
-                        
-                        {/* Buttons with 75% and 25% width */}
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            className="bg-white text-black hover:bg-gray-200 flex-1 text-xs font-medium"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Handle play action
-                            }}
-                          >
-                            <Play className="w-3 h-3 mr-1" />
-                            Play Now
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="border-white/30 hover:bg-white/10 hover:text-white hover:border-white/30 w-8 h-8 p-0 flex items-center justify-center"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Handle add to watchlist
-                            }}
-                          >
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
+              {/* INDIVIDUAL HOVER */}
+              <div className="relative aspect-[2/3] rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
+                <Image
+                  src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                  alt={movie.title}
+                  fill
+                  className="object-cover"
+                />
+
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 transition">
+                  <div className="absolute bottom-0 p-3">
+                    <h3 className="text-white text-sm font-semibold line-clamp-2">
+                      {movie.title}
+                    </h3>
+
+                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-300">
+                      <Star className="w-3 h-3 text-yellow-400" />
+                      {movie.vote_average.toFixed(1)}
+                    </div>
+
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" className="bg-white text-black text-xs">
+                        <Play className="w-3 h-3 mr-1" />
+                        Play
+                      </Button>
+
+                      <Button size="sm" variant="outline" className="w-8 h-8 p-0">
+                        <Plus className="w-3 h-3" />
+                      </Button>
                     </div>
                   </div>
-                </motion.div>
-              ))}
-              <div className="flex-shrink-0 w-12 md:w-20" />
-            </div>
-          </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+
+          {/* END SPACE */}
+          <div className="flex-shrink-0 w-12 md:w-20" />
         </div>
       </div>
     </div>

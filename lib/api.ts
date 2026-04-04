@@ -297,6 +297,8 @@ export const api = {
       year?: number;
       language?: string;
       minRating?: number;
+      airDateGte?: string;
+      airDateLte?: string;
     } = {}
   ): Promise<TMDBTrendingResponse> {
     checkAccessToken();
@@ -308,6 +310,12 @@ export const api = {
       ...(params.language && { with_original_language: params.language }),
       ...(params.minRating && {
         "vote_average.gte": params.minRating.toString(),
+      }),
+      ...(params.airDateGte && {
+        "air_date.gte": params.airDateGte,
+      }),
+      ...(params.airDateLte && {
+        "air_date.lte": params.airDateLte,
       }),
     });
 

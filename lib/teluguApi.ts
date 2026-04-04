@@ -120,7 +120,7 @@ export const teluguApi = {
       include_video: "false",
       primary_release_year: year.toString(),
       page: page.toString(),
-      api_key: process.env.TMDB_API_KEY || ""
+      api_key: process.env.NEXT_PUBLIC_TMDB_API_KEY || ""
     });
 
     const response = await fetchAPI(`${baseUrl}?${params}`) as any;

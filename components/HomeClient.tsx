@@ -70,7 +70,7 @@ function HomeClient() {
 
       <div className="relative z-10 pt-8 pb-24 overflow-x-hidden">
         {/* All content aligned to a consistent left margin, but allows carousels to bleed right */}
-        <div className="space-y-12 lg:space-y-20">
+        <div className="space-y-8">
             <TimeBasedDiscovery />
             <NewReleasesCarousel />
             <ContinueWatchingSeries />

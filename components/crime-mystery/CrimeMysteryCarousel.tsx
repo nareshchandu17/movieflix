@@ -9,244 +9,149 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useSmoothScroll } from "@/lib/utils/smoothScroll";
 
 const CrimeMysteryCarousel = () => {
-  const [crimeMysteryMovies, setCrimeMysteryMovies] = useState<(TMDBMovie & { media_type: 'movie' })[]>([]);
+  const [movies, setMovies] = useState<(TMDBMovie & { media_type: "movie" })[]>([]);
   const [loading, setLoading] = useState(true);
   const [cardWidth, setCardWidth] = useState(200);
   const carouselRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const handleMovieClick = (movieId: number) => {
-    router.push(`/movie/${movieId}`);
-  };
+  const handleClick = (id: number) => router.push(`/movie/${id}`);
 
   useEffect(() => {
-    const fetchCrimeMysteryMovies = async () => {
+    const fetchData = async () => {
       try {
-        // Crime genre ID: 80, Mystery genre ID: 9643
-        const allMovies: (TMDBMovie & { media_type: 'movie' })[] = [];
-        
-        // Fetch multiple categories for comprehensive collection
-        const fetchPromises = [
-          // Latest crime movies
-          api.getMedia("movie", { category: "popular", genre: "80", sortBy: "popularity.desc" }),
-          // Latest mystery movies  
-          api.getMedia("movie", { category: "popular", genre: "9643", sortBy: "popularity.desc" }),
-          // Top rated crime
-          api.getMedia("movie", { category: "top_rated", genre: "80", sortBy: "vote_average.desc" }),
-          // Top rated mystery
-          api.getMedia("movie", { category: "top_rated", genre: "9643", sortBy: "vote_average.desc" }),
-          // Trending crime & mystery
+        const responses = await Promise.all([
+          api.getMedia("movie", { category: "popular", genre: "80" }),
+          api.getMedia("movie", { category: "popular", genre: "9643" }),
           api.getTrending("movie", "week"),
-        ];
+        ]);
 
-        const responses = await Promise.all(fetchPromises);
-        
-        // Process all responses
-        responses.forEach((response, index) => {
-          let movies: TMDBMovie[] = [];
-          if (index === 4) { // Trending response
-            movies = response.results.filter((item): item is TMDBMovie => 
-              'title' in item && (item.genre_ids.includes(80) || item.genre_ids.includes(9643))
-            );
-          } else { // Other responses - these should already be TMDBMovie[] from getMedia
-            movies = response.results as TMDBMovie[];
-          }
-          
-          const moviesWithMediaType = movies.map(movie => ({ 
-            ...movie, 
-            media_type: 'movie' as const 
-          }));
-          allMovies.push(...moviesWithMediaType);
+        const all: (TMDBMovie & { media_type: "movie" })[] = [];
+
+        responses.forEach((res, i) => {
+          let list: TMDBMovie[] = [];
+          if (i === 2) {
+            list = res.results.filter((m) => m.genre_ids?.includes(80) || m.genre_ids?.includes(9643)) as TMDBMovie[];
+          } else list = res.results as TMDBMovie[];
+
+          all.push(...list.map((m) => ({ ...m, media_type: "movie" as const })));
         });
-        
-        // Remove duplicates and sort by combined score (popularity + rating)
-        const uniqueMovies = allMovies.filter((movie, index, self) => 
-          index === self.findIndex((m) => m.id === movie.id)
-        ).map(movie => ({
-          ...movie,
-          score: (movie.popularity || 0) + ((movie.vote_average || 0) * 100) // Combined scoring with fallbacks
-        }))
-        .sort((a, b) => b.score - a.score) // Sort by combined score
-        .slice(0, 250); // Limit to 250 movies
-        
-        setCrimeMysteryMovies(uniqueMovies);
-      } catch (error) {
-        console.error("Error fetching crime & mystery movies:", error);
+
+        const unique = all.filter((m, i, self) => i === self.findIndex((x) => x.id === m.id)).slice(0, 120);
+        setMovies(unique);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCrimeMysteryMovies();
+    fetchData();
   }, []);
 
-  // Update card width based on window size
   useEffect(() => {
-    const updateCardWidth = () => {
-      const width = window.innerWidth;
-      if (width >= 768) {
-        setCardWidth(200);
-      } else if (width >= 640) {
-        setCardWidth(180);
-      } else {
-        setCardWidth(160);
-      }
+    const update = () => {
+      const w = window.innerWidth;
+      if (w >= 768) setCardWidth(200);
+      else if (w >= 640) setCardWidth(180);
+      else setCardWidth(150);
     };
-
-    updateCardWidth();
-    window.addEventListener('resize', updateCardWidth);
-    return () => window.removeEventListener('resize', updateCardWidth);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
-  const scroll = (direction: "left" | "right") => {
-    if (carouselRef.current) {
-      const scrollAmount = cardWidth * 2 + 16; // Card width * 2 + gap
-
-      carouselRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="w-full py-8">
-        <div className="container mx-auto px-4">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-700 rounded w-64 mb-6"></div>
-            <div className="flex space-x-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="flex-shrink-0" style={{ width: `${cardWidth}px` }}>
-                  <div className="relative aspect-[2/3] bg-gray-700 rounded-xl"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (crimeMysteryMovies.length === 0) {
-    return null;
-  }
+  const scroll = useSmoothScroll(carouselRef, cardWidth, 8);
 
   return (
     <div className="w-full">
-      <div className="relative group">
-        {/* Section Header */}
-        
-
-        {/* Scroll Container with Left Padding */}
-        <div className="px-4 sm:px-6 md:px-12 lg:px-20">
-          <div className="relative group">
-            {/* Navigation Buttons */}
-
-            <div className="flex items-center justify-between mb-6">
+      {/* HEADER */}
+      <div className="px-4 sm:px-6 md:px-12 lg:px-20">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-3xl font-bold text-white mb-2">Crime & Mystery</h2>
-            <p className="text-gray-400">Latest crime thrillers and mystery films</p>
           </div>
-          <Link 
+          <Link
             href="/movie?genre=crime-mystery"
-            className="flex items-center gap-2 text-red-500 hover:text-red-400 transition-colors duration-300 group"
+            className="flex items-center gap-2 text-red-500 hover:text-red-400 transition"
           >
             <span className="text-sm font-medium">See All</span>
-            <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+            <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
-            <button
-              onClick={() => scroll("left")}
-              className="absolute left-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition-all duration-300 opacity-0 group-hover:opacity-100 z-20 border border-white/10 hover:border-red-500/50"
-              aria-label="Scroll left"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+      </div>
 
-            <button
-              onClick={() => scroll("right")}
-              className="absolute right-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition-all duration-300 opacity-0 group-hover:opacity-100 z-20 border border-white/10 hover:border-red-500/50"
-              aria-label="Scroll right"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+      {/* FULL BLEED CAROUSEL */}
+      <div className="relative">
+        {/* LEFT BUTTON */}
+        <button
+          onClick={() => scroll("left")}
+          className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/70 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
 
-            {/* Scroll Container */}
-            <div
-              ref={carouselRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-0"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {crimeMysteryMovies.map((movie, index) => (
-                <motion.div
-                  key={`${movie.id}-${index}`}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex-shrink-0 snap-start cursor-pointer"
+        {/* RIGHT BUTTON */}
+        <button
+          onClick={() => scroll("right")}
+          className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/70 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        {/* SCROLL */}
+        <div
+          ref={carouselRef}
+          className="flex gap-2 md:gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 pl-4 sm:pl-6 md:pl-12 lg:pl-20 pr-0"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none", scrollPaddingLeft: "5rem" }}
+        >
+          {loading
+            ? Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex-shrink-0 snap-start" style={{ width: `${cardWidth}px` }}>
+                  <div className="w-full h-64 bg-gray-800 rounded-xl animate-pulse" />
+                </div>
+              ))
+            : movies.map((movie, i) => (
+                <div
+                  key={`${movie.id}-${i}`}
+                  className="flex-shrink-0 snap-start"
                   style={{ width: `${cardWidth}px` }}
-                  onClick={() => handleMovieClick(movie.id)}
+                  onClick={() => handleClick(movie.id)}
                 >
-                  <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
+                  <motion.div className="relative aspect-[2/3] rounded-lg overflow-hidden group cursor-pointer" whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
                     <Image
                       src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
                       alt={movie.title}
                       fill
-                      className="object-cover transition-transform duration-300 hover:scale-110"
+                      className="object-cover transition-transform duration-300 group-hover:scale-110"
                     />
-                    
-                    {/* Individual hover overlay with 1-second delay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 transition-all duration-500 delay-150">
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <h3 className="text-white font-semibold text-sm line-clamp-2 mb-2">{movie.title}</h3>
+                    {/* HOVER */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300">
+                      <div className="absolute bottom-0 p-4 w-full">
+                        <h3 className="text-white text-sm font-semibold line-clamp-2 mb-2">{movie.title}</h3>
                         <div className="flex items-center gap-2 mb-3">
-                          <div className="flex items-center gap-1">
-                            <Star className="w-3 h-3 text-yellow-400" />
-                            <span className="text-white text-xs">{movie.vote_average.toFixed(1)}</span>
-                          </div>
-                          {movie.release_date && (
-                            <span className="text-white/70 text-xs">
-                              {new Date(movie.release_date).getFullYear()}
-                            </span>
-                          )}
+                          <Star className="w-3 h-3 text-yellow-400" />
+                          <span className="text-white text-xs">{movie.vote_average.toFixed(1)}</span>
                         </div>
-                        
-                        {/* Buttons with 75% and 25% width */}
                         <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            className="bg-white text-black hover:bg-gray-200 flex-1 text-xs font-medium"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Handle play action
-                            }}
-                          >
+                          <Button size="sm" className="flex-1 text-xs bg-white text-black hover:bg-gray-200" onClick={(e) => e.stopPropagation()}>
                             <Play className="w-3 h-3 mr-1" />
-                            Play Now
+                            Play
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="border-white/30 hover:bg-white/10 hover:text-white hover:border-white/30 w-8 h-8 p-0 flex items-center justify-center"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Handle add to watchlist
-                            }}
-                          >
+                          <Button size="sm" variant="outline" className="w-8 h-8 p-0" onClick={(e) => e.stopPropagation()}>
                             <Plus className="w-3 h-3" />
                           </Button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                </div>
               ))}
-              <div className="flex-shrink-0 w-12 md:w-20" />
-            </div>
-          </div>
+          {/* END SPACER */}
+          <div className="flex-shrink-0 w-12 md:w-20" />
         </div>
       </div>
     </div>

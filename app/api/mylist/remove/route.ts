@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import connectDB from "@/lib/db";
+import dbConnect from "@/lib/db/mongodb";
 import Collection from "@/models/Collection";
 import CollectionItem from "@/models/CollectionItem";
 
@@ -22,7 +22,7 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
-    await connectDB();
+    await dbConnect();
 
     // Verify collection belongs to user
     const collection = await Collection.findOne({

@@ -202,22 +202,37 @@ export default function TimeBasedDiscovery() {
               transition={{ delay: index * 0.05 }}
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
-              className="flex-shrink-0 w-[240px] md:w-[320px] aspect-[16/10] snap-start group/card relative"
+              className={`flex-shrink-0 aspect-[16/10] snap-start group/card relative transition-all duration-500 ease-out ${
+                hoveredIndex === index 
+                  ? 'w-[320px] md:w-[400px]' 
+                  : 'w-[240px] md:w-[320px]'
+              }`}
+              style={{
+                zIndex: hoveredIndex === index ? 10 : 1
+              }}
             >
               <div 
-                className="relative w-full h-full rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 group-hover/card:scale-105 group-hover/card:shadow-[0_0_40px_rgba(0,0,0,0.5)] border border-white/5 group-hover/card:border-white/20"
+                className={`relative w-full h-full rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 border border-white/5 ${
+                  hoveredIndex === index 
+                    ? 'scale-105 shadow-[0_0_60px_rgba(0,0,0,0.8)] border-white/30' 
+                    : 'shadow-md border-white/5'
+                }`}
                 onClick={() => router.push(`/movie/${movie.id}`)}
               >
                 <Image
                   src={movie.backdrop_path ? `https://image.tmdb.org/t/p/w780${movie.backdrop_path}` : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80'}
                   alt={movie.title}
                   fill
-                  className="object-cover transition-transform duration-700 group-hover/card:scale-110"
+                  className={`object-cover transition-all duration-700 ${
+                    hoveredIndex === index ? 'scale-110' : 'scale-100'
+                  }`}
                   sizes="(max-width: 768px) 240px, 320px"
                 />
                 
                 {/* Visual Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent opacity-90 group-hover/card:opacity-100 transition-opacity duration-300" />
+                <div className={`absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent transition-opacity duration-300 ${
+                  hoveredIndex === index ? 'opacity-100' : 'opacity-90'
+                }`} />
                 
                 {/* Content Overlay */}
                 <div className="absolute inset-0 p-4 flex flex-col justify-end">
@@ -233,12 +248,35 @@ export default function TimeBasedDiscovery() {
                     )}
                   </div>
                   
-                  <h3 className="text-white font-black text-sm md:text-base line-clamp-1 group-hover/card:tracking-tight transition-all duration-300">
+                  <h3 className={`text-white font-black transition-all duration-300 ${
+                    hoveredIndex === index 
+                      ? 'text-base md:text-lg line-clamp-2' 
+                      : 'text-sm md:text-base line-clamp-1'
+                  }`}>
                     {movie.title}
                   </h3>
                   
+                  {/* Expanded Description - Only show on hover */}
+                  <AnimatePresence>
+                    {hoveredIndex === index && (
+                      <motion.p
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="text-white/70 text-xs md:text-sm mt-2 line-clamp-2"
+                      >
+                        {movie.overview}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                  
                   {/* Action Bar - Reveals on Hover */}
-                  <div className="flex items-center gap-3 mt-3 opacity-0 group-hover/card:opacity-100 translate-y-2 group-hover/card:translate-y-0 transition-all duration-300">
+                  <div className={`flex items-center gap-3 mt-3 transition-all duration-300 ${
+                    hoveredIndex === index 
+                      ? 'opacity-100 translate-y-0' 
+                      : 'opacity-0 translate-y-2'
+                  }`}>
                     <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl">
                       <Play className="w-4 h-4 text-black fill-black ml-0.5" />
                     </button>

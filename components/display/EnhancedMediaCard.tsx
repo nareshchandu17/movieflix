@@ -129,6 +129,7 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
                     variant="outline" 
                     className="border-white/30 hover:bg-white/10 hover:text-white hover:border-white/30 w-8 h-8 p-0 flex items-center justify-center"
                     onClick={handleAddClick}
+                    title="add to watchlist"
                   >
                     <Plus className="w-3 h-3" />
                   </Button>
@@ -201,6 +202,7 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
                     variant="outline" 
                     className="border-white/30 hover:bg-white/10 hover:text-white hover:border-white/30 w-8 h-8 p-0 flex items-center justify-center"
                     onClick={handleAddClick}
+                    title="add to watchlist"
                   >
                     <Plus className="w-3 h-3" />
                   </Button>

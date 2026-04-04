@@ -1,144 +1,200 @@
 "use client";
-import React, { useRef } from "react";
+
+import React, { useRef, useEffect, useState } from "react";
 import { IAction } from "@/lib/models/Action";
 import { TMDBMovie } from "@/lib/types";
-import EnhancedMediaCard from "../display/EnhancedMediaCard";
-import SectionHeader from "../layout/SectionHeader";
-import { ChevronRight, ChevronLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronRight, ChevronLeft, Play, Star, Plus } from "lucide-react";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 const ActionSection = () => {
   const [data, setData] = useState<TMDBMovie[]>([]);
   const [loading, setLoading] = useState(true);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [cardWidth, setCardWidth] = useState(200);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
-  // Fetch action movies from database
+  const handleClick = (id: number) => router.push(`/movie/${id}`);
+
   useEffect(() => {
-    const fetchActionData = async () => {
+    const fetchData = async () => {
       try {
-        setLoading(true);
-        const response = await fetch('/api/action?limit=66');
-        if (!response.ok) {
-          throw new Error('Failed to fetch action movies');
-        }
-        const result = await response.json();
-        
-        // Transform IAction data to TMDBMovie format
-        const transformedData: TMDBMovie[] = (result.results || []).map((item: IAction) => ({
-          id: item.id || 0,
-          title: item.title || item.name || '',
-          overview: item.overview || '',
-          poster_path: item.poster_path || null,
-          backdrop_path: item.backdrop_path || null,
-          release_date: item.release_date || item.first_air_date || '',
-          vote_average: item.vote_average || 0,
-          vote_count: 0, // Default value since it's not in IAction
-          genre_ids: [], // Default value since it's not in IAction
-          adult: false, // Default value since it's not in IAction
-          original_language: 'en', // Default value
-          original_title: item.title || item.name || '',
-          popularity: 0, // Default value since it's not in IAction
-          video: false, // Default value since it's not in IAction
-        }));
-        
-        setData(transformedData);
-      } catch (error) {
-        console.error('Error fetching action movies:', error);
-        setData([]);
+        const res = await fetch("/api/action?limit=66");
+        const result = await res.json();
+
+        const transformed: TMDBMovie[] = (result.results || []).map(
+          (item: IAction) => ({
+            id: item.id || 0,
+            title: item.title || item.name || "",
+            overview: item.overview || "",
+            poster_path: item.poster_path || null,
+            backdrop_path: item.backdrop_path || null,
+            release_date: item.release_date || "",
+            vote_average: item.vote_average || 0,
+            vote_count: 0,
+            genre_ids: [],
+            adult: false,
+            original_language: "en",
+            original_title: item.title || "",
+            popularity: 0,
+            video: false,
+          })
+        );
+
+        setData(transformed);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchActionData();
+    fetchData();
   }, []);
 
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({
-        left: -300,
-        behavior: "smooth",
-      });
-    }
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      if (w >= 768) setCardWidth(200);
+      else if (w >= 640) setCardWidth(180);
+      else setCardWidth(160);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  const scroll = (dir: "left" | "right") => {
+    if (!scrollRef.current) return;
+    
+    const amt = cardWidth * 2 + 8;
+    const container = scrollRef.current;
+    
+    // Custom smooth scrolling with momentum for buttery feel
+    const startTime = performance.now();
+    const startX = container.scrollLeft;
+    const targetX = startX + (dir === "left" ? -amt : amt);
+    const duration = 400; // Slightly longer for smoother feel
+    
+    const animateScroll = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing function for smooth acceleration and deceleration
+      const easeInOutCubic = progress < 0.5
+        ? 4 * progress * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      
+      const currentX = startX + (targetX - startX) * easeInOutCubic;
+      container.scrollLeft = currentX;
+      
+      if (progress < 1) {
+        requestAnimationFrame(animateScroll);
+      }
+    };
+    
+    requestAnimationFrame(animateScroll);
   };
-
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({
-        left: 300,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="animate-pulse space-y-4">
-        <div className="h-6 w-48 bg-gray-800 rounded"></div>
-        <div className="flex gap-4 overflow-x-auto">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="flex-shrink-0 w-40 h-56 bg-gray-800 rounded-lg"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (!data || data.length === 0) {
-    return null;
-  }
 
   return (
-    <div>
-      <SectionHeader title="">
-        <div className="flex items-center justify-between w-full">
-          <h2 className="text-2xl font-bold text-white">Popular in Action</h2>
-          <Link 
+    <div className="w-full">
+      {/* HEADER */}
+      <div className="px-4 sm:px-6 md:px-12 lg:px-20">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-3xl font-bold text-white mb-2">Popular in Action</h2>
+          </div>
+
+          <Link
             href="/action-movies"
-            className="flex items-center gap-2 text-red-500 hover:text-red-400 transition-colors duration-300 group"
+            className="flex items-center gap-2 text-red-500 hover:text-red-400 group"
           >
             <span className="text-sm font-medium">See All</span>
-            <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+            <ChevronRight className="w-4 h-4 transition group-hover:translate-x-1" />
           </Link>
         </div>
-      </SectionHeader>
+      </div>
 
-      {/* Carousel Wrapper */}
+      {/* FULL BLEED */}
       <div className="relative">
-        {/* Left Arrow */}
+        {/* LEFT BUTTON */}
         <button
-          onClick={scrollLeft}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-30 hidden md:flex items-center justify-center w-10 h-10 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full shadow-lg transition-all duration-300 opacity-0 hover:opacity-100 hover:scale-110 chevron-btn-left border border-white/20"
-          aria-label="Scroll left"
+          onClick={() => scroll("left")}
+          className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/70 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition"
         >
-          <ChevronLeft className="w-5 h-5 text-white" />
+          <ChevronLeft className="w-5 h-5" />
         </button>
 
-        {/* Right Arrow */}
+        {/* RIGHT BUTTON */}
         <button
-          onClick={scrollRight}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-30 hidden md:flex items-center justify-center w-10 h-10 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full shadow-lg transition-all duration-300 opacity-0 hover:opacity-100 hover:scale-110 chevron-btn-right border border-white/20"
-          aria-label="Scroll right"
+          onClick={() => scroll("right")}
+          className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/70 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition"
         >
-          <ChevronRight className="w-5 h-5 text-white" />
+          <ChevronRight className="w-5 h-5" />
         </button>
 
-        {/* Scroll Container */}
+        {/* SCROLL */}
         <div
-          ref={scrollContainerRef}
-          className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-4 scrollbar-hide horizontal-scroll touch-scroll pl-4 sm:pl-0"
+          ref={scrollRef}
+          className="flex gap-2 md:gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 pl-4 sm:pl-6 md:pl-12 lg:pl-20 pr-0"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none", scrollPaddingLeft: "5rem" }}
         >
-          {data.slice(0, 10).map((item) => (
-            <div
-              key={item.id}
-              className="flex-shrink-0 scroll-snap-align-start"
-            >
-              <EnhancedMediaCard media={item} variant="horizontal" />
-            </div>
-          ))}
-          {/* Add some padding at the end for better mobile scrolling */}
-          <div className="flex-shrink-0 w-4 sm:w-6"></div>
+          {loading
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex-shrink-0 snap-start" style={{ width: `${cardWidth}px` }}>
+                  <div className="aspect-[2/3] bg-gray-800 rounded-lg animate-pulse" />
+                </div>
+              ))
+            : data.slice(0, 20).map((movie, i) => (
+                <motion.div
+                  key={movie.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: i * 0.02 }}
+                  className="flex-shrink-0 snap-start cursor-pointer"
+                  style={{ width: `${cardWidth}px` }}
+                  onClick={() => handleClick(movie.id)}
+                >
+                  <div className="relative aspect-[2/3] rounded-lg overflow-hidden group/card">
+                    <Image
+                      src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                      alt={movie.title}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover/card:scale-110"
+                    />
+
+                    {/* INDIVIDUAL HOVER */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition duration-500">
+                      <div className="absolute bottom-0 p-4">
+                        <h3 className="text-white text-sm font-semibold mb-2 line-clamp-2">
+                          {movie.title}
+                        </h3>
+
+                        <div className="flex items-center gap-2 mb-3">
+                          <Star className="w-3 h-3 text-yellow-400" />
+                          <span className="text-white text-xs">{movie.vote_average.toFixed(1)}</span>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button size="sm" className="flex-1 bg-white text-black text-xs">
+                            <Play className="w-3 h-3 mr-1" />
+                            Play
+                          </Button>
+
+                          <Button size="sm" variant="outline" className="w-8 h-8 p-0">
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+
+          {/* END SPACER */}
           <div className="flex-shrink-0 w-12 md:w-20" />
         </div>
       </div>

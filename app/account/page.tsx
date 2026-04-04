@@ -1,1037 +1,1553 @@
 "use client";
 
-export default function AccountPage() {
-  return (
-    <div dangerouslySetInnerHTML={{
-      __html: `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MovieFlix — Account Settings</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow:hidden}
-:root{
-  --bg:#141414;
-  --surface:#1F1F1F;
-  --surface2:#252525;
-  --border:#2A2A2A;
-  --red:#E50914;
-  --text:#FFFFFF;
-  --muted:#B3B3B3;
-  --dim:#6B6B6B;
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { 
+  User, 
+  Bell, 
+  Shield, 
+  Monitor, 
+  CreditCard, 
+  HelpCircle, 
+  Play, 
+  Settings,
+  ChevronRight,
+  X,
+  Save,
+  LogOut,
+  Check
+} from "lucide-react";
+import { toast } from "sonner";
+
+interface AccountSettings {
+  _id: string;
+  userId: any;
+  profile: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    avatar: string;
+    displayName: string;
+  };
+  parentalControls: {
+    enabled: boolean;
+    maturityRating: string;
+    pin: string;
+  };
+  language: {
+    display: string;
+    subtitle: string;
+    subtitleAutoDetect: boolean;
+  };
+  playback: {
+    autoplayNextEpisode: boolean;
+    autoplayPreviews: boolean;
+    skipIntros: boolean;
+    smartDownloads: boolean;
+    videoQuality: string;
+    downloadQuality: string;
+  };
+  subtitles: {
+    fontSize: string;
+    fontStyle: string;
+    textColor: string;
+    backgroundOpacity: number;
+  };
+  notifications: {
+    email: {
+      newReleases: boolean;
+      continueWatching: boolean;
+      billingAlerts: boolean;
+      promotions: boolean;
+    };
+    push: {
+      newEpisode: boolean;
+      watchlistUpdates: boolean;
+      friendActivity: boolean;
+      downloadComplete: boolean;
+    };
+  };
+  security: {
+    twoFactorEnabled: boolean;
+    lastPasswordChange: string;
+    loginAlerts: boolean;
+  };
 }
 
-/* ── LAYOUT SHELL ── */
-.mf-wrap{
-  background:var(--bg);
-  color:var(--text);
-  font-family:'DM Sans',sans-serif;
-  display:flex;
-  flex-direction:column;
-  width:100%;
-  height:100vh;
+interface Device {
+  _id: string;
+  name: string;
+  type: string;
+  platform: string;
+  browser: string;
+  location: string;
+  isActive: boolean;
+  isCurrent: boolean;
+  lastActive: string;
+  downloadSlots: number;
+  maxDownloadSlots: number;
 }
 
-/* ── HEADER ── */
-.mf-header{
-  background:#000;
-  border-bottom:1px solid var(--border);
-  padding:0 32px;
-  height:54px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  flex-shrink:0;
-  width:100%;
-}
-.mf-logo{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:26px;
-  color:var(--red);
-  letter-spacing:3px;
-  line-height:1;
-}
-.mf-header-nav{display:flex;align-items:center;gap:20px}
-.mf-hn{font-size:13px;color:var(--muted);cursor:pointer;transition:color .15s}
-.mf-hn:hover{color:#fff}
-.mf-avatar-pill{display:flex;align-items:center;gap:8px;cursor:pointer}
-.mf-av{
-  width:30px;height:30px;border-radius:4px;
-  background:var(--red);
-  display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:700;color:#fff;
+interface LoginActivity {
+  _id: string;
+  location: string;
+  platform: string;
+  browser: string;
+  deviceType: string;
+  isActive: boolean;
+  loginTime: string;
+  logoutTime?: string;
 }
 
-/* ── BODY ── */
-.mf-body{display:flex;flex:1;width:100%;overflow:hidden;padding-top:54px}
+const getDefaultSettings = (session: any): AccountSettings => ({
+  _id: '',
+  userId: session?.user?.id || '',
+  profile: {
+    firstName: session?.user?.name?.split(' ')[0] || 'User',
+    lastName: session?.user?.name?.split(' ').slice(1).join(' ') || '',
+    email: session?.user?.email || '',
+    phone: '',
+    avatar: session?.user?.image || '',
+    displayName: session?.user?.name || 'User',
+  },
+  parentalControls: {
+    enabled: false,
+    maturityRating: 'ALL',
+    pin: '',
+  },
+  language: {
+    display: 'English',
+    subtitle: 'English',
+    subtitleAutoDetect: true,
+  },
+  playback: {
+    autoplayNextEpisode: true,
+    autoplayPreviews: false,
+    skipIntros: true,
+    smartDownloads: true,
+    videoQuality: 'Auto',
+    downloadQuality: 'High',
+  },
+  subtitles: {
+    fontSize: 'Medium',
+    fontStyle: 'Default',
+    textColor: 'White',
+    backgroundOpacity: 60,
+  },
+  notifications: {
+    email: {
+      newReleases: true,
+      continueWatching: true,
+      billingAlerts: true,
+      promotions: false,
+    },
+    push: {
+      newEpisode: true,
+      watchlistUpdates: true,
+      friendActivity: true,
+      downloadComplete: true,
+    },
+  },
+  security: {
+    twoFactorEnabled: false,
+    lastPasswordChange: '',
+    loginAlerts: true,
+  },
+});
 
-/* ── SIDEBAR ── */
-.mf-sidebar{
-  width:210px;
-  min-width:210px;
-  background:#0a0a0a;
-  border-right:1px solid var(--border);
-  display:flex;
-  flex-direction:column;
-  overflow-y:auto;
-  flex-shrink:0;
-}
-.mf-sidebar-top{padding:24px 0 8px}
-.mf-slabel{
-  font-size:10px;font-weight:600;letter-spacing:2px;
-  color:var(--dim);padding:0 18px 8px;text-transform:uppercase;
-}
-.mf-ni{
-  display:flex;align-items:center;gap:11px;
-  padding:10px 18px;cursor:pointer;position:relative;
-  transition:background .15s;font-size:13px;
-  color:var(--muted);font-weight:400;user-select:none;
-}
-.mf-ni:hover{background:var(--surface);color:#fff}
-.mf-ni:hover .ni-icon{opacity:1}
-.mf-ni.active{color:#fff;font-weight:500;background:rgba(229,9,20,0.06)}
-.mf-ni.active::before{
-  content:'';position:absolute;left:0;top:0;bottom:0;
-  width:3px;background:var(--red);border-radius:0 2px 2px 0;
-}
-.mf-ni.active .ni-icon{opacity:1}
-.ni-icon{width:16px;height:16px;flex-shrink:0;opacity:0.5;transition:opacity .15s}
-.mf-sdiv{border-top:1px solid var(--border);margin:10px 0}
+const AccountPage = () => {
+  const { data: session, status } = useSession();
+  const [activeTab, setActiveTab] = useState("profile");
+  const [settings, setSettings] = useState<AccountSettings | null>(null);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [loginActivity, setLoginActivity] = useState<LoginActivity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
-/* ── MAIN CONTENT ── */
-.mf-content{
-  flex:1;
-  min-width:0;
-  overflow-y:auto;
-  background:var(--bg);
-  padding:36px 44px 60px;
-}
-.mf-sec{display:none;width:100%}
-.mf-sec.active{display:block}
-.pg-title{font-size:24px;font-weight:600;letter-spacing:-0.3px;margin-bottom:4px}
-.pg-sub{font-size:13px;color:var(--muted);margin-bottom:32px}
+  useEffect(() => {
+    if (status === 'loading') return; // Wait for session to resolve
 
-/* ── GRID HELPERS ── */
-.mf-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.mf-grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
-.mf-card-wide{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start;margin-bottom:14px}
+    if (session?.user) {
+      fetchAccountData();
+    } else {
+      // No session — use defaults so the UI renders
+      setSettings(getDefaultSettings(null));
+      setLoading(false);
+    }
+  }, [session, status]);
 
-/* ── CARDS ── */
-.mf-card{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:6px;padding:22px;margin-bottom:14px;width:100%;
-}
-.card-t{font-size:15px;font-weight:500;margin-bottom:3px}
-.card-s{font-size:12px;color:var(--muted);margin-bottom:18px}
-.sec-h{
-  font-size:14px;font-weight:600;
-  padding-bottom:14px;border-bottom:1px solid var(--border);
-  margin-bottom:18px;letter-spacing:0.2px;
-}
+  const fetchAccountData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch settings
+      const settingsRes = await fetch('/api/account/settings');
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        if (settingsData.settings) {
+          setSettings(settingsData.settings);
+        } else {
+          // API returned ok but no settings object — use defaults
+          setSettings(getDefaultSettings(session));
+        }
+      } else {
+        // API error — still render UI with defaults
+        setSettings(getDefaultSettings(session));
+      }
 
-/* ── FORM ELEMENTS ── */
-.flabel{
-  font-size:10px;font-weight:600;letter-spacing:1.5px;
-  color:var(--dim);text-transform:uppercase;margin-bottom:7px;
-}
-.finput{
-  width:100%;background:#0d0d0d;border:1px solid var(--border);
-  border-radius:4px;color:#fff;font-family:'DM Sans',sans-serif;
-  font-size:13px;padding:10px 13px;outline:none;transition:border-color .15s;
-}
-.finput:focus{border-color:#555}
-.fselect{
-  width:100%;background:#0d0d0d;border:1px solid var(--border);
-  border-radius:4px;color:#fff;font-family:'DM Sans',sans-serif;
-  font-size:13px;padding:10px 13px;outline:none;cursor:pointer;
-  appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center;
-}
-.fselect:focus{border-color:#555}
-.frow{margin-bottom:16px}
+      // Fetch devices (non-critical — failures are silent)
+      try {
+        const devicesRes = await fetch('/api/account/devices');
+        if (devicesRes.ok) {
+          const devicesData = await devicesRes.json();
+          setDevices(devicesData?.data?.devices || []);
+          setLoginActivity(devicesData?.data?.loginActivity || []);
+        }
+      } catch {
+        // Devices fetch failed — not critical, leave defaults
+      }
+    } catch (error) {
+      console.error('Error fetching account data:', error);
+      // Fall back to defaults so the UI still renders
+      setSettings(getDefaultSettings(session));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-/* ── BUTTONS ── */
-.btn{
-  display:inline-flex;align-items:center;gap:7px;
-  padding:9px 18px;border-radius:4px;
-  font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:500;
-  cursor:pointer;transition:all .15s;border:none;line-height:1;
-}
-.btn-p{background:var(--red);color:#fff}
-.btn-p:hover{background:#f40612}
-.btn-g{background:transparent;color:#fff;border:1px solid #3a3a3a}
-.btn-g:hover{background:var(--surface2);border-color:#555}
-.btn-d{background:transparent;color:#ff5555;border:1px solid rgba(255,85,85,0.25)}
-.btn-d:hover{background:rgba(255,85,85,0.07)}
-.btn-sm{padding:6px 14px;font-size:12px}
-.btn-row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  const updateSettings = async (updates: Partial<AccountSettings>) => {
+    try {
+      setSaving(true);
+      const res = await fetch('/api/account/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
 
-/* ── TOGGLES ── */
-.trow{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:13px 0;border-bottom:1px solid var(--border);
-}
-.trow:last-child{border-bottom:none}
-.trow-info .tt{font-size:13.5px;color:#fff}
-.trow-info .ts{font-size:12px;color:var(--muted);margin-top:3px}
-.tog{
-  width:40px;height:22px;background:#333;border-radius:11px;
-  position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;
-}
-.tog.on{background:var(--red)}
-.tog::after{
-  content:'';position:absolute;top:3px;left:3px;
-  width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;
-}
-.tog.on::after{transform:translateX(18px)}
+      if (res.ok) {
+        setSettings(prev => prev ? { ...prev, ...updates } : null);
+        setHasChanges(false);
+        toast.success('Settings saved successfully');
+      } else {
+        throw new Error('Failed to save settings');
+      }
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      toast.error('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
+  };
 
-/* ── PROFILE HERO ── */
-.profile-hero{
-  display:flex;align-items:center;gap:18px;padding:20px;
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:6px;margin-bottom:14px;width:100%;
-}
-.p-av{
-  width:66px;height:66px;border-radius:8px;background:var(--red);
-  display:flex;align-items:center;justify-content:center;
-  font-size:26px;font-weight:700;cursor:pointer;
-  position:relative;overflow:hidden;flex-shrink:0;
-}
-.p-av-ov{
-  position:absolute;inset:0;background:rgba(0,0,0,0.55);
-  display:flex;align-items:center;justify-content:center;
-  font-size:11px;opacity:0;transition:opacity .2s;
-}
-.p-av:hover .p-av-ov{opacity:1}
-.p-name{font-size:19px;font-weight:600}
-.p-email{font-size:13px;color:var(--muted);margin-top:3px}
-.p-badge{
-  display:inline-flex;align-items:center;gap:5px;
-  background:rgba(229,9,20,0.12);border:1px solid rgba(229,9,20,0.28);
-  color:#ff5555;font-size:10.5px;padding:3px 9px;
-  border-radius:20px;margin-top:7px;font-weight:600;
-}
+  const updatePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      const res = await fetch('/api/account/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
 
-/* ── QUALITY BUTTONS ── */
-.qrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-.qbtn{
-  padding:8px 16px;border-radius:4px;background:var(--surface2);
-  border:1px solid var(--border);color:var(--muted);font-size:12.5px;
-  cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;
-}
-.qbtn.active{background:var(--red);border-color:var(--red);color:#fff}
-.qbtn:hover:not(.active){border-color:#555;color:#fff}
+      if (res.ok) {
+        toast.success('Password updated successfully');
+      } else {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update password');
+      }
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update password');
+    }
+  };
 
-/* ── DEVICE ROWS ── */
-.dev-row{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 0;border-bottom:1px solid var(--border);
-}
-.dev-row:last-child{border-bottom:none}
-.dev-ic{
-  width:36px;height:36px;background:var(--surface2);border:1px solid var(--border);
-  border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
-}
-.dev-name{font-size:13.5px;font-weight:500}
-.dev-meta{font-size:11.5px;color:var(--muted);margin-top:3px}
-.cur-tag{
-  display:inline-flex;align-items:center;
-  background:rgba(229,9,20,0.12);color:#ff5555;
-  font-size:9.5px;font-weight:700;padding:2px 7px;
-  border-radius:10px;margin-left:7px;letter-spacing:0.5px;
-}
+  const removeDevice = async (deviceId: string) => {
+    try {
+      const res = await fetch('/api/account/devices', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId })
+      });
 
-/* ── STATS GRID ── */
-.stat-grid{
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:12px;margin-bottom:14px;
-}
-.stat-card{
-  background:#0d0d0d;border:1px solid var(--border);
-  border-radius:6px;padding:16px;
-}
-.stat-label{
-  font-size:10px;font-weight:600;letter-spacing:1.5px;
-  text-transform:uppercase;color:var(--dim);margin-bottom:6px;
-}
-.stat-val{font-size:20px;font-weight:600}
+      if (res.ok) {
+        setDevices(prev => prev.filter(d => d._id !== deviceId));
+        toast.success('Device removed successfully');
+      } else {
+        throw new Error('Failed to remove device');
+      }
+    } catch (error) {
+      console.error('Error removing device:', error);
+      toast.error('Failed to remove device');
+    }
+  };
 
-/* ── PLAN CARD ── */
-.plan-card{
-  background:#0d0d0d;border:1px solid var(--border);
-  border-radius:6px;padding:20px;position:relative;
-  overflow:hidden;margin-bottom:14px;width:100%;
-}
-.plan-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;
-  height:2px;background:var(--red);
-}
-.plan-name{
-  font-size:11px;font-weight:700;letter-spacing:1.5px;
-  text-transform:uppercase;color:var(--red);margin-bottom:5px;
-}
-.plan-price{font-size:30px;font-weight:700}
-.plan-price em{font-size:14px;font-weight:400;color:var(--muted);font-style:normal}
+  const signOutAllDevices = async () => {
+    try {
+      const res = await fetch('/api/account/signout-all', {
+        method: 'DELETE'
+      });
 
-/* ── BILLING ROWS ── */
-.bill-row{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;
-}
-.bill-row:last-child{border-bottom:none}
+      if (res.ok) {
+        setLoginActivity(prev => prev.map(activity => ({ 
+          ...activity, 
+          isActive: false,
+          logoutTime: new Date().toISOString()
+        })));
+        toast.success('Signed out from all devices successfully');
+      } else {
+        throw new Error('Failed to sign out from all devices');
+      }
+    } catch (error) {
+      console.error('Error signing out from all devices:', error);
+      toast.error('Failed to sign out from all devices');
+    }
+  };
 
-/* ── HELP LINKS ── */
-.help-link{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:13px 0;border-bottom:1px solid var(--border);
-  cursor:pointer;transition:color .15s;font-size:13.5px;color:var(--muted);
-}
-.help-link:hover{color:#fff}
-.help-link:last-child{border-bottom:none}
-
-/* ── ACTIVITY ROWS ── */
-.act-row{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 0;border-bottom:1px solid var(--border);font-size:13px;
-}
-.act-row:last-child{border-bottom:none}
-.dot-live{
-  width:7px;height:7px;border-radius:50%;background:#22c55e;
-  display:inline-block;margin-right:7px;
-}
-
-/* ── MISC ── */
-.ch-arr{width:14px;height:14px;opacity:0.45;flex-shrink:0}
-.mf-hr{border:none;border-top:1px solid var(--border);margin:10px 0}
-
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar{width:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:10px}
-::-webkit-scrollbar-thumb:hover{background:#3a3a3a}
-</style>
-</head>
-<body>
-
-<div class="mf-wrap">
-
-  
-  <!-- ═══════════════ BODY ═══════════════ -->
-  <div class="mf-body">
-
-    <!-- ─── SIDEBAR ─── -->
-    <div class="mf-sidebar">
-      <div class="mf-sidebar-top">
-
-        <div class="mf-slabel">Account</div>
-
-        <div class="mf-ni active" onclick="nav('profile',this)">
-          <svg class="ni-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-          Profile
+  if (loading || status === 'loading') {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-[#E50914] border-t-transparent rounded-full animate-spin" />
+          <div className="text-[#B3B3B3] text-sm">Loading your settings...</div>
         </div>
-
-        <div class="mf-ni" onclick="nav('playback',this)">
-          <svg class="ni-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <polygon points="5 3 19 12 5 21 5 3"/>
-          </svg>
-          Playback
-        </div>
-
-        <div class="mf-ni" onclick="nav('notifications',this)">
-          <svg class="ni-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-          </svg>
-          Notifications
-        </div>
-
-        <div class="mf-ni" onclick="nav('security',this)">
-          <svg class="ni-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <rect x="3" y="11" width="18" height="11" rx="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          Security
-        </div>
-
-        <div class="mf-ni" onclick="nav('devices',this)">
-          <svg class="ni-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <rect x="2" y="3" width="20" height="14" rx="2"/>
-            <path d="M8 21h8M12 17v4"/>
-          </svg>
-          Devices
-        </div>
-
-        <div class="mf-sdiv"></div>
-        <div class="mf-slabel">Subscription</div>
-
-        <div class="mf-ni" onclick="nav('billing',this)">
-          <svg class="ni-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <rect x="1" y="4" width="22" height="16" rx="2"/>
-            <line x1="1" y1="10" x2="23" y2="10"/>
-          </svg>
-          Billing
-        </div>
-
-        <div class="mf-sdiv"></div>
-        <div class="mf-slabel">Support</div>
-
-        <div class="mf-ni" onclick="nav('help',this)">
-          <svg class="ni-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-            <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2.5"/>
-          </svg>
-          Help Center
-        </div>
-
       </div>
-    </div><!-- /sidebar -->
+    );
+  }
 
-    <!-- ─── MAIN CONTENT ─── -->
-    <div class="mf-content">
+  if (!settings) {
+    // This should rarely happen now since we always fall back to defaults
+    setSettings(getDefaultSettings(session));
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-[#E50914] border-t-transparent rounded-full animate-spin" />
+          <div className="text-[#B3B3B3] text-sm">Loading your settings...</div>
+        </div>
+      </div>
+    );
+  }
 
-      <!-- ══════════ PROFILE ══════════ -->
-      <div class="mf-sec active" id="sec-profile">
-        <div class="pg-title">Profile &amp; Account</div>
-        <div class="pg-sub">Manage your MovieFlix identity and viewing preferences</div>
+  return (
+    <div className="min-h-screen bg-[#141414] text-white font-['DM_Sans']">
+      <div className="flex h-screen">
+        {/* Sidebar */}
+        <aside className="w-[210px] min-w-[210px] bg-[#0a0a0a] border-r border-[#2A2A2A] flex flex-col overflow-y-auto">
+          <div className="py-6 pb-2">
+            <div className="text-[10px] font-semibold tracking-[2px] text-[#6B6B6B] px-[18px] pb-2 uppercase">
+              Account
+            </div>
+            
+            <button
+              onClick={() => setActiveTab("profile")}
+              className={`w-full flex items-center gap-[11px] px-[18px] py-[10px] relative transition-colors text-[13px] ${
+                activeTab === "profile" 
+                  ? "text-white font-medium bg-[rgba(229,9,20,0.06)]" 
+                  : "text-[#B3B3B3] hover:bg-[#1F1F1F] hover:text-white"
+              }`}
+            >
+              <User className="w-4 h-4 opacity-50" />
+              Profile
+              {activeTab === "profile" && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E50914] rounded-r-[2px]" />
+              )}
+            </button>
 
-        <div class="profile-hero">
-          <div class="p-av">
-            A
-            <div class="p-av-ov">Edit</div>
+            <button
+              onClick={() => setActiveTab("playback")}
+              className={`w-full flex items-center gap-[11px] px-[18px] py-[10px] relative transition-colors text-[13px] ${
+                activeTab === "playback" 
+                  ? "text-white font-medium bg-[rgba(229,9,20,0.06)]" 
+                  : "text-[#B3B3B3] hover:bg-[#1F1F1F] hover:text-white"
+              }`}
+            >
+              <Play className="w-4 h-4 opacity-50" />
+              Playback
+              {activeTab === "playback" && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E50914] rounded-r-[2px]" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab("notifications")}
+              className={`w-full flex items-center gap-[11px] px-[18px] py-[10px] relative transition-colors text-[13px] ${
+                activeTab === "notifications" 
+                  ? "text-white font-medium bg-[rgba(229,9,20,0.06)]" 
+                  : "text-[#B3B3B3] hover:bg-[#1F1F1F] hover:text-white"
+              }`}
+            >
+              <Bell className="w-4 h-4 opacity-50" />
+              Notifications
+              {activeTab === "notifications" && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E50914] rounded-r-[2px]" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab("security")}
+              className={`w-full flex items-center gap-[11px] px-[18px] py-[10px] relative transition-colors text-[13px] ${
+                activeTab === "security" 
+                  ? "text-white font-medium bg-[rgba(229,9,20,0.06)]" 
+                  : "text-[#B3B3B3] hover:bg-[#1F1F1F] hover:text-white"
+              }`}
+            >
+              <Shield className="w-4 h-4 opacity-50" />
+              Security
+              {activeTab === "security" && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E50914] rounded-r-[2px]" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab("devices")}
+              className={`w-full flex items-center gap-[11px] px-[18px] py-[10px] relative transition-colors text-[13px] ${
+                activeTab === "devices" 
+                  ? "text-white font-medium bg-[rgba(229,9,20,0.06)]" 
+                  : "text-[#B3B3B3] hover:bg-[#1F1F1F] hover:text-white"
+              }`}
+            >
+              <Monitor className="w-4 h-4 opacity-50" />
+              Devices
+              {activeTab === "devices" && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E50914] rounded-r-[2px]" />
+              )}
+            </button>
+
+            <div className="border-t border-[#2A2A2A] my-[10px]" />
+            <div className="text-[10px] font-semibold tracking-[2px] text-[#6B6B6B] px-[18px] pb-2 uppercase">
+              Subscription
+            </div>
+
+            <button
+              onClick={() => setActiveTab("billing")}
+              className={`w-full flex items-center gap-[11px] px-[18px] py-[10px] relative transition-colors text-[13px] ${
+                activeTab === "billing" 
+                  ? "text-white font-medium bg-[rgba(229,9,20,0.06)]" 
+                  : "text-[#B3B3B3] hover:bg-[#1F1F1F] hover:text-white"
+              }`}
+            >
+              <CreditCard className="w-4 h-4 opacity-50" />
+              Billing
+              {activeTab === "billing" && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E50914] rounded-r-[2px]" />
+              )}
+            </button>
+
+            <div className="border-t border-[#2A2A2A] my-[10px]" />
+            <div className="text-[10px] font-semibold tracking-[2px] text-[#6B6B6B] px-[18px] pb-2 uppercase">
+              Support
+            </div>
+
+            <button
+              onClick={() => setActiveTab("help")}
+              className={`w-full flex items-center gap-[11px] px-[18px] py-[10px] relative transition-colors text-[13px] ${
+                activeTab === "help" 
+                  ? "text-white font-medium bg-[rgba(229,9,20,0.06)]" 
+                  : "text-[#B3B3B3] hover:bg-[#1F1F1F] hover:text-white"
+              }`}
+            >
+              <HelpCircle className="w-4 h-4 opacity-50" />
+              Help Center
+              {activeTab === "help" && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E50914] rounded-r-[2px]" />
+              )}
+            </button>
           </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 min-w-0 overflow-y-auto bg-[#141414] p-9 pb-[60px]">
+          {activeTab === "profile" && <ProfileSection settings={settings} updateSettings={updateSettings} />}
+          {activeTab === "playback" && <PlaybackSection settings={settings} updateSettings={updateSettings} />}
+          {activeTab === "notifications" && <NotificationsSection settings={settings} updateSettings={updateSettings} />}
+          {activeTab === "security" && <SecuritySection settings={settings} updatePassword={updatePassword} loginActivity={loginActivity} signOutAllDevices={signOutAllDevices} />}
+          {activeTab === "devices" && <DevicesSection devices={devices} removeDevice={removeDevice} />}
+          {activeTab === "billing" && <BillingSection />}
+          {activeTab === "help" && <HelpSection />}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+// Profile Section Component
+const ProfileSection = ({ settings, updateSettings }: { settings: AccountSettings; updateSettings: any }) => {
+  const [formData, setFormData] = useState(settings.profile);
+
+  const handleSave = () => {
+    updateSettings({ profile: formData });
+  };
+
+  return (
+    <div>
+      <h1 className="text-[24px] font-semibold tracking-[-0.3px] mb-1">Profile & Account</h1>
+      <p className="text-[13px] text-[#B3B3B3] mb-8">Manage your MovieFlix identity and viewing preferences</p>
+
+      {/* Profile Hero */}
+      <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-5 mb-[14px] flex items-center gap-[18px]">
+        <div className="w-[66px] h-[66px] rounded-[8px] bg-[#E50914] flex items-center justify-center text-[26px] font-bold cursor-pointer relative overflow-hidden">
+          {formData.firstName?.[0]?.toUpperCase() || 'U'}
+          <div className="absolute inset-0 bg-[rgba(0,0,0,0.55)] flex items-center justify-center text-[11px] opacity-0 hover:opacity-100 transition-opacity">
+            Edit
+          </div>
+        </div>
+        <div>
+          <div className="text-[19px] font-semibold">{formData.firstName} {formData.lastName}</div>
+          <div className="text-[13px] text-[#B3B3B3] mt-[3px]">{formData.email}</div>
+          <div className="inline-flex items-center gap-[5px] bg-[rgba(229,9,20,0.12)] border border-[rgba(229,9,20,0.28)] text-[#ff5555] text-[10.5px] px-[9px] py-[3px] rounded-[20px] mt-[7px] font-semibold">
+            <Check className="w-[10px] h-[10px]" />
+            Premium Member
+          </div>
+        </div>
+        <div className="ml-auto flex gap-2 items-center">
+          <button className="px-[14px] py-[6px] bg-transparent text-white border border-[#3a3a3a] text-[12px] font-medium hover:bg-[#252525] hover:border-[#555] transition-all">
+            Watch History
+          </button>
+          <button className="px-[14px] py-[6px] bg-transparent text-white border border-[#3a3a3a] text-[12px] font-medium hover:bg-[#252525] hover:border-[#555] transition-all">
+            My Ratings
+          </button>
+        </div>
+      </div>
+
+      {/* Personal Info and Right Column */}
+      <div className="grid grid-cols-2 gap-[14px] mb-[14px]">
+        {/* Personal Info Card */}
+        <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+          <div className="text-[15px] font-medium mb-[3px]">Personal Information</div>
+          <div className="text-[12px] text-[#B3B3B3] mb-[18px]">Update your name and contact details</div>
+          
+          <div className="grid grid-cols-2 gap-[16px] mb-0">
+            <div className="mb-[16px]">
+              <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+                First Name
+              </label>
+              <input
+                type="text"
+                value={formData.firstName}
+                onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none transition-colors focus:border-[#555]"
+              />
+            </div>
+            <div className="mb-[16px]">
+              <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+                Last Name
+              </label>
+              <input
+                type="text"
+                value={formData.lastName}
+                onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none transition-colors focus:border-[#555]"
+              />
+            </div>
+          </div>
+          
+          <div className="mb-[16px]">
+            <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+              Email Address
+            </label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none transition-colors focus:border-[#555]"
+            />
+          </div>
+          
+          <div className="mb-[16px]">
+            <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              value={formData.phone || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+              placeholder="+91 00000 00000"
+              className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none transition-colors focus:border-[#555]"
+            />
+          </div>
+          
+          <div className="flex gap-[10px] mt-[18px] flex-wrap">
+            <button
+              onClick={handleSave}
+              className="inline-flex items-center gap-[7px] px-[18px] py-[9px] rounded-[4px] bg-[#E50914] text-white font-['DM_Sans'] text-[12.5px] font-medium cursor-pointer transition-all hover:bg-[#f40612] border-none leading-none"
+            >
+              <Save className="w-4 h-4" />
+              Save Changes
+            </button>
+            <button className="px-[18px] py-[9px] bg-transparent text-white border border-[#3a3a3a] text-[12.5px] font-medium hover:bg-[#252525] hover:border-[#555] transition-all">
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="flex flex-col gap-[14px]">
+          {/* Parental Controls */}
+          <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+            <div className="text-[15px] font-medium mb-[3px]">Parental Controls</div>
+            <div className="text-[12px] text-[#B3B3B3] mb-[18px]">Set viewing restrictions with a PIN</div>
+            
+            <div className="mb-[16px]">
+              <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+                Maturity Rating
+              </label>
+              <select 
+                value={settings.parentalControls.maturityRating}
+                onChange={(e) => updateSettings({ 
+                  parentalControls: { 
+                    ...settings.parentalControls, 
+                    maturityRating: e.target.value 
+                  } 
+                })}
+                className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none cursor-pointer transition-colors focus:border-[#555] appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%3E%3Cpath%20d%3D%22M1%201l4%204%204-4%22%20stroke%3D%22%23555%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E')] bg-no-repeat bg-[right_12px_center]"
+              >
+                <option value="ALL">All Ratings</option>
+                <option value="PG">PG</option>
+                <option value="PG-13">PG-13</option>
+                <option value="R">R</option>
+                <option value="TV-MA">TV-MA</option>
+              </select>
+            </div>
+            
+            <button className="px-[14px] py-[6px] bg-transparent text-white border border-[#3a3a3a] text-[12px] font-medium hover:bg-[#252525] hover:border-[#555] transition-all">
+              Change PIN
+            </button>
+          </div>
+
+          {/* Profile Language */}
+          <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+            <div className="text-[15px] font-medium mb-[3px]">Profile Language</div>
+            <div className="text-[12px] text-[#B3B3B3] mb-[18px]">Language and subtitle defaults</div>
+            
+            <div className="mb-[16px]">
+              <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+                Display Language
+              </label>
+              <select 
+                value={settings.language.display}
+                onChange={(e) => updateSettings({ 
+                  language: { 
+                    ...settings.language, 
+                    display: e.target.value 
+                  } 
+                })}
+                className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none cursor-pointer transition-colors focus:border-[#555] appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%3E%3Cpath%20d%3D%22M1%201l4%204%204-4%22%20stroke%3D%22%23555%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E')] bg-no-repeat bg-[right_12px_center]"
+              >
+                <option value="English">English</option>
+                <option value="Hindi">Hindi</option>
+                <option value="Tamil">Tamil</option>
+                <option value="Telugu">Telugu</option>
+                <option value="Spanish">Spanish</option>
+              </select>
+            </div>
+            
+            <div className="mb-[16px]">
+              <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+                Subtitle Language
+              </label>
+              <select 
+                value={settings.language.subtitle}
+                onChange={(e) => updateSettings({ 
+                  language: { 
+                    ...settings.language, 
+                    subtitle: e.target.value 
+                  } 
+                })}
+                className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none cursor-pointer transition-colors focus:border-[#555] appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%3E%3Cpath%20d%3D%22M1%201l4%204%204-4%22%20stroke%3D%22%23555%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E')] bg-no-repeat bg-[right_12px_center]"
+              >
+                <option value="Off">Off</option>
+                <option value="English">English</option>
+                <option value="Hindi">Hindi</option>
+                <option value="Auto-detect">Auto-detect</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Autoplay & Viewing */}
+      <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px] mb-[14px]">
+        <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px] tracking-[0.2px]">
+          Autoplay & Viewing
+        </div>
+        
+        <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
           <div>
-            <div class="p-name">Alex Mohan</div>
-            <div class="p-email">alex.mohan@email.com</div>
-            <div class="p-badge">
-              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-              Premium Member
-            </div>
+            <div className="text-[13.5px] text-white">Autoplay Next Episode</div>
+            <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Automatically play next episode in a series</div>
           </div>
-          <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-            <button class="btn btn-g btn-sm">Watch History</button>
-            <button class="btn btn-g btn-sm">My Ratings</button>
-          </div>
+          <button
+            onClick={() => updateSettings({ 
+              playback: { 
+                ...settings.playback, 
+                autoplayNextEpisode: !settings.playback.autoplayNextEpisode 
+              } 
+            })}
+            className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+              settings.playback.autoplayNextEpisode ? 'bg-[#E50914]' : 'bg-[#333]'
+            }`}
+          >
+            <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+              settings.playback.autoplayNextEpisode ? 'translate-x-[18px]' : ''
+            }`} />
+          </button>
         </div>
 
-        <div class="mf-card-wide">
-          <!-- Personal info card -->
-          <div class="mf-card" style="margin-bottom:0">
-            <div class="card-t">Personal Information</div>
-            <div class="card-s">Update your name and contact details</div>
-            <div class="mf-grid2" style="margin-bottom:0">
-              <div class="frow"><div class="flabel">First Name</div><input class="finput" type="text" value="Alex"></div>
-              <div class="frow"><div class="flabel">Last Name</div><input class="finput" type="text" value="Mohan"></div>
-            </div>
-            <div class="frow"><div class="flabel">Email Address</div><input class="finput" type="email" value="alex.mohan@email.com"></div>
-            <div class="frow"><div class="flabel">Phone Number</div><input class="finput" type="tel" placeholder="+91 00000 00000"></div>
-            <div class="btn-row">
-              <button class="btn btn-p">Save Changes</button>
-              <button class="btn btn-g">Cancel</button>
-            </div>
+        <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
+          <div>
+            <div className="text-[13.5px] text-white">Autoplay Previews</div>
+            <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Play previews while browsing MovieFlix</div>
           </div>
-
-          <!-- Right column stacked cards -->
-          <div style="display:flex;flex-direction:column;gap:14px">
-            <div class="mf-card" style="margin-bottom:0">
-              <div class="card-t">Parental Controls</div>
-              <div class="card-s">Set viewing restrictions with a PIN</div>
-              <div class="frow">
-                <div class="flabel">Maturity Rating</div>
-                <select class="fselect">
-                  <option>All Ratings</option><option>PG</option>
-                  <option>PG-13</option><option>R</option><option>TV-MA</option>
-                </select>
-              </div>
-              <button class="btn btn-g btn-sm">Change PIN</button>
-            </div>
-            <div class="mf-card" style="margin-bottom:0">
-              <div class="card-t">Profile Language</div>
-              <div class="card-s">Language and subtitle defaults</div>
-              <div class="frow">
-                <div class="flabel">Display Language</div>
-                <select class="fselect">
-                  <option>English</option><option>Hindi</option>
-                  <option>Tamil</option><option>Telugu</option><option>Spanish</option>
-                </select>
-              </div>
-              <div class="frow">
-                <div class="flabel">Subtitle Language</div>
-                <select class="fselect">
-                  <option>Off</option><option>English</option><option>Hindi</option><option>Auto-detect</option>
-                </select>
-              </div>
-            </div>
-          </div>
+          <button
+            onClick={() => updateSettings({ 
+              playback: { 
+                ...settings.playback, 
+                autoplayPreviews: !settings.playback.autoplayPreviews 
+              } 
+            })}
+            className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+              settings.playback.autoplayPreviews ? 'bg-[#E50914]' : 'bg-[#333]'
+            }`}
+          >
+            <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+              settings.playback.autoplayPreviews ? 'translate-x-[18px]' : ''
+            }`} />
+          </button>
         </div>
 
-        <div class="mf-card">
-          <div class="sec-h">Autoplay &amp; Viewing</div>
-          <div class="trow">
-            <div class="trow-info">
-              <div class="tt">Autoplay Next Episode</div>
-              <div class="ts">Automatically play the next episode in a series</div>
-            </div>
-            <div class="tog on" onclick="this.classList.toggle('on')"></div>
+        <div className="flex items-center justify-between py-[13px]">
+          <div>
+            <div className="text-[13.5px] text-white">Skip Intros Automatically</div>
+            <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Skip show opening sequences when detected</div>
           </div>
-          <div class="trow">
-            <div class="trow-info">
-              <div class="tt">Autoplay Previews</div>
-              <div class="ts">Play previews while browsing MovieFlix</div>
-            </div>
-            <div class="tog" onclick="this.classList.toggle('on')"></div>
-          </div>
-          <div class="trow">
-            <div class="trow-info">
-              <div class="tt">Skip Intros Automatically</div>
-              <div class="ts">Skip show opening sequences when detected</div>
-            </div>
-            <div class="tog on" onclick="this.classList.toggle('on')"></div>
-          </div>
+          <button
+            onClick={() => updateSettings({ 
+              playback: { 
+                ...settings.playback, 
+                skipIntros: !settings.playback.skipIntros 
+              } 
+            })}
+            className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+              settings.playback.skipIntros ? 'bg-[#E50914]' : 'bg-[#333]'
+            }`}
+          >
+            <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+              settings.playback.skipIntros ? 'translate-x-[18px]' : ''
+            }`} />
+          </button>
         </div>
-      </div><!-- /profile -->
+      </div>
+    </div>
+  );
+};
 
+// Playback Section Component
+const PlaybackSection = ({ settings, updateSettings }: { settings: AccountSettings; updateSettings: any }) => {
+  return (
+    <div>
+      <h1 className="text-[24px] font-semibold tracking-[-0.3px] mb-1">Playback Settings</h1>
+      <p className="text-[13px] text-[#B3B3B3] mb-8">Control video quality, behavior, and subtitle appearance across all devices</p>
 
-      <!-- ══════════ PLAYBACK ══════════ -->
-      <div class="mf-sec" id="sec-playback">
-        <div class="pg-title">Playback Settings</div>
-        <div class="pg-sub">Control video quality, behavior, and subtitle appearance across all devices</div>
-
-        <div class="mf-card-wide">
-          <div class="mf-card" style="margin-bottom:0">
-            <div class="sec-h">Streaming Quality</div>
-            <div class="flabel" style="margin-bottom:10px">Video Quality</div>
-            <div class="qrow">
-              <button class="qbtn" onclick="sq(this,'q1')">Auto</button>
-              <button class="qbtn" onclick="sq(this,'q1')">Low</button>
-              <button class="qbtn" onclick="sq(this,'q1')">Medium</button>
-              <button class="qbtn" onclick="sq(this,'q1')">High</button>
-              <button class="qbtn active" onclick="sq(this,'q1')">Ultra HD 4K</button>
+      <div className="grid grid-cols-2 gap-[14px] mb-[14px]">
+        {/* Streaming Quality */}
+        <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+          <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">
+            Streaming Quality
+          </div>
+          
+          <div className="mb-[10px]">
+            <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[10px] block">
+              Video Quality
+            </label>
+            <div className="flex gap-2 flex-wrap mb-[16px]">
+              {['Auto', 'Low', 'Medium', 'High', 'Ultra HD 4K'].map((quality) => (
+                <button
+                  key={quality}
+                  onClick={() => updateSettings({ 
+                    playback: { 
+                      ...settings.playback, 
+                      videoQuality: quality 
+                    } 
+                  })}
+                  className={`px-4 py-2 rounded-[4px] text-[12.5px] font-['DM_Sans'] cursor-pointer transition-all ${
+                    settings.playback.videoQuality === quality
+                      ? 'bg-[#E50914] border-[#E50914] text-white'
+                      : 'bg-[#252525] border-[#2A2A2A] text-[#B3B3B3] hover:border-[#555] hover:text-white'
+                  }`}
+                >
+                  {quality}
+                </button>
+              ))}
             </div>
-            <div style="font-size:11.5px;color:var(--dim);margin-bottom:20px">
+            <div className="text-[11.5px] text-[#6B6B6B] mb-[20px]">
               Ultra HD requires Premium plan and a compatible display
             </div>
-            <div class="flabel" style="margin-bottom:10px">Download Quality</div>
-            <div class="qrow">
-              <button class="qbtn" onclick="sq(this,'q2')">Standard</button>
-              <button class="qbtn active" onclick="sq(this,'q2')">High</button>
-            </div>
           </div>
 
-          <div class="mf-card" style="margin-bottom:0">
-            <div class="sec-h">Playback Behavior</div>
-            <div class="trow">
-              <div class="trow-info">
-                <div class="tt">Autoplay Next Episode</div>
-                <div class="ts">Jump automatically after credits roll</div>
-              </div>
-              <div class="tog on" onclick="this.classList.toggle('on')"></div>
-            </div>
-            <div class="trow">
-              <div class="trow-info">
-                <div class="tt">Autoplay Trailers</div>
-                <div class="ts">Play previews while browsing titles</div>
-              </div>
-              <div class="tog" onclick="this.classList.toggle('on')"></div>
-            </div>
-            <div class="trow">
-              <div class="trow-info">
-                <div class="tt">Skip Intros</div>
-                <div class="ts">Auto-skip detected opening sequences</div>
-              </div>
-              <div class="tog on" onclick="this.classList.toggle('on')"></div>
-            </div>
-            <div class="trow">
-              <div class="trow-info">
-                <div class="tt">Smart Downloads</div>
-                <div class="ts">Auto-download next episode on Wi-Fi</div>
-              </div>
-              <div class="tog on" onclick="this.classList.toggle('on')"></div>
+          <div className="mb-[10px]">
+            <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[10px] block">
+              Download Quality
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {['Standard', 'High'].map((quality) => (
+                <button
+                  key={quality}
+                  onClick={() => updateSettings({ 
+                    playback: { 
+                      ...settings.playback, 
+                      downloadQuality: quality 
+                    } 
+                  })}
+                  className={`px-4 py-2 rounded-[4px] text-[12.5px] font-['DM_Sans'] cursor-pointer transition-all ${
+                    settings.playback.downloadQuality === quality
+                      ? 'bg-[#E50914] border-[#E50914] text-white'
+                      : 'bg-[#252525] border-[#2A2A2A] text-[#B3B3B3] hover:border-[#555] hover:text-white'
+                  }`}
+                >
+                  {quality}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        <div class="mf-card">
-          <div class="sec-h">Subtitle Appearance</div>
-          <div class="mf-grid3">
-            <div class="frow" style="margin-bottom:0">
-              <div class="flabel">Font Size</div>
-              <select class="fselect">
-                <option>Small</option><option selected>Medium</option>
-                <option>Large</option><option>Extra Large</option>
-              </select>
-            </div>
-            <div class="frow" style="margin-bottom:0">
-              <div class="flabel">Font Style</div>
-              <select class="fselect">
-                <option selected>Default</option><option>Bold</option>
-                <option>Italic</option><option>Outlined</option>
-              </select>
-            </div>
-            <div class="frow" style="margin-bottom:0">
-              <div class="flabel">Text Color</div>
-              <select class="fselect">
-                <option selected>White</option><option>Yellow</option><option>Green</option><option>Cyan</option>
-              </select>
-            </div>
+        {/* Playback Behavior */}
+        <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+          <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">
+            Playback Behavior
           </div>
-          <div class="frow">
-            <div class="flabel">Background Opacity</div>
-            <input type="range" min="0" max="100" value="60" step="1"
-              style="width:100%;accent-color:var(--red);margin-top:6px">
-          </div>
-          <button class="btn btn-p">Save Subtitle Preferences</button>
-        </div>
-      </div><!-- /playback -->
-
-
-      <!-- ══════════ NOTIFICATIONS ══════════ -->
-      <div class="mf-sec" id="sec-notifications">
-        <div class="pg-title">Notifications</div>
-        <div class="pg-sub">Choose how and when MovieFlix contacts you</div>
-
-        <div class="mf-card-wide">
-          <div class="mf-card" style="margin-bottom:0">
-            <div class="sec-h">Email Notifications</div>
-            <div class="trow">
-              <div class="trow-info">
-                <div class="tt">New Releases &amp; Picks</div>
-                <div class="ts">Titles we think you'll love, personalised weekly</div>
-              </div>
-              <div class="tog on" onclick="this.classList.toggle('on')"></div>
-            </div>
-            <div class="trow">
-              <div class="trow-info">
-                <div class="tt">Continue Watching</div>
-                <div class="ts">Reminders for shows you haven't finished</div>
-              </div>
-              <div class="tog on" onclick="this.classList.toggle('on')"></div>
-            </div>
-            <div class="trow">
-              <div class="trow-info">
-                <div class="tt">Billing &amp; Account Alerts</div>
-                <div class="ts">Payment confirmations and security notices</div>
-              </div>
-              <div class="tog on" onclick="this.classList.toggle('on')"></div>
-            </div>
-            <div class="trow">
-              <div class="trow-info">
-                <div class="tt">Promotions &amp; Offers</div>
-                <div class="ts">Special deals and MovieFlix news</div>
-              </div>
-              <div class="tog" onclick="this.classList.toggle('on')"></div>
-            </div>
-          </div>
-
-          <div class="mf-card" style="margin-bottom:0">
-            <div class="sec-h">Push Notifications</div>
-            <div class="trow">
-              <div class="trow-info">
-                <div class="tt">New Episode Available</div>
-                <div class="ts">When a followed show drops a new episode</div>
-              </div>
-              <div class="tog on" onclick="this.classList.toggle('on')"></div>
-            </div>
-            <div class="trow">
-              <div class="trow-info">
-                <div class="tt">Watchlist Updates</div>
-                <div class="ts">Changes to items saved in your watchlist</div>
-              </div>
-              <div class="tog on" onclick="this.classList.toggle('on')"></div>
-            </div>
-            <div class="trow">
-              <div class="trow-info">
-                <div class="tt">Friend Activity</div>
-                <div class="ts">See what your friends are watching</div>
-              </div>
-              <div class="tog on" onclick="this.classList.toggle('on')"></div>
-            </div>
-            <div class="trow">
-              <div class="trow-info">
-                <div class="tt">Download Complete</div>
-                <div class="ts">Notify when an offline download finishes</div>
-              </div>
-              <div class="tog on" onclick="this.classList.toggle('on')"></div>
-            </div>
-          </div>
-        </div>
-      </div><!-- /notifications -->
-
-
-      <!-- ══════════ SECURITY ══════════ -->
-      <div class="mf-sec" id="sec-security">
-        <div class="pg-title">Security</div>
-        <div class="pg-sub">Manage your password, two-factor authentication, and active sessions</div>
-
-        <div class="mf-card-wide">
-          <div class="mf-card" style="margin-bottom:0">
-            <div class="sec-h">Change Password</div>
-            <div class="frow">
-              <div class="flabel">Current Password</div>
-              <input class="finput" type="password" placeholder="••••••••••••">
-            </div>
-            <div class="frow">
-              <div class="flabel">New Password</div>
-              <input class="finput" type="password" placeholder="Min 8 characters">
-            </div>
-            <div class="frow">
-              <div class="flabel">Confirm New Password</div>
-              <input class="finput" type="password" placeholder="Repeat new password">
-            </div>
-            <button class="btn btn-p">Update Password</button>
-          </div>
-
-          <div style="display:flex;flex-direction:column;gap:14px">
-            <div class="mf-card" style="margin-bottom:0">
-              <div class="sec-h">Two-Factor Authentication</div>
-              <div class="trow" style="border-bottom:none;padding:0">
-                <div class="trow-info">
-                  <div class="tt">Enable 2FA</div>
-                  <div class="ts">SMS or authenticator app verification</div>
-                </div>
-                <div class="tog" onclick="this.classList.toggle('on')"></div>
-              </div>
-              <div style="font-size:11.5px;color:var(--dim);margin-top:12px;line-height:1.6">
-                Adds a second verification step when signing in from a new device.
-              </div>
-              <button class="btn btn-g btn-sm" style="margin-top:14px">Setup Authenticator</button>
-            </div>
-            <div class="mf-card" style="margin-bottom:0;background:rgba(229,9,20,0.05);border-color:rgba(229,9,20,0.2)">
-              <div style="font-size:13px;font-weight:500;margin-bottom:6px">Sign Out Everywhere</div>
-              <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">
-                Immediately revokes access on all devices except this one.
-              </div>
-              <button class="btn btn-d btn-sm">Sign Out of All Devices</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="mf-card">
-          <div class="sec-h">Recent Login Activity</div>
-          <div class="act-row">
+          
+          <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
             <div>
-              <div style="font-size:13.5px;font-weight:500">
-                <span class="dot-live"></span>Hyderabad, India
-              </div>
-              <div style="font-size:12px;color:var(--muted);margin-top:3px">
-                Chrome · Windows 11 · Active now
-              </div>
+              <div className="text-[13.5px] text-white">Autoplay Next Episode</div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Jump automatically after credits roll</div>
             </div>
-            <div style="background:rgba(34,197,94,0.1);color:#22c55e;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">
-              Current
-            </div>
+            <button
+              onClick={() => updateSettings({ 
+                playback: { 
+                  ...settings.playback, 
+                  autoplayNextEpisode: !settings.playback.autoplayNextEpisode 
+                } 
+              })}
+              className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                settings.playback.autoplayNextEpisode ? 'bg-[#E50914]' : 'bg-[#333]'
+              }`}
+            >
+              <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                settings.playback.autoplayNextEpisode ? 'translate-x-[18px]' : ''
+              }`} />
+            </button>
           </div>
-          <div class="act-row">
+
+          <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
             <div>
-              <div style="font-size:13.5px">Mumbai, India</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:3px">
-                Safari · iPhone 15 Pro · 2 days ago
-              </div>
+              <div className="text-[13.5px] text-white">Autoplay Trailers</div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Play previews while browsing titles</div>
             </div>
-            <button class="btn btn-g btn-sm">Sign Out</button>
+            <button
+              onClick={() => updateSettings({ 
+                playback: { 
+                  ...settings.playback, 
+                  autoplayPreviews: !settings.playback.autoplayPreviews 
+                } 
+              })}
+              className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                settings.playback.autoplayPreviews ? 'bg-[#E50914]' : 'bg-[#333]'
+              }`}
+            >
+              <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                settings.playback.autoplayPreviews ? 'translate-x-[18px]' : ''
+              }`} />
+            </button>
           </div>
-          <div class="act-row">
+
+          <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
             <div>
-              <div style="font-size:13.5px">Bengaluru, India</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:3px">
-                MovieFlix App · Samsung Smart TV · 5 days ago
-              </div>
+              <div className="text-[13.5px] text-white">Skip Intros</div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Auto-skip detected opening sequences</div>
             </div>
-            <button class="btn btn-g btn-sm">Sign Out</button>
-          </div>
-        </div>
-      </div><!-- /security -->
-
-
-      <!-- ══════════ DEVICES ══════════ -->
-      <div class="mf-sec" id="sec-devices">
-        <div class="pg-title">Devices</div>
-        <div class="pg-sub">Manage all devices currently signed into your MovieFlix account</div>
-
-        <div class="stat-grid">
-          <div class="stat-card">
-            <div class="stat-label">Active Devices</div>
-            <div class="stat-val">3</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Device Limit</div>
-            <div class="stat-val">5</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Download Slots</div>
-            <div class="stat-val">4 / 4</div>
-          </div>
-        </div>
-
-        <div class="mf-card">
-          <div class="sec-h">Active Devices</div>
-
-          <div class="dev-row">
-            <div style="display:flex;align-items:center;gap:14px">
-              <div class="dev-ic">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:#6B6B6B">
-                  <rect x="2" y="3" width="20" height="14" rx="2"/>
-                  <path d="M8 21h8M12 17v4"/>
-                </svg>
-              </div>
-              <div>
-                <div class="dev-name">Dell XPS 15<span class="cur-tag">CURRENT</span></div>
-                <div class="dev-meta">Windows 11 · Chrome 123 · Hyderabad, IN</div>
-                <div class="dev-meta" style="color:#22c55e;margin-top:2px">Active now</div>
-              </div>
-            </div>
-            <button class="btn btn-g btn-sm" style="opacity:0.35;cursor:not-allowed" disabled>Remove</button>
+            <button
+              onClick={() => updateSettings({ 
+                playback: { 
+                  ...settings.playback, 
+                  skipIntros: !settings.playback.skipIntros 
+                } 
+              })}
+              className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                settings.playback.skipIntros ? 'bg-[#E50914]' : 'bg-[#333]'
+              }`}
+            >
+              <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                settings.playback.skipIntros ? 'translate-x-[18px]' : ''
+              }`} />
+            </button>
           </div>
 
-          <div class="dev-row">
-            <div style="display:flex;align-items:center;gap:14px">
-              <div class="dev-ic">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:#6B6B6B">
-                  <rect x="5" y="2" width="14" height="20" rx="2"/>
-                  <line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"/>
-                </svg>
-              </div>
-              <div>
-                <div class="dev-name">iPhone 15 Pro</div>
-                <div class="dev-meta">iOS 17 · Safari · Mumbai, IN</div>
-                <div class="dev-meta">Last active 2 days ago</div>
-              </div>
-            </div>
-            <button class="btn btn-d btn-sm" onclick="removeDevice(this)">Remove</button>
-          </div>
-
-          <div class="dev-row">
-            <div style="display:flex;align-items:center;gap:14px">
-              <div class="dev-ic">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color:#6B6B6B">
-                  <rect x="2" y="7" width="20" height="15" rx="2"/>
-                  <polyline points="17 2 12 7 7 2"/>
-                </svg>
-              </div>
-              <div>
-                <div class="dev-name">Samsung QLED 55"</div>
-                <div class="dev-meta">Smart TV · MovieFlix App · Bengaluru, IN</div>
-                <div class="dev-meta">Last active 5 days ago</div>
-              </div>
-            </div>
-            <button class="btn btn-d btn-sm" onclick="removeDevice(this)">Remove</button>
-          </div>
-        </div>
-
-        <div class="mf-card" style="border-color:rgba(229,9,20,0.2);background:rgba(229,9,20,0.03)">
-          <div style="display:flex;align-items:center;justify-content:space-between">
+          <div className="flex items-center justify-between py-[13px]">
             <div>
-              <div style="font-size:13.5px;font-weight:500;margin-bottom:4px">Manage Download Devices</div>
-              <div style="font-size:12px;color:var(--muted)">
-                You can download on up to 4 devices with your Premium plan
-              </div>
+              <div className="text-[13.5px] text-white">Smart Downloads</div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Auto-download next episode on Wi-Fi</div>
             </div>
-            <button class="btn btn-g btn-sm">Manage</button>
+            <button
+              onClick={() => updateSettings({ 
+                playback: { 
+                  ...settings.playback, 
+                  smartDownloads: !settings.playback.smartDownloads 
+                } 
+              })}
+              className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                settings.playback.smartDownloads ? 'bg-[#E50914]' : 'bg-[#333]'
+              }`}
+            >
+              <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                settings.playback.smartDownloads ? 'translate-x-[18px]' : ''
+              }`} />
+            </button>
           </div>
         </div>
-      </div><!-- /devices -->
+      </div>
 
-
-      <!-- ══════════ BILLING ══════════ -->
-      <div class="mf-sec" id="sec-billing">
-        <div class="pg-title">Billing &amp; Subscription</div>
-        <div class="pg-sub">Manage your plan, payment method, and invoice history</div>
-
-        <div class="plan-card">
-          <div class="plan-name">Premium Plan</div>
-          <div class="plan-price">₹649<em>/month</em></div>
-          <div style="font-size:12px;color:var(--muted);margin:8px 0 18px">
-            Ultra HD · 4 simultaneous screens · Unlimited downloads
+      {/* Subtitle Appearance */}
+      <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+        <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">
+          Subtitle Appearance
+        </div>
+        
+        <div className="grid grid-cols-3 gap-[16px] mb-[14px]">
+          <div className="mb-0">
+            <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+              Font Size
+            </label>
+            <select 
+              value={settings.subtitles.fontSize}
+              onChange={(e) => updateSettings({ 
+                subtitles: { 
+                  ...settings.subtitles, 
+                  fontSize: e.target.value 
+                } 
+              })}
+              className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none cursor-pointer transition-colors focus:border-[#555] appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%3E%3Cpath%20d%3D%22M1%201l4%204%204-4%22%20stroke%3D%22%23555%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E')] bg-no-repeat bg-[right_12px_center]"
+            >
+              <option value="Small">Small</option>
+              <option value="Medium">Medium</option>
+              <option value="Large">Large</option>
+              <option value="Extra Large">Extra Large</option>
+            </select>
           </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <button class="btn btn-p">Upgrade Plan</button>
-            <button class="btn btn-g">Change Plan</button>
-            <button class="btn btn-d" style="margin-left:auto">Cancel Subscription</button>
+          
+          <div className="mb-0">
+            <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+              Font Style
+            </label>
+            <select 
+              value={settings.subtitles.fontStyle}
+              onChange={(e) => updateSettings({ 
+                subtitles: { 
+                  ...settings.subtitles, 
+                  fontStyle: e.target.value 
+                } 
+              })}
+              className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none cursor-pointer transition-colors focus:border-[#555] appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%3E%3Cpath%20d%3D%22M1%201l4%204%204-4%22%20stroke%3D%22%23555%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E')] bg-no-repeat bg-[right_12px_center]"
+            >
+              <option value="Default">Default</option>
+              <option value="Bold">Bold</option>
+              <option value="Italic">Italic</option>
+              <option value="Outlined">Outlined</option>
+            </select>
+          </div>
+          
+          <div className="mb-0">
+            <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+              Text Color
+            </label>
+            <select 
+              value={settings.subtitles.textColor}
+              onChange={(e) => updateSettings({ 
+                subtitles: { 
+                  ...settings.subtitles, 
+                  textColor: e.target.value 
+                } 
+              })}
+              className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none cursor-pointer transition-colors focus:border-[#555] appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%3E%3Cpath%20d%3D%22M1%201l4%204%204-4%22%20stroke%3D%22%23555%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E')] bg-no-repeat bg-[right_12px_center]"
+            >
+              <option value="White">White</option>
+              <option value="Yellow">Yellow</option>
+              <option value="Green">Green</option>
+              <option value="Cyan">Cyan</option>
+            </select>
           </div>
         </div>
-
-        <div class="mf-card-wide">
-          <div class="mf-card" style="margin-bottom:0">
-            <div class="sec-h">Billing Details</div>
-            <div class="bill-row">
-              <span style="color:var(--muted)">Current plan</span>
-              <span style="font-weight:600">Premium</span>
-            </div>
-            <div class="bill-row">
-              <span style="color:var(--muted)">Monthly charge</span>
-              <span style="font-weight:600">₹649.00</span>
-            </div>
-            <div class="bill-row">
-              <span style="color:var(--muted)">Next billing date</span>
-              <span style="font-weight:600">May 1, 2026</span>
-            </div>
-            <div class="bill-row">
-              <span style="color:var(--muted)">Member since</span>
-              <span style="font-weight:600">March 2022</span>
-            </div>
-          </div>
-
-          <div class="mf-card" style="margin-bottom:0">
-            <div class="sec-h">Payment Method</div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-              <div style="display:flex;align-items:center;gap:13px">
-                <div style="background:#0d0d2e;border:1px solid #2a2a4a;border-radius:5px;padding:7px 12px;font-size:12px;font-weight:700;color:#4f8ef7;letter-spacing:1px">
-                  VISA
-                </div>
-                <div>
-                  <div style="font-size:13.5px">•••• •••• •••• 4291</div>
-                  <div style="font-size:12px;color:var(--muted);margin-top:3px">Expires 08/27</div>
-                </div>
-              </div>
-              <button class="btn btn-g btn-sm">Update</button>
-            </div>
-
-            <div class="sec-h">Billing History</div>
-            <div class="bill-row">
-              <div>
-                <div style="font-size:13px">Premium · Monthly</div>
-                <div style="font-size:11px;color:var(--dim);margin-top:2px">Apr 1, 2026</div>
-              </div>
-              <div style="text-align:right">
-                <div style="font-weight:500;font-size:13px">₹649.00</div>
-                <div style="font-size:11px;color:#22c55e;margin-top:2px">Paid</div>
-              </div>
-            </div>
-            <div class="bill-row">
-              <div>
-                <div style="font-size:13px">Premium · Monthly</div>
-                <div style="font-size:11px;color:var(--dim);margin-top:2px">Mar 1, 2026</div>
-              </div>
-              <div style="text-align:right">
-                <div style="font-weight:500;font-size:13px">₹649.00</div>
-                <div style="font-size:11px;color:#22c55e;margin-top:2px">Paid</div>
-              </div>
-            </div>
-            <div class="bill-row">
-              <div>
-                <div style="font-size:13px">Premium · Monthly</div>
-                <div style="font-size:11px;color:var(--dim);margin-top:2px">Feb 1, 2026</div>
-              </div>
-              <div style="text-align:right">
-                <div style="font-weight:500;font-size:13px">₹649.00</div>
-                <div style="font-size:11px;color:#22c55e;margin-top:2px">Paid</div>
-              </div>
-            </div>
-            <button class="btn btn-g btn-sm" style="margin-top:14px">Download All Invoices</button>
-          </div>
+        
+        <div className="mb-[16px]">
+          <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+            Background Opacity
+          </label>
+          <input 
+            type="range" 
+            min="0" 
+            max="100" 
+            value={settings.subtitles.backgroundOpacity}
+            onChange={(e) => updateSettings({ 
+              subtitles: { 
+                ...settings.subtitles, 
+                backgroundOpacity: parseInt(e.target.value) 
+              } 
+            })}
+            className="w-full accent-[#E50914] mt-[6px]"
+          />
         </div>
-      </div><!-- /billing -->
-
-
-      <!-- ══════════ HELP ══════════ -->
-      <div class="mf-sec" id="sec-help">
-        <div class="pg-title">Help Center</div>
-        <div class="pg-sub">Get support, review our policies, or report an issue</div>
-
-        <div class="mf-card-wide">
-          <div class="mf-card" style="margin-bottom:0">
-            <div class="sec-h">Support</div>
-            <div class="help-link">
-              <span>Help Center</span>
-              <svg class="ch-arr" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-            <div class="help-link">
-              <span>Contact Support</span>
-              <svg class="ch-arr" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-            <div class="help-link">
-              <span>Live Chat</span>
-              <svg class="ch-arr" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-            <div class="help-link">
-              <span>Report a Problem</span>
-              <svg class="ch-arr" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-            <div class="help-link">
-              <span>Speed Test</span>
-              <svg class="ch-arr" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-          </div>
-
-          <div class="mf-card" style="margin-bottom:0">
-            <div class="sec-h">Legal</div>
-            <div class="help-link">
-              <span>Privacy Policy</span>
-              <svg class="ch-arr" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-            <div class="help-link">
-              <span>Terms of Service</span>
-              <svg class="ch-arr" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-            <div class="help-link">
-              <span>Cookie Preferences</span>
-              <svg class="ch-arr" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-            <div class="help-link">
-              <span>Corporate Information</span>
-              <svg class="ch-arr" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-            <div class="help-link">
-              <span>Accessibility</span>
-              <svg class="ch-arr" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-          </div>
-        </div>
-
-        <div class="mf-card" style="background:#0d0d0d">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div>
-              <div style="font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:5px">
-                App Version
-              </div>
-              <div style="font-size:13.5px;color:var(--muted)">
-                MovieFlix Web v5.12.1 · Build 2026.04.01
-              </div>
-            </div>
-            <div style="font-size:11px;color:var(--dim)">© 2026 MovieFlix, Inc.</div>
-          </div>
-        </div>
-      </div><!-- /help -->
-
-    </div><!-- /mf-content -->
-  </div><!-- /mf-body -->
-</div><!-- /mf-wrap -->
-
-<script>
-  function nav(id, el) {
-    document.querySelectorAll('.mf-sec').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.mf-ni').forEach(n => n.classList.remove('active'));
-    document.getElementById('sec-' + id).classList.add('active');
-    el.classList.add('active');
-    document.querySelector('.mf-content').scrollTop = 0;
-  }
-
-  function sq(btn, grp) {
-    btn.closest('.qrow').querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-
-  function removeDevice(btn) {
-    var row = btn.closest('.dev-row');
-    row.style.transition = 'opacity .3s, transform .3s';
-    row.style.opacity = '0';
-    row.style.transform = 'translateX(16px)';
-    setTimeout(() => row.remove(), 300);
-  }
-</script>
-
-</body>
-</html>`
-    }} />
+        
+        <button className="px-[18px] py-[9px] rounded-[4px] bg-[#E50914] text-white font-['DM_Sans'] text-[12.5px] font-medium cursor-pointer transition-all hover:bg-[#f40612] border-none leading-none">
+          Save Subtitle Preferences
+        </button>
+      </div>
+    </div>
   );
-}
+};
+
+// Notifications Section Component
+const NotificationsSection = ({ settings, updateSettings }: { settings: AccountSettings; updateSettings: any }) => {
+  return (
+    <div>
+      <h1 className="text-[24px] font-semibold tracking-[-0.3px] mb-1">Notifications</h1>
+      <p className="text-[13px] text-[#B3B3B3] mb-8">Choose how and when MovieFlix contacts you</p>
+
+      <div className="grid grid-cols-2 gap-[14px]">
+        {/* Email Notifications */}
+        <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+          <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">
+            Email Notifications
+          </div>
+          
+          <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
+            <div>
+              <div className="text-[13.5px] text-white">New Releases & Picks</div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Titles we think you'll love, personalised weekly</div>
+            </div>
+            <button
+              onClick={() => updateSettings({ 
+                notifications: { 
+                  ...settings.notifications, 
+                  email: { 
+                    ...settings.notifications.email, 
+                    newReleases: !settings.notifications.email.newReleases 
+                  } 
+                } 
+              })}
+              className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                settings.notifications.email.newReleases ? 'bg-[#E50914]' : 'bg-[#333]'
+              }`}
+            >
+              <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                settings.notifications.email.newReleases ? 'translate-x-[18px]' : ''
+              }`} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
+            <div>
+              <div className="text-[13.5px] text-white">Continue Watching</div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Reminders for shows you haven't finished</div>
+            </div>
+            <button
+              onClick={() => updateSettings({ 
+                notifications: { 
+                  ...settings.notifications, 
+                  email: { 
+                    ...settings.notifications.email, 
+                    continueWatching: !settings.notifications.email.continueWatching 
+                  } 
+                } 
+              })}
+              className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                settings.notifications.email.continueWatching ? 'bg-[#E50914]' : 'bg-[#333]'
+              }`}
+            >
+              <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                settings.notifications.email.continueWatching ? 'translate-x-[18px]' : ''
+              }`} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
+            <div>
+              <div className="text-[13.5px] text-white">Billing & Account Alerts</div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Payment confirmations and security notices</div>
+            </div>
+            <button
+              onClick={() => updateSettings({ 
+                notifications: { 
+                  ...settings.notifications, 
+                  email: { 
+                    ...settings.notifications.email, 
+                    billingAlerts: !settings.notifications.email.billingAlerts 
+                  } 
+                } 
+              })}
+              className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                settings.notifications.email.billingAlerts ? 'bg-[#E50914]' : 'bg-[#333]'
+              }`}
+            >
+              <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                settings.notifications.email.billingAlerts ? 'translate-x-[18px]' : ''
+              }`} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between py-[13px]">
+            <div>
+              <div className="text-[13.5px] text-white">Promotions & Offers</div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Special deals and MovieFlix news</div>
+            </div>
+            <button
+              onClick={() => updateSettings({ 
+                notifications: { 
+                  ...settings.notifications, 
+                  email: { 
+                    ...settings.notifications.email, 
+                    promotions: !settings.notifications.email.promotions 
+                  } 
+                } 
+              })}
+              className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                settings.notifications.email.promotions ? 'bg-[#E50914]' : 'bg-[#333]'
+              }`}
+            >
+              <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                settings.notifications.email.promotions ? 'translate-x-[18px]' : ''
+              }`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Push Notifications */}
+        <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+          <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">
+            Push Notifications
+          </div>
+          
+          <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
+            <div>
+              <div className="text-[13.5px] text-white">New Episode Available</div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">When a followed show drops a new episode</div>
+            </div>
+            <button
+              onClick={() => updateSettings({ 
+                notifications: { 
+                  ...settings.notifications, 
+                  push: { 
+                    ...settings.notifications.push, 
+                    newEpisode: !settings.notifications.push.newEpisode 
+                  } 
+                } 
+              })}
+              className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                settings.notifications.push.newEpisode ? 'bg-[#E50914]' : 'bg-[#333]'
+              }`}
+            >
+              <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                settings.notifications.push.newEpisode ? 'translate-x-[18px]' : ''
+              }`} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
+            <div>
+              <div className="text-[13.5px] text-white">Watchlist Updates</div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Changes to items saved in your watchlist</div>
+            </div>
+            <button
+              onClick={() => updateSettings({ 
+                notifications: { 
+                  ...settings.notifications, 
+                  push: { 
+                    ...settings.notifications.push, 
+                    watchlistUpdates: !settings.notifications.push.watchlistUpdates 
+                  } 
+                } 
+              })}
+              className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                settings.notifications.push.watchlistUpdates ? 'bg-[#E50914]' : 'bg-[#333]'
+              }`}
+            >
+              <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                settings.notifications.push.watchlistUpdates ? 'translate-x-[18px]' : ''
+              }`} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
+            <div>
+              <div className="text-[13.5px] text-white">Friend Activity</div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">See what your friends are watching</div>
+            </div>
+            <button
+              onClick={() => updateSettings({ 
+                notifications: { 
+                  ...settings.notifications, 
+                  push: { 
+                    ...settings.notifications.push, 
+                    friendActivity: !settings.notifications.push.friendActivity 
+                  } 
+                } 
+              })}
+              className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                settings.notifications.push.friendActivity ? 'bg-[#E50914]' : 'bg-[#333]'
+              }`}
+            >
+              <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                settings.notifications.push.friendActivity ? 'translate-x-[18px]' : ''
+              }`} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between py-[13px]">
+            <div>
+              <div className="text-[13.5px] text-white">Download Complete</div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">Notify when an offline download finishes</div>
+            </div>
+            <button
+              onClick={() => updateSettings({ 
+                notifications: { 
+                  ...settings.notifications, 
+                  push: { 
+                    ...settings.notifications.push, 
+                    downloadComplete: !settings.notifications.push.downloadComplete 
+                  } 
+                } 
+              })}
+              className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                settings.notifications.push.downloadComplete ? 'bg-[#E50914]' : 'bg-[#333]'
+              }`}
+            >
+              <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                settings.notifications.push.downloadComplete ? 'translate-x-[18px]' : ''
+              }`} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Security Section Component
+const SecuritySection = ({ settings, updatePassword, loginActivity, signOutAllDevices }: { 
+  settings: AccountSettings; 
+  updatePassword: (current: string, newPassword: string) => void; 
+  loginActivity: LoginActivity[];
+  signOutAllDevices: () => void;
+}) => {
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  const handlePasswordUpdate = () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    if (passwordForm.newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    updatePassword(passwordForm.currentPassword, passwordForm.newPassword);
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  };
+
+  return (
+    <div>
+      <h1 className="text-[24px] font-semibold tracking-[-0.3px] mb-1">Security</h1>
+      <p className="text-[13px] text-[#B3B3B3] mb-8">Manage your password, two-factor authentication, and active sessions</p>
+
+      <div className="grid grid-cols-2 gap-[14px] mb-[14px]">
+        {/* Change Password */}
+        <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+          <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">
+            Change Password
+          </div>
+          
+          <div className="mb-[16px]">
+            <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+              Current Password
+            </label>
+            <input
+              type="password"
+              value={passwordForm.currentPassword}
+              onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+              placeholder="•••••••••••"
+              className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none transition-colors focus:border-[#555]"
+            />
+          </div>
+          
+          <div className="mb-[16px]">
+            <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+              New Password
+            </label>
+            <input
+              type="password"
+              value={passwordForm.newPassword}
+              onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+              placeholder="Min 8 characters"
+              className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none transition-colors focus:border-[#555]"
+            />
+          </div>
+          
+          <div className="mb-[16px]">
+            <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[7px] block">
+              Confirm New Password
+            </label>
+            <input
+              type="password"
+              value={passwordForm.confirmPassword}
+              onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+              placeholder="Repeat new password"
+              className="w-full bg-[#0d0d0d] border border-[#2A2A2A] rounded-[4px] text-white font-['DM_Sans'] text-[13px] p-[10px] outline-none transition-colors focus:border-[#555]"
+            />
+          </div>
+          
+          <button
+            onClick={handlePasswordUpdate}
+            className="px-[18px] py-[9px] rounded-[4px] bg-[#E50914] text-white font-['DM_Sans'] text-[12.5px] font-medium cursor-pointer transition-all hover:bg-[#f40612] border-none leading-none"
+          >
+            Update Password
+          </button>
+        </div>
+
+        {/* Right Column */}
+        <div className="flex flex-col gap-[14px]">
+          {/* Two-Factor Authentication */}
+          <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+            <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">
+              Two-Factor Authentication
+            </div>
+            
+            <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
+              <div>
+                <div className="text-[13.5px] text-white">Enable 2FA</div>
+                <div className="text-[12px] text-[#B3B3B3] mt-[3px]">SMS or authenticator app verification</div>
+              </div>
+              <button
+                className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                  settings.security.twoFactorEnabled ? 'bg-[#E50914]' : 'bg-[#333]'
+                }`}
+              >
+                <div className={`absolute top-[3px] left-[3px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${
+                  settings.security.twoFactorEnabled ? 'translate-x-[18px]' : ''
+                }`} />
+              </button>
+            </div>
+            
+            <div className="text-[11.5px] text-[#6B6B6B] mt-[12px] leading-[1.6]">
+              Adds a second verification step when signing in from a new device.
+            </div>
+            
+            <button className="px-[14px] py-[6px] bg-transparent text-white border border-[#3a3a3a] text-[12px] font-medium hover:bg-[#252525] hover:border-[#555] transition-all mt-[14px]">
+              Setup Authenticator
+            </button>
+          </div>
+
+          {/* Sign Out Everywhere */}
+          <div className="bg-[rgba(229,9,20,0.05)] border border-[rgba(229,9,20,0.2)] rounded-[6px] p-[22px]">
+            <div className="text-[13px] font-medium mb-[6px]">Sign Out Everywhere</div>
+            <div className="text-[12px] text-[#B3B3B3] mb-[14px] leading-[1.6]">
+              Immediately revokes access on all devices except this one.
+            </div>
+            <button
+              onClick={signOutAllDevices}
+              className="px-[14px] py-[6px] bg-transparent text-[#ff5555] border border-[rgba(255,85,85,0.25)] text-[12px] font-medium hover:bg-[rgba(255,85,85,0.07)] transition-all"
+            >
+              Sign Out of All Devices
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Login Activity */}
+      <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+        <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">
+          Recent Login Activity
+        </div>
+        
+        {loginActivity.map((activity, index) => (
+          <div key={activity._id} className="flex items-center justify-between py-[12px] border-b border-[#2A2A2A] last:border-b-0">
+            <div>
+              <div className="text-[13.5px] font-medium">
+                {activity.isActive && <span className="w-[7px] h-[7px] rounded-full bg-[#22c55e] inline-block mr-[7px]" />}
+                {activity.location}
+              </div>
+              <div className="text-[12px] text-[#B3B3B3] mt-[3px]">
+                {activity.browser} · {activity.platform} · {activity.isActive ? 'Active now' : `${new Date(activity.loginTime).toLocaleDateString()}`}
+              </div>
+            </div>
+            {activity.isActive ? (
+              <div className="bg-[rgba(34,197,94,0.1)] text-[#22c55e] px-[10px] py-[3px] rounded-[20px] text-[11px] font-semibold">
+                Current
+              </div>
+            ) : (
+              <button className="px-[14px] py-[6px] bg-transparent text-white border border-[#3a3a3a] text-[12px] font-medium hover:bg-[#252525] hover:border-[#555] transition-all">
+                Sign Out
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Devices Section Component
+const DevicesSection = ({ devices, removeDevice }: { devices: Device[]; removeDevice: (id: string) => void }) => {
+  const activeDevices = devices.filter(d => d.isActive).length;
+  const deviceLimit = 5;
+  const totalDownloadSlots = devices.reduce((sum, device) => sum + device.downloadSlots, 0);
+  const maxDownloadSlots = devices.reduce((sum, device) => sum + device.maxDownloadSlots, 0);
+
+  const getDeviceIcon = (type: string) => {
+    switch (type) {
+      case 'Desktop': return <Monitor className="w-4 h-4" />;
+      case 'Mobile': return <Monitor className="w-4 h-4" />;
+      case 'Tablet': return <Monitor className="w-4 h-4" />;
+      case 'TV': return <Monitor className="w-4 h-4" />;
+      default: return <Monitor className="w-4 h-4" />;
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-[24px] font-semibold tracking-[-0.3px] mb-1">Devices</h1>
+      <p className="text-[13px] text-[#B3B3B3] mb-8">Manage all devices currently signed into your MovieFlix account</p>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-3 gap-[12px] mb-[14px]">
+        <div className="bg-[#0d0d0d] border border-[#2A2A2A] rounded-[6px] p-4">
+          <div className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[6px]">
+            Active Devices
+          </div>
+          <div className="text-[20px] font-semibold">{activeDevices}</div>
+        </div>
+        <div className="bg-[#0d0d0d] border border-[#2A2A2A] rounded-[6px] p-4">
+          <div className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[6px]">
+            Device Limit
+          </div>
+          <div className="text-[20px] font-semibold">{deviceLimit}</div>
+        </div>
+        <div className="bg-[#0d0d0d] border border-[#2A2A2A] rounded-[6px] p-4">
+          <div className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[6px]">
+            Download Slots
+          </div>
+          <div className="text-[20px] font-semibold">{totalDownloadSlots} / {maxDownloadSlots}</div>
+        </div>
+      </div>
+
+      {/* Active Devices */}
+      <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+        <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">
+          Active Devices
+        </div>
+
+        {devices.map((device) => (
+          <div key={device._id} className="flex items-center justify-between py-[14px] border-b border-[#2A2A2A] last:border-b-0">
+            <div className="flex items-center gap-[14px]">
+              <div className="w-[36px] h-[36px] bg-[#252525] border border-[#2A2A2A] rounded-[5px] flex items-center justify-center flex-shrink-0">
+                {getDeviceIcon(device.type)}
+              </div>
+              <div>
+                <div className="text-[13.5px] font-medium">
+                  {device.name}
+                  {device.isCurrent && <span className="bg-[rgba(229,9,20,0.12)] text-[#ff5555] px-[7px] py-[2px] rounded-[10px] text-[9.5px] font-semibold ml-[7px] tracking-[0.5px]">CURRENT</span>}
+                </div>
+                <div className="text-[11.5px] text-[#B3B3B3] mt-[3px]">
+                  {device.platform} · {device.browser} · {device.location}
+                </div>
+                {device.isActive && (
+                  <div className="text-[11.5px] text-[#22c55e] mt-[2px]">Active now</div>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => !device.isCurrent && removeDevice(device._id)}
+              disabled={device.isCurrent}
+              className={`px-[14px] py-[6px] text-[12px] font-medium transition-all ${
+                device.isCurrent 
+                  ? 'opacity-35 cursor-not-allowed bg-transparent text-white border border-[#3a3a3a]' 
+                  : 'bg-transparent text-white border border-[#3a3a3a] hover:bg-[#252525] hover:border-[#555]'
+              }`}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Billing Section Component
+const BillingSection = () => {
+  return (
+    <div>
+      <h1 className="text-[24px] font-semibold tracking-[-0.3px] mb-1">Billing</h1>
+      <p className="text-[13px] text-[#B3B3B3] mb-8">Manage your subscription and payment methods</p>
+
+      <div className="bg-[#0d0d0d] border border-[#2A2A2A] rounded-[6px] p-5 relative overflow-hidden mb-[14px]">
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#E50914]" />
+        <div className="text-[11px] font-bold tracking-[1.5px] text-[#E50914] uppercase mb-[5px]">
+          Premium Plan
+        </div>
+        <div className="text-[30px] font-bold">
+          $9.99 <em className="text-[14px] font-normal text-[#B3B3B3] not-italic">/month</em>
+        </div>
+      </div>
+
+      <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+        <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">
+          Billing History
+        </div>
+        
+        <div className="flex justify-between items-center py-[10px] border-b border-[#2A2A2A] text-[13px]">
+          <span>Premium Subscription</span>
+          <span>$9.99</span>
+        </div>
+        <div className="flex justify-between items-center py-[10px] border-b border-[#2A2A2A] text-[13px]">
+          <span>Next Billing Date</span>
+          <span>Dec 15, 2024</span>
+        </div>
+        <div className="flex justify-between items-center py-[10px] text-[13px]">
+          <span>Payment Method</span>
+          <span>••••• 4242</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Help Section Component
+const HelpSection = () => {
+  const helpLinks = [
+    { title: 'Getting Started', description: 'Learn the basics of MovieFlix' },
+    { title: 'Account & Billing', description: 'Manage your subscription and account' },
+    { title: 'Troubleshooting', description: 'Fix common playback and app issues' },
+    { title: 'Safety & Privacy', description: 'Understand your privacy and security' },
+    { title: 'Contact Support', description: 'Get help from our support team' }
+  ];
+
+  return (
+    <div>
+      <h1 className="text-[24px] font-semibold tracking-[-0.3px] mb-1">Help Center</h1>
+      <p className="text-[13px] text-[#B3B3B3] mb-8">Find answers to common questions and get support</p>
+
+      <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px]">
+        {helpLinks.map((link, index) => (
+          <div key={index} className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A] last:border-b-0 cursor-pointer transition-colors text-[13.5px] text-[#B3B3B3] hover:text-white">
+            <span>{link.title}</span>
+            <ChevronRight className="w-[14px] h-[14px] opacity-45 flex-shrink-0" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default AccountPage;

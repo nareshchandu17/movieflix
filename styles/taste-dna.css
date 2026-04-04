@@ -1,0 +1,183 @@
+/* Taste DNA Performance Optimizations */
+
+/* Base performance optimizations */
+.taste-dna-container {
+  transform: translateZ(0);
+  will-change: transform;
+  background: #07070a; /* Ensure consistent background */
+}
+
+/* Section background fixes */
+.taste-dna-section {
+  background: #07070a;
+  position: relative;
+}
+
+.taste-dna-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #07070a;
+  z-index: -1;
+}
+
+/* GPU acceleration for animated elements */
+.animated-element {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 0;
+}
+
+/* Prevent background flashes during scroll */
+body {
+  background: #07070a;
+}
+
+/* Reduced motion support for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  
+  .animated-element {
+    will-change: auto;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .taste-dna-container {
+    will-change: auto;
+  }
+  
+  .animated-element {
+    will-change: opacity;
+    transform: translateZ(0);
+  }
+}
+
+/* Grain overlay optimization */
+.grain-overlay {
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: 
+    radial-gradient(circle at 20% 80%, transparent 50%, rgba(255,255,255,0.3) 51%),
+    radial-gradient(circle at 80% 20%, transparent 50%, rgba(255,255,255,0.3) 51%),
+    radial-gradient(circle at 40% 40%, transparent 50%, rgba(255,255,255,0.2) 51%);
+  background-size: 2px 2px, 3px 3px, 5px 5px;
+  background-position: 0 0, 10px 10px, 20px 20px;
+  animation: grain 0.5s steps(1) infinite;
+  will-change: auto;
+}
+
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-1%, -1%); }
+  20% { transform: translate(1%, 1%); }
+  30% { transform: translate(-2%, 2%); }
+  40% { transform: translate(2%, -1%); }
+  50% { transform: translate(-1%, 2%); }
+  60% { transform: translate(2%, 1%); }
+  70% { transform: translate(-2%, -2%); }
+  80% { transform: translate(1%, -2%); }
+  90% { transform: translate(-1%, 1%); }
+}
+
+/* Section-specific optimizations */
+.taste-dna-section {
+  contain: layout style paint;
+  transform: translateZ(0);
+  min-height: 100vh;
+}
+
+/* Background image fallbacks */
+.bg-fallback {
+  background-color: #07070a;
+  background-image: linear-gradient(135deg, #07070a 0%, #1a1a1f 100%);
+}
+
+/* Performance monitoring styles */
+.performance-monitor {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .animated-element {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .animated-element {
+    transition-duration: 0.2s;
+  }
+  
+  .taste-dna-section {
+    scroll-snap-type: none;
+  }
+}
+
+/* Prevent background flash during transitions */
+.section-transition {
+  background: #07070a !important;
+}
+
+/* Ensure consistent section heights */
+.section-full-height {
+  min-height: 100vh;
+  height: 100vh;
+  position: relative;
+}
+
+/* Prevent section blinking */
+.taste-dna-section {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevent content flicker */
+.taste-dna-section > * {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Smooth section transitions */
+.taste-dna-section {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.taste-dna-section.is-transitioning {
+  opacity: 0.99;
+}
+
+/* Prevent ScrollTrigger refresh flicker */
+.scroll-trigger-stable {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}

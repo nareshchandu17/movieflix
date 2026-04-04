@@ -6,6 +6,7 @@ import HeroSpotlight from "./HeroSpotlight";
 import FilterBar from "./FilterBar";
 import Top10Row from "./Top10Row";
 import NewReleasesGrid from "./NewReleasesGrid";
+import EnhancedNewReleasesGrid from "./EnhancedNewReleasesGrid";
 import TrendingCarousel from "./TrendingCarousel";
 import NewForYouGrid from "./NewForYouGrid";
 import { TMDBMovie, TMDBTVShow } from "@/lib/types";
@@ -342,15 +343,7 @@ const NewAndPopularClient = () => {
         >
           <HeroSpotlight media={getFilteredMedia(allMedia).slice(0, 5)} />
           
-          {/* Enhanced Filter Bar - Overlay on Hero */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            className="absolute bottom-0 left-0 right-0 z-30"
-          >
-            <FilterBar />
-          </motion.div>
+          
         </motion.div>
 
         {/* Content Sections - Enhanced Carousels */}
@@ -365,12 +358,73 @@ const NewAndPopularClient = () => {
             <div className="flex items-center gap-4 mb-8">
               <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full"></div>
               <h2 className="text-3xl font-bold text-white">Continue Watching</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 border border-blue-400/20">RESUME</span>
-                <span className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all duration-300 hover:scale-105 border border-indigo-400/20">WATCHLIST</span>
-              </div>
+              
             </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.slice(0, 5))} />
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {allMedia.slice(0, 3).map((show, index) => {
+                const title = 'title' in show ? show.title : show.name;
+                const progress = [70, 45, 85];
+                const timeRemaining = [32, 15, 8];
+                
+                return (
+                  <motion.div
+                    key={show.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    className="relative group cursor-pointer"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    {/* Thumbnail */}
+                    <div className="relative aspect-[16/9] rounded-lg overflow-hidden bg-gray-900">
+                      {show.poster_path ? (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w500${show.poster_path}`}
+                          alt={title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                          <span className="text-gray-400 text-lg font-semibold">{title.charAt(0)}</span>
+                        </div>
+                      )}
+                      
+                      {/* Progress Bar */}
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-700/80 backdrop-blur-sm">
+                        <div 
+                          className="h-0.5 bg-red-600 transition-all duration-300"
+                          style={{ width: progress[index] + '%' }}
+                        />
+                        <div className="absolute inset-0 left-0 top-0 w-full h-0.5 bg-white/20 backdrop-blur-sm rounded-full"></div>
+                        <div 
+                          className="h-full bg-red-600 transition-all duration-300"
+                          style={{ width: progress[index] + '%' }}
+                        />
+                      </div>
+                      
+                      {/* Hotstar Badge */}
+                      {index === 0 && (
+                        <div className="absolute top-2 left-2 bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
+                          <span className="text-lg">⭐</span>
+                          <span>HOTSTAR</span>
+                        </div>
+                      )}
+                      
+                      {/* Time Remaining Badge */}
+                      <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm text-white text-xs px-2 py-1 rounded">
+                        {timeRemaining[index] + 'm left'}
+                      </div>
+                      
+                      {/* Title Overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/70 to-transparent">
+                        <h4 className="text-white font-semibold text-sm">{title}</h4>
+                        <p className="text-gray-300 text-xs mt-1">Episode {index + 1} • {timeRemaining[index] + 'm left'}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
           </motion.div>
 
           {/* ⚡ Quick Picks for You */}
@@ -378,146 +432,80 @@ const NewAndPopularClient = () => {
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 1.0 }}
-            className="mb-8"
+            className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-cyan-500 to-blue-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Quick Picks for You</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 transition-all duration-300 hover:scale-105 border border-cyan-400/20">PERSONAL</span>
-                <span className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 border border-blue-400/20">AI PICKS</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(personalizedMedia)} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(personalizedMedia)}
+              title="Quick Picks for You"
+            />
           </motion.div>
 
-          {/* Top 10 in Your Country */}
+          {/* 🏆 Top 10 in Your Country */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 1.2 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-red-500 to-orange-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Top 10 in Your Country</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 transition-all duration-300 hover:scale-105 border border-red-400/20">DAILY</span>
-                <span className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-yellow-500/30 hover:shadow-xl hover:shadow-yellow-500/40 transition-all duration-300 hover:scale-105 border border-yellow-400/20">RANKED</span>
-              </div>
-            </div>
-            <Top10Row media={getFilteredMedia(top10Media)} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(top10Media)}
+              title="Top 10 in Your Country"
+            />
           </motion.div>
 
-          {/* Trending Right Now */}
+          {/* 🔥 Trending Right Now */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 1.4 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Trending Right Now</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all duration-300 hover:scale-105 border border-orange-400/20">REAL-TIME</span>
-                <span className="px-4 py-2 bg-gradient-to-r from-red-600 to-pink-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 transition-all duration-300 hover:scale-105 border border-red-400/20">VIRAL</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(trendingMedia)} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(trendingMedia)}
+              title="Trending Right Now"
+            />
           </motion.div>
 
-          {/* Globally Trending */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 1.6 }}
-            className="mb-12"
-          >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Globally Trending</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 border border-blue-400/20">WORLDWIDE</span>
-                <span className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 transition-all duration-300 hover:scale-105 border border-cyan-400/20">BREAKOUT</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.popularity > 500).slice(0, 10))} />
-          </motion.div>
-
-          {/* Most Discussed This Week */}
+          
+          {/* 💬 Most Discussed This Week */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 1.8 }}
-            className="mb-10"
-          >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-red-500 to-rose-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Most Discussed This Week</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 transition-all duration-300 hover:scale-105 border border-red-400/20">SOCIAL</span>
-                <span className="px-4 py-2 bg-gradient-to-r from-rose-600 to-pink-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40 transition-all duration-300 hover:scale-105 border border-rose-400/20">BUZZ</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.popularity > 300).slice(0, 10))} />
-          </motion.div>
-
-          {/* New This Week */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 2.0 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">New This Week</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 border border-blue-400/20">FRESH</span>
-                <span className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 border border-purple-400/20">7 DAYS</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(getNewThisWeek())} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => item.popularity > 300).slice(0, 10))}
+              title="Most Discussed This Week"
+            />
           </motion.div>
 
-          {/* New Seasons Just Dropped */}
+          {/* 🆕 New Seasons Just Dropped */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 2.2 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">New Seasons Just Dropped</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 border border-purple-400/20">NEW SEASON</span>
-                <span className="px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105 border border-pink-400/20">SERIES</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => 'first_air_date' in item).slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => 'first_air_date' in item).slice(0, 10))}
+              title="New Seasons Just Dropped"
+            />
           </motion.div>
 
-          {/* Recently Added */}
+          {/* 📅 Recently Added */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 2.4 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Recently Added</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 border border-green-400/20">NEW</span>
-                <span className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-300 hover:scale-105 border border-emerald-400/20">LICENSED</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(newReleases)} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(newReleases)}
+              title="Recently Added"
+            />
           </motion.div>
 
-          {/* New For You */}
           {/* 🎯 New For You */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
@@ -525,33 +513,23 @@ const NewAndPopularClient = () => {
             transition={{ duration: 0.8, delay: 2.6 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-cyan-500 to-blue-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">New For You</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 transition-all duration-300 hover:scale-105 border border-cyan-400/20">PERSONAL</span>
-                <span className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 border border-blue-400/20">AI PICKS</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(personalizedMedia)} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(personalizedMedia)}
+              title="New For You"
+            />
           </motion.div>
 
-          {/* 🎬 Because You Watched {Action} */}
+          {/* 🎬 Because You Watched Action */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 2.8 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Because You Watched Action</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all duration-300 hover:scale-105 border border-indigo-400/20">SIMILAR</span>
-                <span className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-white text-sm font-semibold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 border border-purple-400/20">CONTEXTUAL</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(28)).slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(28)).slice(0, 10))}
+              title="Because You Watched Action"
+            />
           </motion.div>
 
           {/* 🎭 If You Liked {Last Watched Title} */}
@@ -561,50 +539,23 @@ const NewAndPopularClient = () => {
             transition={{ duration: 0.8, delay: 3.0 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-rose-500 to-pink-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">If You Liked Last Watched Title</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-rose-600 rounded-full text-white text-sm font-semibold">RECOMMENDED</span>
-                <span className="px-3 py-1 bg-pink-600 rounded-full text-white text-sm font-semibold">SIMILAR</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.vote_average > 7.5).slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => item.vote_average > 7.5).slice(0, 10))}
+              title="If You Liked Last Watched Title"
+            />
           </motion.div>
-          {/* 🌟 Trending Among Viewers Like You */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 3.2 }}
-            className="mb-12"
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-teal-500 to-green-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Trending Among Viewers Like You</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-teal-600 rounded-full text-white text-sm font-semibold">COMMUNITY</span>
-                <span className="px-3 py-1 bg-green-600 rounded-full text-white text-sm font-semibold">PEERS</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.popularity > 500 && item.vote_average > 7.0).slice(0, 10))} />
-          </motion.div>
-
-          {/* � Hidden Gems For You */}
+          
+          {/* 💎 Hidden Gems For You */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 3.4 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-teal-500 to-green-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Hidden Gems For You</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-teal-600 rounded-full text-white text-sm font-semibold">UNDISCOVERED</span>
-                <span className="px-3 py-1 bg-green-600 rounded-full text-white text-sm font-semibold">RARE</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.popularity < 500 && item.vote_average > 7.5).slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => item.popularity < 500 && item.vote_average > 7.5).slice(0, 10))}
+              title="Hidden Gems For You"
+            />
           </motion.div>
 
           {/* 🌙 Tonight's Picks */}
@@ -614,15 +565,10 @@ const NewAndPopularClient = () => {
             transition={{ duration: 0.8, delay: 3.6 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-amber-500 to-orange-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Tonight's Picks</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-amber-600 rounded-full text-white text-sm font-semibold">EVENING</span>
-                <span className="px-3 py-1 bg-orange-600 rounded-full text-white text-sm font-semibold">TIME-BASED</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.slice(0, 10))}
+              title="Tonight's Picks"
+            />
           </motion.div>
 
           {/* 🏆 Critics' Picks */}
@@ -632,15 +578,10 @@ const NewAndPopularClient = () => {
             transition={{ duration: 0.8, delay: 3.8 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-yellow-500 to-amber-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Critics' Picks</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-yellow-600 rounded-full text-white text-sm font-semibold">TOP RATED</span>
-                <span className="px-3 py-1 bg-amber-600 rounded-full text-white text-sm font-semibold">AWARDS</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.vote_average > 8.5).slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => item.vote_average > 8.5).slice(0, 10))}
+              title="Critics' Picks"
+            />
           </motion.div>
           {/* 🎖️ Award Winners & Nominees */}
           <motion.div
@@ -649,15 +590,10 @@ const NewAndPopularClient = () => {
             transition={{ duration: 0.8, delay: 4.0 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-amber-500 to-yellow-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Award Winners & Nominees</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-amber-600 rounded-full text-white text-sm font-semibold">OSCAR</span>
-                <span className="px-3 py-1 bg-yellow-600 rounded-full text-white text-sm font-semibold">EMMY</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.vote_average > 8.0 && item.vote_count > 1000).slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => item.vote_average > 8.0 && item.vote_count > 1000).slice(0, 10))}
+              title="Award Winners & Nominees"
+            />
           </motion.div>
 
           {/* 🚀 Sci-Fi Spotlight */}
@@ -667,15 +603,10 @@ const NewAndPopularClient = () => {
             transition={{ duration: 0.8, delay: 4.2 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-rose-500 to-pink-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Sci-Fi Spotlight</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-rose-600 rounded-full text-white text-sm font-semibold">ROTATING</span>
-                <span className="px-3 py-1 bg-pink-600 rounded-full text-white text-sm font-semibold">GENRE</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(878)).slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(878)).slice(0, 10))}
+              title="Sci-Fi Spotlight"
+            />
           </motion.div>
 
           {/* ⚔️ Action & Adventure */}
@@ -685,15 +616,10 @@ const NewAndPopularClient = () => {
             transition={{ duration: 0.8, delay: 4.4 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-red-500 to-orange-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Action & Adventure</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-red-600 rounded-full text-white text-sm font-semibold">THRILL</span>
-                <span className="px-3 py-1 bg-orange-600 rounded-full text-white text-sm font-semibold">ADVENTURE</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(28) || item.genre_ids?.includes(12)).slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(28) || item.genre_ids?.includes(12)).slice(0, 10))}
+              title="Action & Adventure"
+            />
           </motion.div>
 
           {/* 🔍 Thrillers & Crime */}
@@ -703,15 +629,10 @@ const NewAndPopularClient = () => {
             transition={{ duration: 0.8, delay: 4.6 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-gray-500 to-slate-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Thrillers & Crime</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-gray-600 rounded-full text-white text-sm font-semibold">SUSPENSE</span>
-                <span className="px-3 py-1 bg-slate-600 rounded-full text-white text-sm font-semibold">CRIME</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(53) || item.genre_ids?.includes(80)).slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(53) || item.genre_ids?.includes(80)).slice(0, 10))}
+              title="Thrillers & Crime"
+            />
           </motion.div>
 
           {/* 😄 Comedy Hits */}
@@ -721,15 +642,10 @@ const NewAndPopularClient = () => {
             transition={{ duration: 0.8, delay: 4.8 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Comedy Hits</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-pink-600 rounded-full text-white text-sm font-semibold">FUNNY</span>
-                <span className="px-3 py-1 bg-rose-600 rounded-full text-white text-sm font-semibold">LAUGHS</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(35)).slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(35)).slice(0, 10))}
+              title="Comedy Hits"
+            />
           </motion.div>
 
           {/* 💕 Romance & Drama */}
@@ -739,15 +655,10 @@ const NewAndPopularClient = () => {
             transition={{ duration: 0.8, delay: 5.0 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Romance & Drama</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-purple-600 rounded-full text-white text-sm font-semibold">LOVE</span>
-                <span className="px-3 py-1 bg-pink-600 rounded-full text-white text-sm font-semibold">DRAMA</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(10749) || item.genre_ids?.includes(18)).slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(10749) || item.genre_ids?.includes(18)).slice(0, 10))}
+              title="Romance & Drama"
+            />
           </motion.div>
 
           {/* 🌌 Sci-Fi & Fantasy */}
@@ -757,34 +668,13 @@ const NewAndPopularClient = () => {
             transition={{ duration: 0.8, delay: 5.2 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Sci-Fi & Fantasy</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-blue-600 rounded-full text-white text-sm font-semibold">FUTURE</span>
-                <span className="px-3 py-1 bg-purple-600 rounded-full text-white text-sm font-semibold">MAGIC</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(878) || item.genre_ids?.includes(14)).slice(0, 10))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(878) || item.genre_ids?.includes(14)).slice(0, 10))}
+              title="Sci-Fi & Fantasy"
+            />
           </motion.div>
 
-          {/* 📚 Documentaries & True Stories */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 5.4 }}
-            className="mb-12"
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-green-500 to-teal-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Documentaries & True Stories</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-green-600 rounded-full text-white text-sm font-semibold">REAL</span>
-                <span className="px-3 py-1 bg-teal-600 rounded-full text-white text-sm font-semibold">TRUE</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(99)).slice(0, 10))} />
-          </motion.div>
+          
 
 
           {/* ⏱️ Short & Sweet (Under 2 Hours) */}
@@ -794,15 +684,10 @@ const NewAndPopularClient = () => {
             transition={{ duration: 0.8, delay: 5.8 }}
             className="mb-12"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-1 h-8 bg-gradient-to-b from-cyan-500 to-teal-500 rounded-full"></div>
-              <h2 className="text-3xl font-bold text-white">Short & Sweet (Under 2 Hours)</h2>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-cyan-600 rounded-full text-white text-sm font-semibold">QUICK</span>
-                <span className="px-3 py-1 bg-teal-600 rounded-full text-white text-sm font-semibold">BINGE</span>
-              </div>
-            </div>
-            <NewReleasesGrid media={getFilteredMedia(allMedia.slice(0, 15))} />
+            <EnhancedNewReleasesGrid 
+              media={getFilteredMedia(allMedia.slice(0, 15))}
+              title="Short & Sweet (Under 2 Hours)"
+            />
           </motion.div>
 
         </div>

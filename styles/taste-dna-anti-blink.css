@@ -1,0 +1,73 @@
+/* Additional anti-blinking optimizations */
+
+/* Prevent initial page load flash */
+.taste-dna-preload {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.taste-dna-loaded {
+  opacity: 1;
+}
+
+/* Prevent GSAP initialization flash */
+.gsap-initialized {
+  visibility: visible !important;
+}
+
+/* Stabilize pinned sections */
+.taste-dna-section[data-pinned="true"] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 10 !important;
+}
+
+/* Prevent content reflow during scroll */
+.taste-dna-section > div {
+  contain: layout style paint;
+}
+
+/* Smooth section transitions */
+.section-enter {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.section-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Prevent scroll-based flickering */
+@media (prefers-reduced-motion: no-preference) {
+  .taste-dna-section {
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+}
+
+/* Hardware acceleration for smooth scrolling */
+.smooth-scroll-container {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  overflow: hidden;
+}
+
+/* Prevent background flashing during section changes */
+.section-background-stable {
+  background: #07070a !important;
+  transition: background 0s !important;
+}
+
+/* Optimize for high refresh rate displays */
+@media (min-resolution: 120dpi) {
+  .taste-dna-section {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+}

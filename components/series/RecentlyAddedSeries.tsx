@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Play, Star, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Plus, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { TMDBTVShow } from "@/lib/types";
@@ -12,28 +12,39 @@ interface RecentlyAddedSeriesProps {
   title?: string;
 }
 
-export default function RecentlyAddedSeries({ title = "Recently Added" }: RecentlyAddedSeriesProps) {
+export default function RecentlyAddedSeries({
+  title = "Recently Added",
+}: RecentlyAddedSeriesProps) {
   const [series, setSeries] = useState<TMDBTVShow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [hovered, setHovered] = useState<number | null>(null);
 
-  // Fetch recently added series
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  // 🔥 BETTER LOGIC (Recent + Quality)
   useEffect(() => {
     const fetchRecentlyAdded = async () => {
       try {
         setLoading(true);
-        
-        // Get newest series by first air date
-        const response = await api.discover('tv', { 
-          sortBy: 'first_air_date.desc', 
-          page: 1 
+
+        const res = await api.discover("tv", {
+          sortBy: "first_air_date.desc",
+          page: 1,
         });
-        
-        const recentSeries = (response.results as TMDBTVShow[]) || [];
-        setSeries(recentSeries.slice(0, 8));
-      } catch (error) {
-        console.error('Failed to fetch recently added:', error);
+
+        const filtered = (res.results as TMDBTVShow[])
+          .filter(
+            (show) =>
+              show.vote_average >= 6.5 && // avoid trash
+              show.poster_path &&
+              show.backdrop_path
+          )
+          .slice(0, 12);
+
+        setSeries(filtered);
+      } catch (err) {
+        console.error(err);
         setSeries([]);
       } finally {
         setLoading(false);
@@ -43,154 +54,138 @@ export default function RecentlyAddedSeries({ title = "Recently Added" }: Recent
     fetchRecentlyAdded();
   }, []);
 
-  const nextSlide = useCallback(() => {
-    if (series.length > 0) {
-      setCurrentIndex((prev) => (prev + 1) % Math.ceil(series.length / 4));
-    }
-  }, [series.length]);
-
-  const prevSlide = useCallback(() => {
-    if (series.length > 0) {
-      setCurrentIndex((prev) => (prev - 1 + Math.ceil(series.length / 4)) % Math.ceil(series.length / 4));
-    }
-  }, [series.length]);
-
-  const getDaysAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const daysAgo = Math.floor((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysAgo === 0) return "Today";
-    if (daysAgo === 1) return "Yesterday";
-    if (daysAgo <= 7) return `${daysAgo} days ago`;
-    return `${Math.ceil(daysAgo / 7)} weeks ago`;
+  const scroll = (dir: "left" | "right") => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollBy({
+      left: dir === "left" ? -320 : 320,
+      behavior: "smooth",
+    });
   };
 
   if (loading) {
     return (
-      <div className="relative">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-8 bg-yellow-600 rounded-full" />
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
-        </div>
-
-        <div className="relative group">
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth py-4 px-6">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="flex-shrink-0 snap-start"
-                style={{ width: '280px' }}
-              >
-                <div className="relative aspect-video rounded-lg overflow-hidden">
-                  <div className="w-full h-full bg-gray-800 animate-pulse" />
-                </div>
-                <div className="mt-3 space-y-2">
-                  <div className="h-4 bg-gray-700 rounded animate-pulse" />
-                  <div className="h-3 bg-gray-700 rounded w-3/4 animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="px-4 md:px-12 lg:px-20">
+        <h2 className="text-2xl font-bold text-white mb-6">{title}</h2>
+        <div className="flex gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="w-[220px] h-[130px] bg-gray-800 rounded-lg animate-pulse" />
+          ))}
         </div>
       </div>
     );
   }
 
-  if (series.length === 0) {
-    return null;
-  }
+  if (!series.length) return null;
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-1 h-8 bg-yellow-600 rounded-full" />
+      {/* HEADER (LEFT SAFE) */}
+      <div className="px-4 md:px-12 lg:px-20 mb-6">
         <h2 className="text-2xl font-bold text-white">{title}</h2>
       </div>
 
+      {/* CAROUSEL */}
       <div className="relative group">
         <div
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4 px-6"
-          style={{ scrollPaddingLeft: "3rem" }}
+          className="
+            flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory
+            py-4
+            pl-4 md:pl-12 lg:pl-20
+            pr-0
+            -mr-[50vw] w-[calc(100vw+50vw)]
+          "
         >
-          {series.map((show, index) => (
-            <motion.div
-              key={`${show.id}-${index}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="flex-shrink-0 snap-start"
-              style={{ width: '280px' }}
-            >
-              <div className="relative aspect-video rounded-lg overflow-hidden group/card cursor-pointer"
-                   onClick={() => useRouter().push(`/series/${show.id}`)}>
-                <Image
-                  src={show.poster_path ? `https://image.tmdb.org/t/p/w500${show.poster_path}` : '/placeholder-series.jpg'}
-                  alt={show.name}
-                  fill
-                  className="object-cover transition-transform duration-300 group-hover/card:scale-105"
-                  sizes="280px"
-                />
+          {/* LEFT SPACER */}
+          <div className="flex-shrink-0 w-4 md:w-12 lg:w-20" />
 
-                {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className="w-16 h-16 bg-yellow-600 rounded-full flex items-center justify-center"
-                  >
-                    <Play className="w-6 h-6 text-white ml-1" />
-                  </motion.div>
+          {series.map((show) => (
+            <motion.div
+              key={show.id}
+              className="flex-shrink-0 snap-start"
+              style={{ width: "220px" }} // 🔥 PERFECT SIZE
+              onHoverStart={() => setHovered(show.id)}
+              onHoverEnd={() => setHovered(null)}
+            >
+              <div
+                className="relative rounded-lg overflow-hidden cursor-pointer group/card"
+                onClick={() => router.push(`/series/${show.id}`)}
+              >
+                {/* IMAGE */}
+                <div className="relative w-full h-[130px]">
+                  <Image
+                    src={`https://image.tmdb.org/t/p/w500${show.backdrop_path}`}
+                    alt={show.name}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover/card:scale-110"
+                  />
                 </div>
 
-                {/* New Badge */}
-                <div className="absolute top-2 left-2 bg-yellow-600 text-white text-xs px-2 py-1 rounded-md font-bold">
+                {/* BADGE */}
+                <div className="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] px-2 py-1 rounded font-bold">
                   NEW
                 </div>
 
-                {/* Days Added Badge */}
-                <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded-md">
-                  <div className="flex flex-col items-end gap-1 text-xs">
-                    <span className="text-yellow-400 font-semibold">
-                      {show.first_air_date && getDaysAgo(show.first_air_date)}
-                    </span>
-                    <div className="flex items-center gap-1 text-gray-400">
-                      <Star className="w-3 h-3 text-yellow-400" />
-                      <span>{show.vote_average?.toFixed(1)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                {/* HOVER PANEL */}
+                <AnimatePresence>
+                  {hovered === show.id && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      transition={{ duration: 0.25 }}
+                      className="absolute inset-0 bg-black/90 p-3 flex flex-col justify-end"
+                    >
+                      {/* TITLE */}
+                      <h3 className="text-white text-sm font-semibold line-clamp-2">
+                        {show.name}
+                      </h3>
 
-              {/* Series Info */}
-              <div className="mt-3">
-                <h3 className="text-white font-semibold text-sm line-clamp-2 leading-tight">
-                  {show.name}
-                </h3>
-                <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
-                  <span>{show.first_air_date ? new Date(show.first_air_date).getFullYear() : 'N/A'}</span>
-                  <span className="text-yellow-400 font-semibold">
-                    {show.first_air_date && getDaysAgo(show.first_air_date)}
-                  </span>
-                </div>
+                      {/* META */}
+                      <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                        <span>{show.first_air_date?.slice(0, 4)}</span>
+                        <span>•</span>
+                        <div className="flex items-center gap-1 text-yellow-400">
+                          <Star className="w-3 h-3" />
+                          {show.vote_average?.toFixed(1)}
+                        </div>
+                      </div>
+
+                      {/* ACTIONS */}
+                      <div className="flex items-center gap-2 mt-3">
+                        <button className="flex-1 bg-white text-black text-xs py-1.5 rounded flex items-center justify-center gap-1 font-semibold">
+                          <Play className="w-3 h-3" />
+                          Play
+                        </button>
+
+                        <button className="w-8 h-8 bg-white/20 rounded flex items-center justify-center">
+                          <Plus className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           ))}
+
+          {/* RIGHT FULL BLEED SPACE */}
+          <div className="flex-shrink-0 w-20 md:w-32 lg:w-40" />
         </div>
 
-        {/* Navigation Arrows */}
+        {/* NAV BUTTONS */}
         <button
-          onClick={prevSlide}
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-yellow-600 hover:border-yellow-600 z-10"
+          onClick={() => scroll("left")}
+          className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/70 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="text-white w-5 h-5" />
         </button>
 
         <button
-          onClick={nextSlide}
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-yellow-600 hover:border-yellow-600 z-10"
+          onClick={() => scroll("right")}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/70 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="text-white w-5 h-5" />
         </button>
       </div>
     </div>

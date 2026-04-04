@@ -21,6 +21,8 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   const isSeriesPage = pathname?.startsWith('/series/');
   const isCastInfoPage = pathname?.includes('/info');
   const isForYouPage = pathname?.startsWith('/for-you');
+  const isAccountPage = pathname?.startsWith('/account');
+  const isDownloadsPage = pathname?.startsWith('/downloads');
   const { isSearching, searchQuery } = useSearch();
   const [mounted, setMounted] = useState(false);
   
@@ -45,14 +47,14 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       />
 
       <div className="min-h-screen relative z-[90]">
-        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isForYouPage && <Header />}
+        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isForYouPage && !isAccountPage && !isDownloadsPage && <Header />}
         <main className={cn(
           "transition-all duration-700",
           mounted && showDeepOverlay ? "blur-xl scale-[0.97] opacity-20 pointer-events-none" : "blur-0 scale-100 opacity-100"
         )}>
           {children}
         </main>
-        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isForYouPage && <Footer />}
+        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isForYouPage && !isAccountPage && !isDownloadsPage && <Footer />}
         <Toaster position="top-right" richColors />
       </div>
     </>
