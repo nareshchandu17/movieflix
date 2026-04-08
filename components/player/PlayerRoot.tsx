@@ -106,10 +106,7 @@ export function PlayerRoot({ contentId, url, title, roomId, isWatchParty }: Play
     const handleOpenRecorder = (e: any) => {
       setRecorderTimestamp(e.detail.timestamp);
       setIsRecorderOpen(true);
-      // Pause playback when recording starts
-      if (usePlayerState.getState().playing) {
-          usePlayerState.getState().togglePlay();
-      }
+      // Don't pause — let the video keep playing while user reacts live
     };
 
     const handleOpenRoomSettings = () => {
@@ -158,10 +155,14 @@ export function PlayerRoot({ contentId, url, title, roomId, isWatchParty }: Play
       if (clickTimeout.current) clearTimeout(clickTimeout.current);
       
       if (isLeftThird) {
-        seek(currentTime - 10);
+        const nextTime = currentTime - 10;
+        seek(nextTime);
+        window.dispatchEvent(new CustomEvent('player:force-seek', { detail: nextTime }));
         window.dispatchEvent(new CustomEvent('player:seek-flash', { detail: { type: 'rewind', msg: '-10s' } }));
       } else if (isRightThird) {
-        seek(currentTime + 10);
+        const nextTime = currentTime + 10;
+        seek(nextTime);
+        window.dispatchEvent(new CustomEvent('player:force-seek', { detail: nextTime }));
         window.dispatchEvent(new CustomEvent('player:seek-flash', { detail: { type: 'forward', msg: '+10s' } }));
       } else {
         // Center double click -> toggle fullscreen

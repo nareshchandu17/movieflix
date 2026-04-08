@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { smartSearch } from '@/lib/smartSearch';
+import { withContentFilter } from '@/lib/contentFilterMiddleware';
 
-export async function GET(request: NextRequest) {
+async function searchHandler(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q');
@@ -43,6 +44,9 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// Export the handler with content filtering applied
+export const GET = withContentFilter(searchHandler);
 
 export async function POST(request: NextRequest) {
   try {

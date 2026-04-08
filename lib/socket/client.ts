@@ -1,8 +1,8 @@
 import { io } from "socket.io-client";
 
 // Initialize socket connection
-// Use the same host but ensure it works both locally and in production (if deployed custom)
-const URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+// Point directly to the standalone Socket.io server we built for dev
+const URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
 
 export const socket = io(URL, {
   autoConnect: false, // Don't connect until needed

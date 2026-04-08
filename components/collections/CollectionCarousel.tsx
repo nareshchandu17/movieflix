@@ -32,7 +32,7 @@ export default function CollectionCarousel({ title, items }: CollectionCarouselP
       <div className="relative group/section py-8">
         <div className="px-4 sm:px-6 md:px-12 lg:px-20 mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase border-l-4 border-blue-500 pl-3">
+            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase border-l-4 border-red-500 pl-3">
               {title}
             </h2>
           </div>
@@ -40,12 +40,12 @@ export default function CollectionCarousel({ title, items }: CollectionCarouselP
         <div className="px-4 sm:px-6 md:px-12 lg:px-20">
           <div 
             onClick={() => router.push('/')}
-            className="w-full h-[200px] md:h-[300px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 hover:border-blue-500/30 transition-all cursor-pointer group/empty"
+            className="w-full h-[200px] md:h-[300px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 hover:border-red-500/30 transition-all cursor-pointer group/empty"
           >
-            <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-4 group-hover/empty:scale-110 transition-transform group-hover/empty:bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0)] group-hover/empty:shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-              <Plus className="w-8 h-8 text-blue-500" />
+            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4 group-hover/empty:scale-110 transition-transform group-hover/empty:bg-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0)] group-hover/empty:shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+              <Plus className="w-8 h-8 text-red-500" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2 group-hover/empty:text-blue-400 transition-colors">No items yet</h3>
+            <h3 className="text-xl font-bold text-white mb-2 group-hover/empty:text-red-400 transition-colors">No items yet</h3>
             <p className="text-gray-400 font-medium text-sm">Click here to add some movies now</p>
           </div>
         </div>
@@ -68,7 +68,7 @@ export default function CollectionCarousel({ title, items }: CollectionCarouselP
       {/* Header */}
       <div className="px-4 sm:px-6 md:px-12 lg:px-20 mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase border-l-4 border-blue-500 pl-3">
+          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase border-l-4 border-red-500 pl-3">
             {title}
           </h2>
         </div>
@@ -98,7 +98,7 @@ export default function CollectionCarousel({ title, items }: CollectionCarouselP
               className="flex-shrink-0 w-[160px] md:w-[200px] aspect-[2/3] snap-start group/card relative"
             >
               <div 
-                className="relative w-full h-full rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 group-hover/card:scale-105 group-hover/card:shadow-[0_0_30px_rgba(59,130,246,0.2)] border border-white/5 group-hover/card:border-blue-500/30"
+                className="relative w-full h-full rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 group-hover/card:scale-105 group-hover/card:shadow-[0_0_30px_rgba(239,68,68,0.2)] border border-white/5 group-hover/card:border-red-500/30"
                 onClick={() => router.push(`/${item.mediaType === "series" ? "series" : "movie"}/${item.tmdbId}`)}
               >
                 <Image
@@ -115,7 +115,7 @@ export default function CollectionCarousel({ title, items }: CollectionCarouselP
                 {/* Content Overlay */}
                 <div className="absolute inset-x-0 bottom-0 p-4 translate-y-2 group-hover/card:translate-y-0 transition-transform duration-300">
                   <div className="flex items-center gap-1.5 mb-2">
-                    <span className="px-1.5 py-0.5 bg-blue-600 rounded text-[9px] font-black text-white uppercase">
+                    <span className="px-1.5 py-0.5 bg-red-600 rounded text-[9px] font-black text-white uppercase">
                       {item.mediaType}
                     </span>
                     {(item.voteAverage && item.voteAverage > 0) ? (
@@ -126,7 +126,7 @@ export default function CollectionCarousel({ title, items }: CollectionCarouselP
                     ) : null}
                   </div>
                   
-                  <h3 className="text-white font-bold text-sm line-clamp-2 group-hover/card:text-blue-400 transition-colors shadow-black drop-shadow-md">
+                  <h3 className="text-white font-bold text-sm line-clamp-2 group-hover/card:text-red-400 transition-colors shadow-black drop-shadow-md">
                     {item.title}
                   </h3>
                   
@@ -137,7 +137,7 @@ export default function CollectionCarousel({ title, items }: CollectionCarouselP
                         e.stopPropagation();
                         router.push(`/watch/${item.tmdbId}`);
                       }}
-                      className="flex-1 bg-white hover:bg-blue-500 text-black hover:text-white py-1.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1"
+                      className="flex-1 bg-white hover:bg-red-500 text-black hover:text-white py-1.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
                       Play

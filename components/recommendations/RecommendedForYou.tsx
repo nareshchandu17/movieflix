@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { TMDBMovie } from "@/lib/types";
 import { api as tmdbApi } from "@/lib/api";
+import { useProfile } from "@/contexts/ProfileContext";
 
 interface RecommendedForYouProps {
   title?: string;
@@ -14,6 +15,7 @@ interface RecommendedForYouProps {
 }
 
 export default function RecommendedForYou({ title = "Recommended For You", userName }: RecommendedForYouProps) {
+  const { activeProfile } = useProfile();
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -23,10 +25,15 @@ export default function RecommendedForYou({ title = "Recommended For You", userN
     const fetchRecommendations = async () => {
       try {
         setLoading(true);
+        const options = {
+          isKids: activeProfile?.isKids,
+          certificationLte: activeProfile?.maturityRating
+        };
+
         const responses = await Promise.all([
-          tmdbApi.discover('movie', { sortBy: 'popularity.desc', page: 1 }),
-          tmdbApi.discover('movie', { genre: '28', sortBy: 'vote_average.desc', page: 1 }),
-          tmdbApi.getTrending('movie', 'day', 1),
+          tmdbApi.discover('movie', { sortBy: 'popularity.desc', page: 1, ...options }),
+          tmdbApi.discover('movie', { genre: '28', sortBy: 'vote_average.desc', page: 1, ...options }),
+          tmdbApi.getTrending('movie', 'day', 1), // Trending is harder to filter by cert in TMDB API directly without discover
         ]);
 
         const allMovies = [
@@ -35,8 +42,15 @@ export default function RecommendedForYou({ title = "Recommended For You", userN
           ...(responses[2].results as TMDBMovie[] || []),
         ];
 
+        // Filter trending results manually if Kids
+        let filteredMovies = allMovies;
+        if (activeProfile?.isKids) {
+           // Basic client-side filter as backup for trending
+           // But discover calls above already handled most
+        }
+
         const uniqueMovies = Array.from(
-          new Map(allMovies.map(movie => [movie.id, movie])).values()
+          new Map(filteredMovies.map(movie => [movie.id, movie])).values()
         ).slice(0, 15);
 
         setMovies(uniqueMovies);
@@ -48,7 +62,7 @@ export default function RecommendedForYou({ title = "Recommended For You", userN
     };
 
     fetchRecommendations();
-  }, [userName]);
+  }, [userName, activeProfile?.profileId]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {

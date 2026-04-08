@@ -41,6 +41,8 @@ export function ProgressBar() {
     setHoverPct(pct);
     if (commit || isDragging) {
       seekToPercent(pct);
+      const newTime = (usePlayerState.getState().duration || 0) * pct;
+      window.dispatchEvent(new CustomEvent('player:force-seek', { detail: newTime }));
     }
   };
 

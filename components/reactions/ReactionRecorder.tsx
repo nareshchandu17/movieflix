@@ -171,6 +171,7 @@ export function ReactionRecorder({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamCleanupRef = useRef<(() => void) | null>(null);
+  const dragConstraintsRef = useRef<HTMLDivElement>(null);
 
   // Cleanup resources
   const cleanupResources = useCallback(() => {
@@ -530,12 +531,14 @@ export function ReactionRecorder({
       dispatch({ type: 'SET_RECORDING_STATE', payload: 'recording' });
       dispatch({ type: 'SET_RECORDING_TIME', payload: 0 });
       
-      // Start timer
+      // Start timer – use a local counter to avoid stale closure
+      let elapsed = 0;
       timerRef.current = setInterval(() => {
-        dispatch({ type: 'SET_RECORDING_TIME', payload: state.recordingTime + 1 });
+        elapsed++;
+        dispatch({ type: 'SET_RECORDING_TIME', payload: elapsed });
         
         // Auto-stop when max duration reached
-        if (state.recordingTime >= maxRecordingDuration - 1) {
+        if (elapsed >= maxRecordingDuration) {
           stopRecording();
         }
       }, 1000);
@@ -632,43 +635,39 @@ export function ReactionRecorder({
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+      ref={dragConstraintsRef}
+      className="fixed inset-0 z-[100] pointer-events-none"
       role="dialog"
       aria-modal="true"
       aria-labelledby="recorder-title"
       aria-describedby="recorder-description"
     >
       <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
+        drag
+        dragConstraints={dragConstraintsRef}
+        dragElastic={0.05}
+        dragMomentum={false}
+        initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className="relative w-full max-w-2xl bg-white/5 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl"
+        exit={{ opacity: 0, scale: 0.8 }}
+        style={{ position: 'absolute', top: 40, right: 40 }}
+        className="w-full max-w-[320px] bg-black/80 border-2 border-white/20 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl pointer-events-auto cursor-grab active:cursor-grabbing"
       >
         {/* Close button */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-white/60 hover:text-white bg-white/10 rounded-full transition-colors z-10 focus:outline-none focus:ring-2 focus:ring-white/50"
+          className="absolute top-3 right-3 p-1.5 text-white/60 hover:text-white bg-black/60 rounded-full transition-colors z-20 focus:outline-none"
           aria-label="Close recording modal"
         >
           <X className="w-6 h-6" />
         </button>
 
-        <div className="p-6">
-          {/* Header */}
-          <div className="mb-6">
-            <h2 id="recorder-title" className="text-2xl font-bold text-white mb-2">
-              Record Reaction
+        <div className="p-4 flex flex-col items-center">
+          {/* Header - Minimalised */}
+          <div className="w-full mb-3 flex items-center justify-between">
+            <h2 id="recorder-title" className="text-sm font-bold text-white uppercase tracking-widest pl-2">
+              React Mode
             </h2>
-            <p id="recorder-description" className="text-white/40">
-              Reacting to{' '}
-              <span className="text-white/80 font-medium" aria-label={`Movie: ${movieTitle}`}>
-                {movieTitle}
-              </span>{' '}
-              at{' '}
-              <span className="text-white/80 font-mono" aria-label={`Timestamp: ${formatTime(Math.floor(movieTimestamp / 60))}:${(movieTimestamp % 60).toString().padStart(2, '0')}`}>
-                {formatTime(Math.floor(movieTimestamp / 60))}:{(movieTimestamp % 60).toString().padStart(2, '0')}
-              </span>
-            </p>
           </div>
 
           {/* Video Container */}
@@ -676,6 +675,7 @@ export function ReactionRecorder({
             {/* Video Element */}
             <video 
               ref={videoRef}
+              autoPlay
               muted 
               playsInline
               className="w-full h-full object-cover"
@@ -722,73 +722,53 @@ export function ReactionRecorder({
             )}
             
             {/* Recording HUD */}
-            <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10">
+            <div className="absolute top-3 left-3 flex items-center gap-2 px-2 py-1 bg-black/80 backdrop-blur-md rounded-full border border-white/10">
               <div 
-                className={`w-2.5 h-2.5 rounded-full ${getStatusColor()}`}
+                className={`w-2 h-2 rounded-full ${getStatusColor()}`}
                 aria-hidden="true"
               />
-              <span className="text-sm font-mono text-white/90" aria-live="polite">
+              <span className="text-xs font-mono text-white/90" aria-live="polite">
                 {formatTime(state.recordingTime)} / {formatTime(maxRecordingDuration)}
               </span>
             </div>
 
             {/* Status Indicator */}
             {state.recordingState !== 'ready' && state.recordingState !== 'recording' && (
-              <div className="absolute top-4 right-4 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10">
-                <span className="text-sm text-white/80">{getStatusText()}</span>
+              <div className="absolute top-3 right-3 px-2 py-1 bg-black/80 backdrop-blur-md rounded-full border border-white/10">
+                <span className="text-xs text-white/80">{getStatusText()}</span>
               </div>
             )}
 
             {/* Recording Controls */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-6">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4">
               {state.recordingState === 'ready' && (
                 <button
                   onClick={startRecording}
-                  className="w-16 h-16 flex items-center justify-center bg-red-500 hover:bg-red-600 rounded-full shadow-lg shadow-red-500/30 transition-all hover:scale-110 active:scale-95 group/btn focus:outline-none focus:ring-4 focus:ring-red-500/50"
+                  onPointerDown={(e) => e.stopPropagation()} // Prevent drag triggering here
+                  className="w-12 h-12 flex items-center justify-center bg-red-500 hover:bg-red-600 rounded-full shadow-lg shadow-red-500/30 transition-all hover:scale-110 active:scale-95 group/btn border-2 border-white/20"
                   aria-label="Start recording"
-                  disabled={state.recordingState !== 'ready'}
                 >
-                  <Camera className="w-8 h-8 text-white group-hover/btn:scale-110 transition-transform" />
+                  <Camera className="w-5 h-5 text-white transition-transform" />
                 </button>
               )}
               
               {state.recordingState === 'recording' && (
                 <button
                   onClick={stopRecording}
-                  className="w-16 h-16 flex items-center justify-center bg-white hover:bg-white/90 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 group/btn focus:outline-none focus:ring-4 focus:ring-white/50"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="w-12 h-12 flex items-center justify-center bg-white hover:bg-white/90 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 group/btn"
                   aria-label="Stop recording"
                 >
-                  <Square className="w-8 h-8 text-black fill-black" />
+                  <Square className="w-5 h-5 text-black fill-black" />
                 </button>
               )}
               
               {state.recordingState === 'processing' && (
-                <div className="w-16 h-16 flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 text-white/60 animate-spin" />
+                <div className="w-12 h-12 flex items-center justify-center bg-black/60 rounded-full">
+                  <Loader2 className="w-6 h-6 text-white/80 animate-spin" />
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Footer Info */}
-          <div className="mt-4 space-y-2">
-            <p className="text-center text-white/40 text-sm">
-              Maximum recording duration: {maxRecordingDuration} seconds
-            </p>
-            
-            {/* Device Info */}
-            {state.devices && (
-              <div className="text-center text-white/20 text-xs">
-                {state.devices.video.length} camera(s) • {state.devices.audio.length} microphone(s) available
-              </div>
-            )}
-            
-            {/* Recording Metrics */}
-            {state.metrics && (
-              <div className="text-center text-white/20 text-xs">
-                Last recording: {state.metrics.duration}s • {(state.metrics.blobSize / 1024 / 1024).toFixed(1)}MB • {state.metrics.resolution.width}x{state.metrics.resolution.height}
-              </div>
-            )}
           </div>
         </div>
       </motion.div>

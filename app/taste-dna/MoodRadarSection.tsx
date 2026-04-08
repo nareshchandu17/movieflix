@@ -60,14 +60,21 @@ export default function MoodRadarSection({ className = '' }: MoodRadarSectionPro
 
       scrollTl.fromTo(
         headlineRef.current,
-        { x: '-10vw', opacity: 0 },
+        { x: '-12vw', opacity: 1, scale: 0.92 },
+        { x: 0, opacity: 1, scale: 1, ease: 'none' },
+        0
+      );
+
+      scrollTl.fromTo(
+        headlineRef.current,
+        { x: '-10vw', opacity: 1 },
         { x: 0, opacity: 1, ease: 'none' },
         0
       );
 
       scrollTl.fromTo(
         chartRef.current,
-        { x: '18vw', opacity: 0, scale: 0.96 },
+        { x: '18vw', opacity: 1, scale: 0.96 },
         { x: 0, opacity: 1, scale: 1, ease: 'none' },
         0
       );
@@ -198,36 +205,36 @@ export default function MoodRadarSection({ className = '' }: MoodRadarSectionPro
               }} />
             </div>
 
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={moodData}>
-                <PolarGrid 
-                  stroke="rgba(244,246,250,0.08)" 
-                  strokeWidth={1}
-                />
-                <PolarAngleAxis
-                  dataKey="subject"
-                  tick={{ fill: '#A7B0B7', fontSize: 12, fontFamily: 'Space Mono' }}
-                />
-                <PolarRadiusAxis
-                  angle={90}
-                  domain={[0, 100]}
-                  tick={false}
-                  axisLine={false}
-                />
-                <Radar
-                  name="Mood"
-                  dataKey="A"
-                  stroke="#29D7FF"
-                  strokeWidth={2}
-                  fill="#29D7FF"
-                  fillOpacity={radarAnimated ? 0.18 : 0}
-                  isAnimationActive={true}
-                  animationBegin={0}
-                  animationDuration={1500}
-                  animationEasing="ease-out"
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+            <div className="absolute inset-0 w-full h-full flex items-center justify-center">
+              <RadarChart width={400} height={400} cx="50%" cy="50%" outerRadius="70%" data={moodData}>
+                  <PolarGrid 
+                    stroke="rgba(244,246,250,0.08)" 
+                    strokeWidth={1}
+                  />
+                  <PolarAngleAxis
+                    dataKey="subject"
+                    tick={{ fill: '#A7B0B7', fontSize: 12, fontFamily: 'Space Mono' }}
+                  />
+                  <PolarRadiusAxis
+                    angle={90}
+                    domain={[0, 100]}
+                    tick={false}
+                    axisLine={false}
+                  />
+                  <Radar
+                    name="Mood"
+                    dataKey="A"
+                    stroke="#29D7FF"
+                    strokeWidth={2}
+                    fill="#29D7FF"
+                    fillOpacity={0.18}
+                    isAnimationActive={true}
+                    animationBegin={0}
+                    animationDuration={1500}
+                    animationEasing="ease-out"
+                  />
+                </RadarChart>
+            </div>
 
             {/* Center glow */}
             <div 

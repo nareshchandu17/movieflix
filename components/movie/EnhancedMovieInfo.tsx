@@ -2256,6 +2256,11 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
         </div>
       </div>
       
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/*                     FAN REACTIONS CAROUSEL                     */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      <ReactionCarousel movieId={String(id)} />
+      
       {/* Reaction Modal */}
       <PremiumReactionClip />
     </div>

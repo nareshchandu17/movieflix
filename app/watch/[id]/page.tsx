@@ -1,42 +1,62 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
+import { notFound, redirect } from "next/navigation";
+import connectDB from "@/lib/db";
+import Movie from "@/models/Movie";
+import Profile from "@/lib/models/Profile";
 import { PlayerRoot } from "@/components/player/PlayerRoot";
+import RestrictedScreen from "@/components/player/RestrictedScreen";
 
-// Mock movie data - replace with actual data fetching
-async function getMovieData(id: string) {
+async function getMovieFromDB(id: string) {
   try {
-    // In a real app, you'd fetch from your database or API
-    // const response = await fetch(`${process.env.NEXTAUTH_URL}/api/movies/${id}`);
-    // return await response.json();
-    
-    // For now, return mock data
-    return {
-      id,
-      title: `Movie ${id}`,
-      description: "A great movie to watch",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      thumbnailUrl: "/ancient-secrets.jpg"
-    };
+    await connectDB();
+    const movie = await Movie.findById(id).lean();
+    return movie;
   } catch (error) {
     console.error("Error fetching movie:", error);
     return null;
   }
 }
 
+async function getActiveProfile(profileId: string | undefined, userId: string) {
+  if (!profileId) return null;
+  try {
+    const profile = await Profile.findOne({ profileId, userId }).lean();
+    return profile;
+  } catch (e) {
+    return null;
+  }
+}
+
 export default async function WatchPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
-  
-  // Allow guest access - no mandatory redirection to /login
+  if (!session?.user) {
+    redirect("/auth/login");
+  }
 
-  // Unwrap params Promise in Next.js 15+
   const { id } = await params;
-  const movieData = await getMovieData(id);
+  const movieData = await getMovieFromDB(id);
   
-  // Return 404 if movie not found
   if (!movieData) {
     notFound();
+  }
+
+  // Enforcement check
+  const cookieStore = await cookies();
+  const profileId = cookieStore.get("mf_active_profile")?.value;
+  const profile = await getActiveProfile(profileId, session.user.id);
+
+  if (profile?.isKids) {
+    const restrictedRatings = ["R", "TV-MA", "NC-17"];
+    if (restrictedRatings.includes(movieData.certification)) {
+      return (
+        <RestrictedScreen 
+          title={movieData.title} 
+          rating={movieData.certification} 
+        />
+      );
+    }
   }
 
   return (

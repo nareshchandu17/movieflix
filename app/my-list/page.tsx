@@ -57,20 +57,20 @@ export default async function MyListPage() {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24 pt-20">
+    <div className="min-h-screen bg-black text-white pb-24">
       {/* Header Section */}
       <div className="relative w-full h-[40vh] min-h-[300px] flex items-end">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-black to-black z-0" />
+        <div className="absolute inset-0 bg-gradient-to-br from-red-900/40 via-black to-black z-0" />
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-10 mix-blend-overlay" />
         
         <div className="relative z-10 px-4 sm:px-6 md:px-12 lg:px-20 pb-12 w-full max-w-7xl flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-blue-600/20 rounded-2xl flex items-center justify-center border border-blue-500/30 backdrop-blur-md">
-                <Library className="w-6 h-6 text-blue-500" />
+              <div className="w-12 h-12 bg-red-600/20 rounded-2xl flex items-center justify-center border border-red-500/30 backdrop-blur-md">
+                <Library className="w-6 h-6 text-red-500" />
               </div>
               <h1 className="text-4xl md:text-5xl font-black tracking-tight drop-shadow-lg">
-                My <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600">Library</span>
+                My <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">Library</span>
               </h1>
             </div>
             <p className="text-gray-400 max-w-2xl text-lg font-medium">

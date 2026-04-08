@@ -25,11 +25,11 @@ export function ReactionCarousel({ movieId }: ReactionCarouselProps) {
     async function fetchReactions() {
       try {
         console.log(`Fetching reactions for movie: ${movieId}`);
-        const res = await fetch(`/api/movies/${movieId}/reactions?page=1`);
+        const res = await fetch(`/api/reactions?movieId=${movieId}&limit=20`);
         
         if (!res.ok) {
           if (res.status === 404) {
-            console.warn('Reactions endpoint not found - this is expected if no reactions exist yet');
+            console.warn('Reactions endpoint not found');
             setReactions([]);
             setTotal(0);
             return;
@@ -52,7 +52,6 @@ export function ReactionCarousel({ movieId }: ReactionCarouselProps) {
         }
       } catch (err) {
         console.error("Fetch reactions error:", err);
-        // Set empty state on error to prevent infinite loading
         setReactions([]);
         setTotal(0);
       } finally {

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { TMDBMovie } from "@/lib/types";
 import { api as tmdbApi } from "@/lib/api";
+import { useProfile } from "@/contexts/ProfileContext";
 
 interface BecauseYouWatchedCarouselProps {
   movieName: string;
@@ -14,6 +15,7 @@ interface BecauseYouWatchedCarouselProps {
 }
 
 export default function BecauseYouWatchedCarousel({ movieName, movieId }: BecauseYouWatchedCarouselProps) {
+  const { activeProfile } = useProfile();
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -23,12 +25,16 @@ export default function BecauseYouWatchedCarousel({ movieName, movieId }: Becaus
     const fetchRecommendations = async () => {
       try {
         setLoading(true);
+        const options = {
+          isKids: activeProfile?.isKids,
+          certificationLte: activeProfile?.maturityRating
+        };
 
         if (movieId) {
-          const response = await tmdbApi.getSimilar('movie', parseInt(movieId));
+          const response = await tmdbApi.getSimilar('movie', parseInt(movieId), options);
           setMovies(response.results as TMDBMovie[]);
         } else {
-          const response = await tmdbApi.discover('movie', { sortBy: 'popularity.desc', page: 1 });
+          const response = await tmdbApi.discover('movie', { sortBy: 'popularity.desc', page: 1, ...options });
           setMovies(response.results as TMDBMovie[]);
         }
       } catch (error) {
@@ -41,7 +47,7 @@ export default function BecauseYouWatchedCarousel({ movieName, movieId }: Becaus
     if (movieName) {
       fetchRecommendations();
     }
-  }, [movieName, movieId]);
+  }, [movieName, movieId, activeProfile?.profileId]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {

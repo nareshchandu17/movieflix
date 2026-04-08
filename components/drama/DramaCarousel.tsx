@@ -169,7 +169,7 @@ const DramaCarousel = () => {
 
                     <div className="flex items-center gap-2 mt-1 text-xs text-gray-300">
                       <Star className="w-3 h-3 text-yellow-400" />
-                      {movie.vote_average.toFixed(1)}
+                      {movie.vote_average?.toFixed(1) || "N/A"}
                     </div>
 
                     <div className="flex gap-2 mt-2">

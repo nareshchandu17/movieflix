@@ -2,8 +2,11 @@
 
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { TMDBMovie, TMDBTVShow } from "@/lib/types";
 import { ChevronLeft, ChevronRight, Play, Plus, ThumbsUp, Info } from "lucide-react";
+import CollectionPopup from "../collections/CollectionPopup";
+import { AnimatePresence } from "framer-motion";
 
 interface EnhancedNewReleasesGridProps {
   media: (TMDBMovie | TMDBTVShow)[];
@@ -16,8 +19,13 @@ const EnhancedNewReleasesGrid = ({
   title,
   showViewAll = true 
 }: EnhancedNewReleasesGridProps) => {
+  const router = useRouter();
   const [visibleCount, setVisibleCount] = useState(10);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Collection Popup state
+  const [popupMedia, setPopupMedia] = useState<TMDBMovie | TMDBTVShow | null>(null);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | undefined>(undefined);
 
   const loadMore = () => {
     setVisibleCount(prev => Math.min(prev + 10, media.length));
@@ -146,6 +154,10 @@ const EnhancedNewReleasesGrid = ({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.08 }}
                     className="relative w-full h-full rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20"
+                    onClick={() => {
+                      const mediaType = 'first_air_date' in item ? 'tv' : 'movie';
+                      router.push(`/new-popular/${item.id}?type=${mediaType}`);
+                    }}
                   >
                     {/* Poster */}
                     <div className="relative w-full h-full">
@@ -208,11 +220,25 @@ const EnhancedNewReleasesGrid = ({
 
                           {/* Action Buttons */}
                           <div className="flex gap-2 mb-2">
-                            <button className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-2 px-3 rounded-lg flex items-center justify-center gap-1 text-xs font-semibold transition-all duration-300 hover:scale-105 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 w-[75%]">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const mediaType = 'first_air_date' in item ? 'tv' : 'movie';
+                                router.push(`/new-popular/${item.id}?type=${mediaType}`);
+                              }}
+                              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-2 px-3 rounded-lg flex items-center justify-center gap-1 text-xs font-semibold transition-all duration-300 hover:scale-105 shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 w-[75%]"
+                            >
                               <Play className="w-3 h-3" />
                               Play Now
                             </button>
-                            <button className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors duration-300 w-[25%]">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAnchorRect(e.currentTarget.getBoundingClientRect());
+                                setPopupMedia(item);
+                              }}
+                              className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition-colors duration-300 w-[25%] flex items-center justify-center"
+                            >
                               <Plus className="w-3 h-3" />
                             </button>
                           </div>
@@ -227,7 +253,15 @@ const EnhancedNewReleasesGrid = ({
         </div>
       </div>
 
-      
+      <AnimatePresence>
+        {popupMedia && (
+          <CollectionPopup
+            media={popupMedia}
+            anchorRect={anchorRect}
+            onClose={() => setPopupMedia(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

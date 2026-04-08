@@ -4,17 +4,30 @@ import WatchHistory from "@/models/WatchHistory";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-// GET user's watch history
+// GET user's watch history for the active profile
 export async function GET(req: NextRequest) {
   try {
-    // Mock user ID since authentication is removed - using valid ObjectId format
-    const mockUserId = "507f1f77bcf86cd799439011";
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const cookieStore = await cookies();
+    const profileId = cookieStore.get('mf_active_profile')?.value;
+
+    if (!profileId) {
+      return NextResponse.json({ message: "No active profile" }, { status: 400 });
+    }
 
     await connectDB();
 
-    // Return empty array for demo since no data exists
+    const history = await WatchHistory.find({ 
+      userId: session.user.id,
+      profileId 
+    }).sort({ lastWatched: -1 }).limit(20);
+
     return NextResponse.json({ 
-      history: [],
+      history,
       success: true 
     }, { status: 200 });
   } catch (error) {
@@ -27,9 +40,15 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
     if (!session || !session.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const cookieStore = await cookies();
+    const profileId = cookieStore.get('mf_active_profile')?.value;
+
+    if (!profileId) {
+      return NextResponse.json({ message: "No active profile" }, { status: 400 });
     }
 
     const { contentId, contentType, episodeId, timestamp } = await req.json();
@@ -42,8 +61,9 @@ export async function POST(req: NextRequest) {
 
     // Use upsert to update if exists, or create if new
     const updatedHistory = await WatchHistory.findOneAndUpdate(
-      { userId: session.user.id, contentId },
+      { profileId, contentId },
       {
+        userId: session.user.id,
         contentType,
         episodeId,
         timestamp,

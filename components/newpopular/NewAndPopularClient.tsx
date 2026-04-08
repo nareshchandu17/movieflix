@@ -371,7 +371,7 @@ const NewAndPopularClient = () => {
                     key={show.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}  
                     className="relative group cursor-pointer"
                     whileHover={{ scale: 1.02 }}
                   >

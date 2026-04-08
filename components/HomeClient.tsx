@@ -27,7 +27,8 @@ import HiddenGemsCarousel from "@/components/special/HiddenGemsCarousel";
 import QuickWatchCarousel from "@/components/special/QuickWatchCarousel";
 import BingeWorthySeriesCarousel from "@/components/special/BingeWorthySeriesCarousel";
 import CreepyCarouselSimple from "@/components/carousels/CreepyCarouselSimple";
-// Removed OnboardingCard import
+import { SubscriptionGate } from "@/components/payments/SubscriptionGate";
+import { useProfile } from "@/contexts/ProfileContext";
 
 export default function HomePage() {
   return <HomeClient />;
@@ -35,6 +36,7 @@ export default function HomePage() {
 
 function HomeClient() {
   const { data: session, status } = useSession();
+  const { activeProfile } = useProfile();
   const [lastWatchedMovie, setLastWatchedMovie] = useState<{ name: string; id: string } | null>(null);
 
   useEffect(() => {
@@ -106,6 +108,13 @@ function HomeClient() {
             <BingeWorthySeriesCarousel />
             <AnimeCarousel />
             <HorrorCarousel />
+
+            {/* Subscription Gate - Displayed above footer for non-subscribers */}
+            <div className="max-w-7xl mx-auto px-4 mt-20">
+              <SubscriptionGate showLoading={false}>
+                {null}
+              </SubscriptionGate>
+            </div>
         </div>
       </div>
     </div>
