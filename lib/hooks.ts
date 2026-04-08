@@ -62,29 +62,20 @@ export function useSearch(query: string, mediaType?: 'movie' | 'tv', page = 1) {
 
 export function useCategoryData(
   mediaType: 'movie' | 'tv', 
-  category: 'popular' | 'top_rated' | 'now_playing' | 'upcoming' | 'on_the_air' | 'airing_today', 
-  page = 1
+  category: 'popular' | 'top_rated' | 'now_playing' | 'upcoming' | 'on_the_air' | 'airing_today' | 'trending', 
+  page = 1,
+  options: { isKids?: boolean; certificationLte?: string } = {}
 ) {
-  const key = `category/${mediaType}/${category}/${page}`;
+  const key = `category/${mediaType}/${category}/${page}/${options.isKids}/${options.certificationLte}`;
   
   return useSWR<TMDBTrendingResponse>(
     key,
-    () => {
-      switch (category) {
-        case 'popular':
-          return api.getPopular(mediaType, page);
-        case 'top_rated':
-          return api.getTopRated(mediaType, page);
-        case 'now_playing':
-        case 'on_the_air':
-          return api.getNowPlaying(mediaType, page);
-        case 'upcoming':
-        case 'airing_today':
-          return api.getUpcoming(mediaType, page);
-        default:
-          throw new Error(`Unknown category: ${category}`);
-      }
-    },
+    () => api.getMedia(mediaType, { 
+      category, 
+      page, 
+      isKids: options.isKids, 
+      certificationLte: options.certificationLte 
+    }),
     { revalidateOnFocus: false }
   );
 }

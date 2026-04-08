@@ -11,6 +11,11 @@ const MovieSchema = new mongoose.Schema(
     director: { type: String },
     posterUrl: { type: String },
     videoUrl: { type: String },
+    certification: { 
+      type: String, 
+      enum: ['G', 'PG', 'PG-13', 'R', 'TV-MA'],
+      default: 'G' 
+    },
     duration: { type: Number }, // in minutes
   },
   {

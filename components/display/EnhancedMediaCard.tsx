@@ -83,7 +83,7 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
-          className="cursor-pointer"
+          className="cursor-pointer relative z-10 hover:z-50 transition-all duration-300 hover:scale-[1.15] hover:shadow-[0_0_30px_rgba(229,9,20,0.3)] group"
           onClick={handleCardClick}
         >
           <div className="relative aspect-[2/3] w-[160px] sm:w-[180px] md:w-[200px] rounded-xl overflow-hidden">
@@ -92,12 +92,12 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
               alt={`${titleVal} ${isTV ? "TV series" : "movie"} poster`}
               fill
               sizes="(max-width: 640px) 160px, (max-width: 768px) 180px, (max-width: 1024px) 200px, 200px"
-              className="object-cover transition-transform duration-300 hover:scale-110"
+              className="object-cover"
               loading="lazy"
             />
             
-            {/* Individual hover overlay with 1-second delay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 transition-all duration-500 delay-150">
+            {/* Individual hover overlay with immediate display */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
               <div className="absolute bottom-0 left-0 right-0 p-4">
                 <h3 className="text-white font-semibold text-sm line-clamp-2 mb-2">{titleVal}</h3>
                 <div className="flex items-center gap-2 mb-3">
@@ -156,7 +156,7 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
-          className="cursor-pointer"
+          className="cursor-pointer relative z-10 hover:z-50 transition-all duration-300 hover:scale-[1.15] hover:shadow-[0_0_30px_rgba(229,9,20,0.3)] group"
           onClick={handleCardClick}
         >
           <div className="relative aspect-[2/3] w-full rounded-xl overflow-hidden">
@@ -165,12 +165,12 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
               alt={`${titleVal} ${isTV ? "TV series" : "movie"} poster`}
               fill
               sizes="(max-width: 640px) 160px, (max-width: 768px) 180px, (max-width: 1024px) 200px, 200px"
-              className="object-cover transition-transform duration-300 hover:scale-110"
+              className="object-cover"
               loading="lazy"
             />
             
-            {/* Individual hover overlay with 1-second delay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 transition-all duration-500 delay-150">
+            {/* Individual hover overlay with immediate display */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
               <div className="absolute bottom-0 left-0 right-0 p-4">
                 <h3 className="text-white font-semibold text-sm line-clamp-2 mb-2">{titleVal}</h3>
                 <div className="flex items-center gap-2 mb-3">

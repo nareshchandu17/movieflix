@@ -10,6 +10,8 @@ import { createPortal } from "react-dom";
 import { api } from "@/lib/api";
 import { TMDBMovie, TMDBTVShow } from "@/lib/types";
 import { useSearch } from "@/contexts/SearchContext";
+import { useProfileContext } from "@/contexts/ProfileContext";
+import { toast } from "sonner";
 
 // Custom debounce function
 const debounce = <T extends (...args: any[]) => any>(
@@ -44,7 +46,11 @@ interface SearchResult {
 type SearchIntent = 
   | { type: 'multi'; query: string; label?: string }
   | { type: 'similar'; title: string }
-  | { type: 'discover'; filter: Record<string, string | number | boolean>; genreName?: string; moodName?: string };
+  | { type: 'history' }
+  | { type: 'nav'; route: string; label: string }
+  | { type: 'identity' }
+  | { type: 'play'; title: string }
+  | { type: 'discover'; filter: Record<string, string | number | boolean>; remainingQuery: string; labels: string[] };
 
 const ResultCard = ({ result, index, onClick }: { result: SearchResult; index: number; onClick: () => void }) => (
   <motion.div
@@ -100,6 +106,7 @@ const SmartSearch = () => {
   const recognitionRef = useRef<any>(null); // Still any because SpeechRecognition is not standard in TS types yet
   const router = useRouter();
   const { isSearching, setIsSearching, setSearchQuery, searchQuery: globalSearchQuery } = useSearch();
+  const { activeProfile } = useProfileContext();
 
   const [mounted, setMounted] = useState(false);
   const speechTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -164,8 +171,23 @@ const SmartSearch = () => {
   const moodKeywords: Record<string, number[]> = {
     "feel good": [155202, 180547], "sad": [18073, 155146], "mind bending": [10065, 14909, 232635],
     "dark": [10183, 9820, 155127], "romantic": [10749, 9840], "inspiring": [18073, 10751],
-    "scary": [27, 232635], "funny": [35, 155202], "action packed": [28, 180547],
-    "time travel": [9840], "zombie": [12377], "superhero": [9715, 180734], "heist": [9748]
+    "scary": [27, 232635], "funny": [35, 155202], "action packed": [28, 180547]
+  };
+
+  const themeKeywords: Record<string, number[]> = {
+    "time travel": [9840, 4379], "space": [3205, 161176], "alien": [1646, 14909], 
+    "zombie": [12377, 14512], "survival": [10349], "revenge": [1460, 10712],
+    "heist": [9748, 14457], "superhero": [9715, 180734], "vampire": [3133], "magic": [2343],
+    "ai": [10851, 6220], "artificial intelligence": [10851, 6220]
+  };
+
+  const situationKeywords: Record<string, { genres?: number[], keywords?: number[], adult?: string }> = {
+    "date night": { genres: [10749, 35] },
+    "kids": { genres: [16, 10751], adult: 'false' },
+    "family": { genres: [10751], adult: 'false' },
+    "with friends": { genres: [35, 28, 53] },
+    "late night": { genres: [27, 53] },
+    "relaxing": { genres: [35, 10749] }
   };
 
   const awardKeywords: Record<string, string> = {
@@ -174,38 +196,132 @@ const SmartSearch = () => {
   };
 
   const parseQueryIntent = (q: string): SearchIntent => {
-    const lowQ = q.toLowerCase().trim();
-    const quoteMatch = lowQ.match(/^"(.+)"$/);
+    let rawQ = q.toLowerCase().trim();
+    let originalQ = q.trim();
+    
+    // 1. History personalization
+    if (/^(more like this|similar to what i|based on my history|recommendations)/.test(rawQ)) {
+      return { type: 'history' };
+    }
+
+    // 2. Navigation commands
+    if (/^(go to|open|take me to|navigate to) (home|explore|browse)/.test(rawQ)) {
+      return { type: 'nav', route: '/', label: 'Home' };
+    }
+    if (/^(go to|open|take me to|navigate to) (settings|account|profile)/.test(rawQ)) {
+      return { type: 'nav', route: '/account', label: 'Settings' };
+    }
+    if (/^(go to|open|take me to|navigate to) (my list|watchlist|collection)/.test(rawQ)) {
+      return { type: 'nav', route: '/mylist', label: 'My List' };
+    }
+    if (/^(go to|open|take me to|navigate to) (new and popular|trending|latest)/.test(rawQ)) {
+      return { type: 'nav', route: '/new-popular', label: 'New & Popular' };
+    }
+
+    // 3. Identity commands
+    if (/^(who am i|which profile|current profile|my profile|who is watching)/.test(rawQ)) {
+      return { type: 'identity' };
+    }
+
+    // 4. Play commands
+    const playMatch = rawQ.match(/^(play|watch|start) (.+)$/);
+    if (playMatch) {
+      return { type: 'play', title: playMatch[2] };
+    }
+
+    // 5. Exact quotes
+    const quoteMatch = rawQ.match(/^"(.+)"$/);
     if (quoteMatch) return { type: 'multi', query: quoteMatch[1], label: "Quote Search" };
 
-    const similarMatch = lowQ.match(/^movies like (.+)$/);
+    // 3. Similar
+    const similarMatch = rawQ.match(/^movies like (.+)$/);
     if (similarMatch) return { type: 'similar', title: similarMatch[1] };
 
-    const underMatch = lowQ.match(/under (\d+) (hour|hours|minute|minutes)/);
+    // Multi-pass extractor
+    let remainingQuery = rawQ;
+    const filter: Record<string, string | number | boolean> = {};
+    const labels: string[] = [];
+    
+    // Runtime extraction
+    const underMatch = remainingQuery.match(/under (\d+) (hour|hours|minute|minutes|min|mins)/);
     if (underMatch) {
       const val = parseInt(underMatch[1]);
       const minutes = underMatch[2].startsWith('hour') ? val * 60 : val;
-      return { type: 'discover', filter: { 'with_runtime.lte': minutes } };
+      filter['with_runtime.lte'] = minutes;
+      labels.push(`Under ${minutes} mins`);
+      remainingQuery = remainingQuery.replace(underMatch[0], "").trim();
     }
 
-    const yearMatch = lowQ.match(/(\d{4})s?$/);
+    // Year extraction
+    const yearMatch = remainingQuery.match(/from (\d{4})s?|in (\d{4})s?|(\d{4})s? movies/);
     if (yearMatch) {
-      const yearStr = yearMatch[1];
-      if (lowQ.includes('s') && yearStr.endsWith('0')) {
-        return { type: 'discover', filter: { 'primary_release_date.gte': `${yearStr}-01-01`, 'primary_release_date.lte': `${parseInt(yearStr)+9}-12-31` } };
+      const yearStr = yearMatch[1] || yearMatch[2] || yearMatch[3];
+      if (yearStr.endsWith('0') && remainingQuery.match(new RegExp(`${yearStr}s`))) {
+        filter['primary_release_date.gte'] = `${yearStr}-01-01`;
+        filter['primary_release_date.lte'] = `${parseInt(yearStr)+9}-12-31`;
+        labels.push(`${yearStr}s`);
+      } else {
+        filter['primary_release_year'] = parseInt(yearStr);
+        labels.push(yearStr);
       }
-      return { type: 'discover', filter: { primary_release_year: parseInt(yearStr) } };
+      remainingQuery = remainingQuery.replace(yearMatch[0], "").trim();
     }
 
-    const ratingMatch = lowQ.match(/(top rated|imdb|rating) (\d+)\+?/);
-    if (ratingMatch) return { type: 'discover', filter: { 'vote_average.gte': parseInt(ratingMatch[2]) } };
+    // Rating extraction
+    const ratingMatch = remainingQuery.match(/(top rated|imdb|rating) (\d+)\+?/);
+    if (ratingMatch) {
+      filter['vote_average.gte'] = parseInt(ratingMatch[2]);
+      labels.push(`Rating > ${ratingMatch[2]}`);
+      remainingQuery = remainingQuery.replace(ratingMatch[0], "").trim();
+    }
 
-    for (const [award, id] of Object.entries(awardKeywords)) { if (lowQ.includes(award)) return { type: 'discover', filter: { with_keywords: id } }; }
-    for (const [lang, code] of Object.entries(languageMapping)) { if (lowQ.includes(lang)) return { type: 'discover', filter: { with_original_language: code } }; }
-    for (const [genre, id] of Object.entries(genreMapping)) { if (lowQ.includes(genre)) return { type: 'discover', filter: { with_genres: id, genreName: genre } }; }
-    for (const [mood, ids] of Object.entries(moodKeywords)) { if (lowQ.includes(mood)) return { type: 'discover', filter: { with_keywords: ids.join('|'), moodName: mood } }; }
+    // Keyword, Mood, Theme, Situation and Genre Extraction
+    let keywords: number[] = [];
+    let genres: number[] = [];
+    let adult = 'false';
 
-    return { type: 'multi', query: lowQ };
+    const extractDict = (dict: Record<string, any>, isSituation: boolean = false) => {
+      for (const [key, value] of Object.entries(dict)) {
+        if (remainingQuery.includes(key)) {
+          labels.push(key);
+          if (isSituation) {
+            if (value.genres) genres.push(...value.genres);
+            if (value.keywords) keywords.push(...value.keywords);
+            if (value.adult) adult = value.adult;
+          } else if (typeof value === 'object' && Array.isArray(value)) {
+            keywords.push(...value);
+          } else if (typeof value === 'number') {
+            genres.push(value);
+          } else if (typeof value === 'string') {
+            keywords.push(...value.split('|').map(Number));
+          }
+          remainingQuery = remainingQuery.replace(key, "").trim();
+        }
+      }
+    };
+
+    extractDict(situationKeywords, true);
+    extractDict(themeKeywords);
+    extractDict(moodKeywords);
+    extractDict(genreMapping);
+    extractDict(awardKeywords);
+    
+    // Deduplicate lists
+    keywords = [...new Set(keywords)].filter(v => !isNaN(v));
+    genres = [...new Set(genres)];
+
+    if (genres.length > 0) filter['with_genres'] = genres.join(',');
+    if (keywords.length > 0) filter['with_keywords'] = keywords.join('|');
+    filter['include_adult'] = adult;
+
+    // Remaining text cleanup
+    remainingQuery = remainingQuery.replace(/movies?\s*/g, "").replace(/series?\s*/g, "").replace(/with\s*/g, "").replace(/about\s*/g, "").replace(/for\s*/g, "").trim();
+
+    if (Object.keys(filter).length > 1 || (Object.keys(filter).length === 1 && !filter['include_adult'])) {
+      return { type: 'discover', filter, remainingQuery, labels };
+    }
+
+    return { type: 'multi', query: originalQ };
   };
 
   const searchWithNLP = async (searchQuery: string): Promise<SearchResult[]> => {
@@ -215,32 +331,86 @@ const SmartSearch = () => {
       const intent = parseQueryIntent(searchQuery);
       let rawResults: any[] = [];
       let collectionResults: SearchResult[] = [];
+      let personResults: SearchResult[] = [];
 
       let verbalSummary = "";
-      if (intent.type === 'similar') {
+
+      if (intent.type === 'history') {
+        verbalSummary = "Finding recommendations based on recent watch history.";
+        try {
+          const history = JSON.parse(localStorage.getItem('watched_history') || '[]');
+          if (history.length > 0) {
+            const lastItem = history[0];
+            const similarRes = await api.getSimilar(lastItem.type || 'movie', lastItem.id);
+            rawResults = similarRes.results.map((r: any) => ({ ...r, media_type: lastItem.type || 'movie' }));
+          } else {
+            const res = await api.getTrending("movie", "week");
+            rawResults = res.results.map((r: any) => ({ ...r, media_type: 'movie' }));
+          }
+        } catch {
+          const res = await api.getTrending("movie", "week");
+          rawResults = res.results.map((r: any) => ({ ...r, media_type: 'movie' }));
+        }
+      } else if (intent.type === 'similar') {
         verbalSummary = `Searching for movies similar to ${intent.title}.`;
         const searchRes = await api.search(intent.title);
         const firstId = searchRes.results[0]?.id;
         if (firstId) {
           const similarRes = await api.getSimilar('movie', firstId);
-          rawResults = similarRes.results.map(r => ({ ...r, media_type: 'movie' }));
+          rawResults = similarRes.results.map((r: any) => ({ ...r, media_type: 'movie' }));
         }
       } else if (intent.type === 'discover') {
-        const filterLabel = intent.genreName || intent.moodName || (intent.filter['primary_release_year'] ? `from ${intent.filter['primary_release_year']}` : "your criteria");
-        verbalSummary = `Finding content ${filterLabel}.`;
-        const searchParams = new URLSearchParams({ ...intent.filter, 'sort_by': 'popularity.desc', 'include_adult': 'false' } as any);
-        const res = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || ""}&${searchParams}`);
-        if (res.ok) {
-          const data = await res.json();
-          rawResults = data.results.map((r: any) => ({ ...r, media_type: 'movie' }));
+        verbalSummary = `Finding content matching ${intent.labels.join(', ')}.` + (intent.remainingQuery ? ` related to ${intent.remainingQuery}` : "");
+        
+        const searchParams = new URLSearchParams({ ...intent.filter, 'sort_by': 'popularity.desc' } as any);
+        const discoverRes = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || ""}&${searchParams}`).then(r => r.json());
+        let discoverResults = (discoverRes.results || []).map((r: any) => ({ ...r, media_type: 'movie' }));
+
+        if (intent.remainingQuery.trim().length > 0) {
+           const searchRes = await api.search(intent.remainingQuery);
+           rawResults = searchRes.results;
+        } else {
+           rawResults = discoverResults;
+        }
+      } else if (intent.type === 'nav') {
+        verbalSummary = `Taking you to ${intent.label}.`;
+        speak(verbalSummary);
+        router.push(intent.route);
+        setIsSearching(false);
+        setShowResults(false);
+        setQuery("");
+        return [];
+      } else if (intent.type === 'identity') {
+        verbalSummary = activeProfile 
+          ? `You are currently using the ${activeProfile.name} profile.` 
+          : "I'm not sure which profile is active right now.";
+        speak(verbalSummary);
+        toast.info(verbalSummary);
+        return [];
+      } else if (intent.type === 'play') {
+        verbalSummary = `Looking for ${intent.title} to play.`;
+        const searchRes = await api.search(intent.title);
+        const first = searchRes.results[0] as any;
+        if (first) {
+          const type = (first.media_type === 'tv' || !first.title) ? 'series' : 'movie';
+          const title = first.title || first.name;
+          speak(`Starting ${title}.`);
+          router.push(`/${type}/${first.id}`);
+          setShowResults(false);
+          setQuery("");
+          return [];
+        } else {
+          verbalSummary = `I couldn't find ${intent.title} in the library.`;
         }
       } else {
         verbalSummary = `Searching for ${searchQuery}.`;
-        const [searchResponse, collectionResponse] = await Promise.all([
+        const [searchResponse, collectionResponse, personResponse] = await Promise.all([
           api.search(searchQuery),
-          fetch(`https://api.themoviedb.org/3/search/collection?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || ""}&query=${encodeURIComponent(searchQuery)}`).then(r => r.json())
+          fetch(`https://api.themoviedb.org/3/search/collection?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || ""}&query=${encodeURIComponent(searchQuery)}`).then(r => r.json()),
+          fetch(`https://api.themoviedb.org/3/search/person?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || ""}&query=${encodeURIComponent(searchQuery)}`).then(r => r.json())
         ]);
         rawResults = searchResponse.results;
+        
         if (collectionResponse?.results) {
           collectionResults = collectionResponse.results.slice(0, 6).map((c: any) => ({
             id: c.id.toString(), title: c.name, type: "movie" as const,
@@ -249,16 +419,9 @@ const SmartSearch = () => {
             description: "Film Collection / Franchise", year: 0, rating: 0, genres: [], popularity: 100
           }));
         }
-      }
 
-      if (isListening) speak(verbalSummary);
-
-      let personResults: SearchResult[] = [];
-      try {
-        const personRes = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || ""}&query=${encodeURIComponent(searchQuery)}`);
-        if (personRes.ok) {
-          const personData = await personRes.json();
-          personResults = (personData.results || []).filter((p: any) => !!p.profile_path).map((p: any) => ({
+        if (personResponse?.results) {
+          personResults = (personResponse.results || []).filter((p: any) => !!p.profile_path).map((p: any) => ({
             id: p.id.toString(), title: p.name || "", type: p.known_for_department === 'Directing' ? 'movie' : 'actor',
             isDirector: p.known_for_department === 'Directing',
             poster: `https://image.tmdb.org/t/p/w500${p.profile_path}`,
@@ -266,20 +429,22 @@ const SmartSearch = () => {
             knownFor: p.known_for?.map((kf: any) => kf.title || kf.name).slice(0, 3) || []
           }));
         }
-      } catch (e) { console.error(e); }
+      }
 
-      const movieResults: SearchResult[] = rawResults.filter(item => (item.media_type === 'movie' || 'title' in item) && !!item.poster_path).map(item => ({
+      if (isListening) speak(verbalSummary);
+
+      const movieResults: SearchResult[] = rawResults.filter(item => (item.media_type === 'movie' || 'title' in item)).map(item => ({
         id: item.id.toString(), title: item.title || item.original_title || "Unknown", type: "movie" as const,
-        poster: `https://image.tmdb.org/t/p/w500${item.poster_path}`,
+        poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=500",
         backdrop: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : undefined,
         year: item.release_date ? new Date(item.release_date).getFullYear() : 0,
         rating: item.vote_average || 0, description: item.overview || "", genres: [], trending: (item.popularity || 0) > 40,
         releaseDate: item.release_date, popularity: item.popularity
       }));
 
-      const tvResults: SearchResult[] = rawResults.filter(item => (item.media_type === 'tv' || 'name' in item) && !!item.poster_path && !('title' in item)).map(item => ({
+      const tvResults: SearchResult[] = rawResults.filter(item => (item.media_type === 'tv' || 'name' in item) && !('title' in item)).map(item => ({
         id: item.id.toString(), title: item.name || item.original_name || "Unknown", type: "series" as const,
-        poster: `https://image.tmdb.org/t/p/w500${item.poster_path}`,
+        poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=500",
         backdrop: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : undefined,
         year: item.first_air_date ? new Date(item.first_air_date).getFullYear() : 0,
         rating: item.vote_average || 0, description: item.overview || "", genres: [], trending: (item.popularity || 0) > 40,
@@ -313,36 +478,42 @@ const SmartSearch = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setQuery(value);
-    setInputWidth(value.length > 0 ? "w-64" : (isFocused ? "w-56" : "w-32"));
+    setInputWidth(value.length > 0 ? "w-72" : (isFocused ? "w-64" : "w-40"));
     debouncedSearch(value);
   };
 
   const toggleVoiceSearch = () => {
     if (isListening) {
-      if (recognitionRef.current) recognitionRef.current.stop();
+      recognitionRef.current?.stop();
       setIsListening(false);
-      speak("Stopping voice assistant.");
+      return;
     }
-    else {
-      const SpeechRecognition = (typeof window !== 'undefined') && ((window as any).webkitSpeechRecognition || (window as any).SpeechRecognition);
-      if (!SpeechRecognition) {
-        speak("Speech recognition is not supported in your browser.");
-        return;
-      }
-      if (!recognitionRef.current) {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.onresult = (e: any) => {
-          const t = e.results[0][0].transcript;
-          setQuery(t);
-          debouncedSearch(t);
-        };
-        recognitionRef.current.onend = () => setIsListening(false);
-      }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Speech recognition is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    
+    // Set language based on profile
+    recognition.lang = activeProfile?.language || 'en-US';
+    
+    recognition.onstart = () => {
       setIsListening(true);
-      setShowResults(true);
-      speak("I'm listening. What would you like to watch?");
-      recognitionRef.current.start();
-    }
+      if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
+    };
+    recognition.onresult = (e: any) => {
+      const t = e.results[0][0].transcript;
+      setQuery(t);
+      debouncedSearch(t);
+    };
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
   };
 
   const handleResultClick = (result: SearchResult) => {
@@ -350,16 +521,37 @@ const SmartSearch = () => {
     router.push(route); setShowResults(false); setQuery("");
   };
 
-  const handleFocus = () => { setIsFocused(true); setShowResults(true); setInputWidth("w-56"); };
+  const handleFocus = () => { setIsFocused(true); setShowResults(true); setInputWidth("w-64"); };
   const handleBlur = () => { setTimeout(() => { setIsFocused(false); setIsSearching(false); }, 150); setTimeout(() => setShowResults(false), 200); };
-  const closeResults = () => { setShowResults(false); setQuery(""); setResults([]); setInputWidth("w-32"); };
+  const closeResults = () => { setShowResults(false); setQuery(""); setResults([]); setInputWidth("w-40"); };
 
   return (
     <div ref={searchRef} className="relative hidden sm:flex items-center">
-      <div className={`flex items-center bg-white/5 backdrop-blur-xl border rounded-full px-4 py-2 transition-all duration-300 z-[95] ${isFocused ? "bg-white/10 border-white/20 shadow-[0_0_20px_rgba(168,85,247,0.3)]" : "border-white/10"}`}>
-        <BiSearch className="text-white/60" />
-        <input ref={inputRef} type="text" placeholder="Search..." value={query} onChange={handleSearchChange} onFocus={handleFocus} onBlur={handleBlur} className={`bg-transparent outline-none text-white text-sm ml-3 transition-all duration-500 ${inputWidth}`} />
-        {query.length > 0 && <button onClick={closeResults} className="ml-2 text-white/40 hover:text-white"><X className="w-4 h-4" /></button>}
+      <div className={`flex items-center bg-black/20 backdrop-blur-md border rounded-full px-4 py-2 transition-all duration-300 z-[95] ${isFocused ? "bg-black/40 border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-105" : "border-white/10"}`}>
+        {isListening && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <motion.div
+                  key={i}
+                  animate={{
+                    height: [8, 24, 8],
+                    opacity: [0.3, 1, 0.3]
+                  }}
+                  transition={{
+                    duration: 0.6,
+                    repeat: Infinity,
+                    delay: i * 0.1
+                  }}
+                  className="w-1 bg-primary rounded-full"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        <Mic className={`w-5 h-5 transition-colors ${isListening ? 'text-primary animate-pulse' : 'text-white/70'}`} />
+        <input ref={inputRef} type="text" placeholder="Search movies, series, actors..." value={query} onChange={handleSearchChange} onFocus={handleFocus} onBlur={handleBlur} className={`bg-transparent outline-none text-white text-sm ml-3 transition-all duration-500 placeholder:text-white/40 ${inputWidth}`} />
+        {query.length > 0 && <button onClick={closeResults} className="ml-2 text-white/40 hover:text-white transition-colors"><X className="w-4 h-4" /></button>}
         <button onClick={toggleVoiceSearch} className={`ml-2 p-1 rounded-full ${isListening ? "bg-red-500/20 text-red-400 animate-pulse" : "text-white/50"}`}>{isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}</button>
       </div>
 

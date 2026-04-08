@@ -185,7 +185,7 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
           <h2 className="text-white font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
-            <Bookmark className="w-4 h-4 text-blue-500 fill-blue-500" />
+            <Bookmark className="w-4 h-4 text-red-500 fill-red-500" />
             Save to Collection
           </h2>
           <button 
@@ -202,7 +202,7 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
         <div className="max-h-[300px] overflow-y-auto scrollbar-hide p-2 bg-black/40">
           {isLoading ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+              <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
               <p className="text-gray-400 text-sm">Synchronizing collections...</p>
             </div>
           ) : (
@@ -220,9 +220,9 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
               {!isCreating && (
                 <button
                   onClick={() => setIsCreating(true)}
-                  className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors flex items-center gap-3 text-blue-400 group rounded-lg mt-1"
+                  className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors flex items-center gap-3 text-red-400 group rounded-lg mt-1"
                 >
-                  <div className="w-6 h-6 flex items-center justify-center bg-blue-500/10 rounded-full group-hover:bg-blue-500/20 transition-colors">
+                  <div className="w-6 h-6 flex items-center justify-center bg-red-500/10 rounded-full group-hover:bg-red-500/20 transition-colors">
                     <Plus className="w-4 h-4" />
                   </div>
                   <span className="text-sm font-bold">Create New Collection</span>

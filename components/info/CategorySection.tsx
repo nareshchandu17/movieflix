@@ -8,6 +8,7 @@ import { ChevronRight, ChevronLeft, Play, Plus, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useProfile } from "@/contexts/ProfileContext";
 
 interface CategorySectionProps {
   title: string;
@@ -18,7 +19,8 @@ interface CategorySectionProps {
     | "now_playing"
     | "upcoming"
     | "on_the_air"
-    | "airing_today";
+    | "airing_today"
+    | "trending";
   seeAllHref: string;
 }
 
@@ -28,9 +30,13 @@ const CategorySection = ({
   category,
   seeAllHref,
 }: CategorySectionProps) => {
+  const { activeProfile } = useProfile();
   const page = 1;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const { data, isLoading, error } = useCategoryData(mediaType, category, page);
+  const { data, isLoading, error } = useCategoryData(mediaType, category, page, {
+    isKids: activeProfile?.isKids,
+    certificationLte: activeProfile?.maturityRating
+  });
   const router = useRouter();
 
   const results: (TMDBMovie | TMDBTVShow)[] = data?.results || [];

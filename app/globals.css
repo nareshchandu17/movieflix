@@ -1,6 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Profile manage-mode wiggle animation */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-2deg); }
+  75%      { transform: rotate(2deg); }
+}
 
 /* Custom scrollbar hide utility */
 @layer utilities {
@@ -177,9 +186,14 @@
   /* Enhanced app background with better responsiveness */
   .app-bg-enhanced {
     @apply min-h-screen;
-    background-color: #000000;
+    background: radial-gradient(circle at center top, #141414 0%, #000000 100%);
     background-attachment: fixed;
     background-size: 100% 100%;
+  }
+  
+  /* Standard row padding for exact 60px desktop grid start */
+  .row-padding {
+    @apply pl-4 sm:pl-6 md:pl-[60px];
   }
   
   /* Mobile optimized background */
@@ -255,7 +269,7 @@
   /* Enhanced app background with better responsiveness */
   .app-bg-enhanced {
     @apply min-h-screen;
-    background-color: #000000;
+    background: radial-gradient(circle at center top, #141414 0%, #000000 100%);
     background-attachment: fixed;
     background-size: 100% 100%;
   }

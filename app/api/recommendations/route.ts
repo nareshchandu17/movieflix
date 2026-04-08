@@ -6,8 +6,9 @@ import User from "@/models/User";
 import WatchHistory from "@/models/WatchHistory";
 import Movie from "@/models/Movie";
 import Series from "@/models/Series";
+import { withContentFilter } from "@/lib/contentFilterMiddleware";
 
-export async function GET(req: NextRequest) {
+async function recommendationsHandler(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -83,10 +84,19 @@ export async function GET(req: NextRequest) {
     // Ensure uniqueness based on ID
     const uniqueRecs = Array.from(new Map(combinedRecs.map(item => [item._id.toString(), item])).values());
 
-    return NextResponse.json({ recommendations: uniqueRecs.slice(0, 15) }, { status: 200 });
+    return NextResponse.json({ 
+      success: true,
+      data: uniqueRecs.slice(0, 15)
+    }, { status: 200 });
 
   } catch (error) {
     console.error("Recommendations GET error:", error);
-    return NextResponse.json({ message: "Failed to generate recommendations" }, { status: 500 });
+    return NextResponse.json({ 
+      success: false,
+      error: "Failed to generate recommendations" 
+    }, { status: 500 });
   }
 }
+
+// Export the handler with content filtering applied
+export const GET = withContentFilter(recommendationsHandler);

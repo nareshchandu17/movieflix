@@ -299,9 +299,15 @@ export const api = {
       minRating?: number;
       airDateGte?: string;
       airDateLte?: string;
+      certificationLte?: string;
+      isKids?: boolean;
     } = {}
   ): Promise<TMDBTrendingResponse> {
     checkAccessToken();
+    
+    // Default Kids restriction is PG
+    const kidsCertification = params.certificationLte || 'PG';
+    
     const searchParams = new URLSearchParams({
       page: (params.page || 1).toString(),
       ...(params.genre && { with_genres: params.genre }),
@@ -316,6 +322,11 @@ export const api = {
       }),
       ...(params.airDateLte && {
         "air_date.lte": params.airDateLte,
+      }),
+      // Enforce maturity rating for Kids
+      ...(params.isKids && {
+        "certification_country": "US",
+        "certification.lte": kidsCertification,
       }),
     });
 
@@ -442,6 +453,8 @@ export const api = {
       year?: number;
       sortBy?: string;
       timeWindow?: "day" | "week";
+      isKids?: boolean;
+      certificationLte?: string;
     } = {}
   ): Promise<T extends "movie" ? TMDBMovieResponse : TMDBTVResponse> {
     checkAccessToken();
@@ -452,8 +465,28 @@ export const api = {
       genre, 
       year, 
       sortBy,
-      timeWindow = "day" 
+      timeWindow = "day",
+      isKids = false,
+      certificationLte = 'PG'
     } = options;
+
+    // For Kids, we MUST use discover to enforce certification filters
+    // Categorical endpoints (popular, trending) don't support certification filters directly
+    if (isKids) {
+      const kidsParams: any = {
+        page,
+        certificationLte,
+        isKids: true,
+        sortBy: sortBy || 'popularity.desc'
+      };
+      
+      // Map category to sortBy or genre if possible
+      if (category === 'top_rated') kidsParams.sortBy = 'vote_average.desc';
+      if (genre) kidsParams.genre = genre;
+      if (year) kidsParams.year = year;
+      
+      return this.discover(mediaType, kidsParams) as any;
+    }
 
     // If we have filters (genre, year, custom sortBy), use discover API
     if (genre || year || (sortBy && sortBy !== 'popularity.desc')) {
@@ -577,12 +610,23 @@ export const api = {
   async getSimilar(
     mediaType: "movie" | "tv",
     id: number,
-    page = 1
+    options: { page?: number; isKids?: boolean; certificationLte?: string } = {}
   ): Promise<TMDBTrendingResponse> {
     checkAccessToken();
+    
+    // If Kids profile, we should use discover with genre/certification filtering instead of a raw similar call
+    // or just append certifications if the endpoint supports it (TMDB similar doesn't support them well)
+    // For now, we'll try to append them but ideally we'd use discover for better filtering.
+    
     const searchParams = new URLSearchParams({
-      page: page.toString(),
+      page: (options.page || 1).toString(),
     });
+
+    if (options.isKids) {
+      searchParams.append('certification_country', 'US');
+      searchParams.append('certification.lte', options.certificationLte || 'PG');
+    }
+
     return await fetchAPI<TMDBTrendingResponse>(
       `${BASE_URL}/${mediaType}/${id}/similar?${searchParams}`,
       {

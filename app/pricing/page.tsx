@@ -72,9 +72,9 @@ function renderFeatureCell(value: string | boolean | number): React.ReactNode {
 
 // ─── Plan Icon ────────────────────────────────────────────────
 function PlanIcon({ planId }: { planId: PlanTier }) {
-  if (planId === "mobile") return <Smartphone className="w-6 h-6" />;
-  if (planId === "basic") return <Shield className="w-6 h-6" />;
-  return <Crown className="w-6 h-6" />;
+  if (planId === "mobile") return <>📱</>;
+  if (planId === "basic") return <>🖥</>;
+  return <>👑</>;
 }
 
 // ─── FAQ data ─────────────────────────────────────────────────
@@ -159,7 +159,7 @@ function PaymentOverlay({ state, error, planName, onRetry, onDismiss }: {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl"
+            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-8 max-sm w-full mx-4 text-center shadow-2xl"
           >
             {(state === "creating" || state === "verifying") && (
               <>
@@ -357,14 +357,24 @@ export default function PricingPage() {
                 key={plan.id}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
+                whileHover={{
+                  scale: 1.03,
+                  y: -5,
+                  borderColor:
+                    plan.id === "premium"
+                      ? "rgba(245, 158, 11, 0.4)"
+                      : plan.popular
+                      ? "rgba(229, 9, 20, 0.6)"
+                      : "rgba(255, 255, 255, 0.2)",
+                }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
                 onHoverStart={() => setHoveredPlan(plan.id)}
                 onHoverEnd={() => setHoveredPlan(null)}
                 className={`relative rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer ${
                   plan.popular
                     ? "border-red-500/50 shadow-[0_0_60px_-10px_rgba(229,9,20,0.4)]"
                     : isHovered
-                    ? "border-zinc-600"
+                    ? "border-zinc-600 shadow-xl"
                     : "border-zinc-800"
                 } ${plan.popular ? "md:-mt-4 md:mb-4" : ""}`}
                 style={{
@@ -373,16 +383,27 @@ export default function PricingPage() {
                     : "linear-gradient(160deg, #111 0%, #0a0a0a 60%)",
                 }}
               >
+                {/* Subtle Glow Effect */}
+                <div
+                  className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${
+                    plan.popular
+                      ? "bg-red-500/5"
+                      : plan.id === "premium"
+                      ? "bg-amber-500/5"
+                      : "bg-white/5"
+                  }`}
+                />
                 {/* Popular badge */}
                 {plan.popular && (
                   <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-red-500 to-transparent" />
                 )}
                 {plan.popular && (
-                  <div className="absolute top-4 right-4">
-                    <span className="flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                      <Star className="w-3 h-3 fill-current" />
+                  <div className="absolute top-4 right-4 text-right">
+                    <span className="flex items-center gap-1 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-1">
+                      <Star className="w-2.5 h-2.5 fill-current" />
                       Most Popular
                     </span>
+                    <p className="text-[10px] text-zinc-400 font-medium">Recommended for most</p>
                   </div>
                 )}
 
@@ -396,7 +417,9 @@ export default function PricingPage() {
                       <PlanIcon planId={plan.id} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-white text-lg leading-tight">{plan.name}</h3>
+                      <h3 className="font-bold text-white text-lg leading-tight flex items-center gap-2">
+                        {plan.name}
+                      </h3>
                       <p className="text-zinc-500 text-xs">{plan.tagline}</p>
                     </div>
                   </div>
@@ -409,8 +432,12 @@ export default function PricingPage() {
                       </span>
                       <span className="text-zinc-500 text-sm mb-1.5">/mo</span>
                     </div>
+                    <p className="text-zinc-500 text-[10px] uppercase tracking-widest mt-1 font-semibold flex items-center gap-1.5">
+                      <Shield className="w-3 h-3" />
+                      Cancel anytime
+                    </p>
                     {billing === "annually" && (
-                      <p className="text-zinc-500 text-xs mt-1">
+                      <p className="text-zinc-500 text-xs mt-2 italic">
                         Billed {formatCurrency(price)}/year · Save {formatCurrency(plan.annualSavings)}
                       </p>
                     )}
@@ -420,12 +447,14 @@ export default function PricingPage() {
                   <button
                     onClick={() => handleSubscribe(plan.id)}
                     disabled={isCurrentPlan || isProcessing || state === "creating" || state === "verifying"}
-                    className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-200 relative overflow-hidden group ${
+                    className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-200 relative overflow-hidden group shadow-md active:scale-95 ${
                       isCurrentPlan
                         ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 cursor-default"
+                        : plan.id === "premium"
+                        ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black shadow-[0_0_20px_-5px_rgba(245,158,11,0.5)]"
                         : plan.popular
                         ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/30 hover:shadow-red-900/50"
-                        : "bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 hover:border-zinc-500"
+                        : "bg-transparent border border-zinc-700 hover:border-zinc-400 text-zinc-300 hover:text-white"
                     }`}
                   >
                     {isProcessing ? (

@@ -11,14 +11,14 @@ interface RecommendationsSectionProps {
 }
 
 const recommendations = [
-  { id: 1, title: 'Void Echoes', match: 96, image: '/poster1.jpg' },
-  { id: 2, title: 'The Echoes Within', match: 94, image: '/poster2.jpg' },
-  { id: 3, title: 'Ember Fall', match: 92, image: '/poster3.jpg' },
-  { id: 4, title: 'Shadows of Doubt', match: 89, image: '/poster4.jpg' },
-  { id: 5, title: 'Nightfall Home', match: 87, image: '/poster5.jpg' },
-  { id: 6, title: 'Echoes of Tomorrow', match: 85, image: '/poster6.jpg' },
-  { id: 7, title: 'Cybernetic Chasm', match: 83, image: '/poster7.jpg' },
-  { id: 8, title: 'The Fall of Numantia', match: 81, image: '/poster8.jpg' },
+  { id: 1, title: 'Void Echoes', match: 96, image: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=500&h=750' },
+  { id: 2, title: 'The Echoes Within', match: 94, image: 'https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?auto=format&fit=crop&q=80&w=500&h=750' },
+  { id: 3, title: 'Ember Fall', match: 92, image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=500&h=750' },
+  { id: 4, title: 'Shadows of Doubt', match: 89, image: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&q=80&w=500&h=750' },
+  { id: 5, title: 'Nightfall Home', match: 87, image: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80&w=500&h=750' },
+  { id: 6, title: 'Echoes of Tomorrow', match: 85, image: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=500&h=750' },
+  { id: 7, title: 'Cybernetic Chasm', match: 83, image: 'https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?auto=format&fit=crop&q=80&w=500&h=750' },
+  { id: 8, title: 'The Fall of Numantia', match: 81, image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=500&h=750' },
 ];
 
 export default function RecommendationsSection({ className = '' }: RecommendationsSectionProps) {
@@ -47,28 +47,6 @@ export default function RecommendationsSection({ className = '' }: Recommendatio
           },
         }
       );
-
-      // Cards staggered animation
-      const cards = gridRef.current?.children;
-      if (cards) {
-        gsap.fromTo(
-          cards,
-          { y: 40, opacity: 0, scale: 0.98 },
-          {
-            y: 0,
-            opacity: 1,
-            scale: 1,
-            duration: 0.6,
-            stagger: 0.08,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: gridRef.current,
-              start: 'top 75%',
-              toggleActions: 'play none none reverse',
-            },
-          }
-        );
-      }
     }, section);
 
     return () => ctx.revert();

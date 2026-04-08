@@ -1,59 +1,51 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, Document, Model } from 'mongoose';
 
-const ProfileSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-    index: true
-  },
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 50
-  },
-  avatar: {
-    type: String,
-    default: "default.png"
-  },
-  isKids: {
-    type: Boolean,
-    default: false
-  },
-  maturityLevel: {
-    type: String,
-    enum: ["U", "13+", "18+"],
-    default: "18+"
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  lastWatchedAt: {
-    type: Date,
-    default: null
-  },
-  preferences: {
-    autoplay: {
-      type: Boolean,
-      default: true
+export interface IProfile extends Document {
+  profileId: string;
+  userId: string;
+  name: string;
+  avatarId: string;
+  isKids: boolean;
+  isDefault: boolean;
+  color: string;
+  pin?: string; // 4-digit PIN for adult profiles
+  maturityRating: 'G' | 'PG' | 'PG-13' | 'R' | 'TV-MA';
+  language: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ProfileSchema = new Schema<IProfile>(
+  {
+    profileId: { type: String, required: true, unique: true },
+    userId:    { type: String, required: true, index: true },
+    name:      { type: String, required: true, trim: true, minlength: 2, maxlength: 20 },
+    avatarId:  { type: String, required: true },
+    isKids:    { type: Boolean, default: false },
+    isDefault: { type: Boolean, default: false },
+    color:     { type: String, default: '#E50914' },
+    pin:       { type: String, default: null },
+    maturityRating: { 
+      type: String, 
+      enum: ['G', 'PG', 'PG-13', 'R', 'TV-MA'],
+      default: 'TV-MA' 
     },
-    language: {
-      type: String,
-      default: "en"
+    language: { 
+      type: String, 
+      default: 'en-US' 
     },
-    subtitles: {
-      type: Boolean,
-      default: false
-    }
-  }
-}, {
-  timestamps: true
-});
+  },
+  { timestamps: true }
+);
 
-// Index for performance
-ProfileSchema.index({ userId: 1, isActive: 1 });
-ProfileSchema.index({ lastWatchedAt: -1 });
+// Unique name per user
+ProfileSchema.index({ userId: 1, name: 1 }, { unique: true });
 
-export default mongoose.models.Profile || mongoose.model("Profile", ProfileSchema);
+// Drop the old model if exists to allow schema change in dev
+if (mongoose.models.Profile) {
+  delete mongoose.models.Profile;
+}
+
+const Profile: Model<IProfile> = mongoose.model<IProfile>('Profile', ProfileSchema);
+
+export default Profile;

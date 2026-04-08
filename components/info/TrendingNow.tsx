@@ -86,7 +86,7 @@ const TrendingNow = ({
   return (
     <div className="w-full">
       {/* HEADER WITH LEFT PADDING */}
-      <div className="pl-4 sm:pl-6 md:pl-12 lg:pl-20 flex items-center justify-between mb-4">
+      <div className="row-padding flex items-center justify-between mb-4">
         <div>
           <h2 className="text-3xl font-bold text-white mb-2">{title}</h2>
         </div>
@@ -100,11 +100,11 @@ const TrendingNow = ({
       </div>
 
       {/* CAROUSEL FULL-BLEED WITH LEFT PADDING */}
-      <div className="relative pl-4 sm:pl-6 md:pl-12 lg:pl-20">
+      <div className="relative row-padding group/carousel">
         {/* LEFT SCROLL BUTTON */}
         <button
           onClick={() => scroll("left")}
-          className="absolute left-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition z-20"
+          className="absolute left-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition z-20 opacity-0 group-hover/carousel:opacity-100 hover:scale-110"
           aria-label="Scroll left"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -113,7 +113,7 @@ const TrendingNow = ({
         {/* RIGHT SCROLL BUTTON */}
         <button
           onClick={() => scroll("right")}
-          className="absolute right-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition z-20"
+          className="absolute right-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition z-20 opacity-0 group-hover/carousel:opacity-100 hover:scale-110"
           aria-label="Scroll right"
         >
           <ChevronRight className="w-5 h-5" />
@@ -121,7 +121,7 @@ const TrendingNow = ({
 
         <div
           ref={scrollContainerRef}
-          className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4"
+          className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-6 px-2"
         >
           {/* LEFT SPACER */}
           <div className="flex-shrink-0 w-12 md:w-20" />

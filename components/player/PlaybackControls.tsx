@@ -5,7 +5,9 @@ export function PlaybackControls({ isWatchParty }: { isWatchParty?: boolean }) {
   const { playing, togglePlay, seek, currentTime } = usePlayerState();
 
   const handleSeek = (amount: number, type: 'forward' | 'rewind', msg: string) => {
-    seek(currentTime + amount);
+    const nextTime = currentTime + amount;
+    seek(nextTime);
+    window.dispatchEvent(new CustomEvent('player:force-seek', { detail: nextTime }));
     window.dispatchEvent(new CustomEvent('player:seek-flash', { detail: { type, msg } }));
   };
 

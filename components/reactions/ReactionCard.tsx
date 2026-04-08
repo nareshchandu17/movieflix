@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import Image from "next/image";
-import { Play, Heart, Share2, Clock } from "lucide-react";
+import { Play, Heart, Share2, Clock, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
@@ -14,13 +14,14 @@ interface ReactionCardProps {
     thumbnailUrl: string;
     movieTimestamp: number;
     moodEmoji: string;
+    visibility?: "public" | "private";
     duration: number;
     likesCount: number;
     sharesCount: number;
-    userId: {
-      name: string;
-      avatar: string;
-    };
+    userId?: {
+      name?: string;
+      avatar?: string;
+    } | string; // Could be raw ObjectId if not populated
   };
 }
 
@@ -34,21 +35,43 @@ export function ReactionCard({ reaction, movieId }: ReactionCardProps) {
     return `${min}:${sec.toString().padStart(2, "0")}`;
   };
 
+  // Handle both populated userId objects and raw string IDs
+  const userName = typeof reaction.userId === 'object' && reaction.userId?.name
+    ? reaction.userId.name
+    : "Anonymous";
+  const userAvatar = typeof reaction.userId === 'object' && reaction.userId?.avatar
+    ? reaction.userId.avatar
+    : "";
+  const isPrivate = reaction.visibility === "private";
+
   return (
     <Link href={`/watch/${movieId}?reactionId=${reaction._id}`} className="block">
       <motion.div
         onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
+        onMouseLeave={() => {
+          setIsHovering(false);
+          // Pause video on leave
+          if (videoRef.current) {
+            videoRef.current.pause();
+            videoRef.current.currentTime = 0;
+          }
+        }}
         whileHover={{ y: -8, scale: 1.02 }}
-        className="relative flex flex-col w-[280px] h-[400px] bg-white/5 border border-white/10 rounded-2xl overflow-hidden group transition-all duration-500 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7)]"
+        className={`relative flex flex-col w-[280px] h-[400px] bg-white/5 border rounded-2xl overflow-hidden group transition-all duration-500 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7)] ${
+          isPrivate ? 'border-purple-500/30' : 'border-white/10'
+        }`}
       >
       {/* Media Content (75%) */}
       <div className="relative h-[75%] w-full overflow-hidden bg-black">
         <Image
-          src={reaction.thumbnailUrl || "/api/placeholder/280/300"}
-          alt={`Reaction to movie`}
+          src={reaction.thumbnailUrl || "/placeholder-reaction.jpg"}
+          alt={`Reaction by ${userName}`}
           fill
           className={`object-cover transition-opacity duration-500 ${isHovering ? 'opacity-0' : 'opacity-100'}`}
+          onError={(e) => {
+            // Fallback on broken thumbnail
+            (e.target as HTMLImageElement).src = '/placeholder-reaction.jpg';
+          }}
         />
         
         <AnimatePresence>
@@ -69,7 +92,7 @@ export function ReactionCard({ reaction, movieId }: ReactionCardProps) {
         </AnimatePresence>
 
         {/* Overlays */}
-        <div className="absolute top-3 left-3 flex items-center gap-2">
+        <div className="absolute top-3 left-3 flex items-center gap-2 flex-wrap">
           <div className="px-2 py-1 bg-black/60 backdrop-blur-md border border-white/20 rounded-lg flex items-center gap-1.5">
             <span className="text-lg leading-none">{reaction.moodEmoji}</span>
           </div>
@@ -78,6 +101,14 @@ export function ReactionCard({ reaction, movieId }: ReactionCardProps) {
             <span className="text-[10px] text-white/90 font-bold uppercase tracking-wider">Scene {formatTimestamp(reaction.movieTimestamp)}</span>
           </div>
         </div>
+
+        {/* Private Badge */}
+        {isPrivate && (
+          <div className="absolute top-3 right-3 px-2 py-1 bg-purple-600/80 backdrop-blur-md border border-purple-400/30 rounded-lg flex items-center gap-1">
+            <EyeOff className="w-3 h-3 text-white" />
+            <span className="text-[10px] text-white font-bold uppercase tracking-wider">Only You</span>
+          </div>
+        )}
 
         {!isHovering && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-transparent transition-colors">
@@ -91,31 +122,40 @@ export function ReactionCard({ reaction, movieId }: ReactionCardProps) {
       {/* User Info (25%) */}
       <div className="h-[25%] p-4 flex flex-col justify-between bg-gradient-to-b from-white/[0.05] to-transparent">
         <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-full border-2 border-white/10 overflow-hidden bg-white/5 flex-shrink-0">
-             <Image 
-                src={reaction.userId.avatar || "/default-avatar.png"} 
-                alt={reaction.userId.name} 
-                fill 
-                className="object-cover"
-             />
+          <div className="relative w-10 h-10 rounded-full border-2 border-white/10 overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
+             {userAvatar ? (
+               <Image 
+                  src={userAvatar} 
+                  alt={userName} 
+                  fill 
+                  className="object-cover"
+               />
+             ) : (
+               <span className="text-white/60 text-sm font-bold">
+                 {userName.charAt(0).toUpperCase()}
+               </span>
+             )}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-white font-bold text-sm truncate">{reaction.userId.name}</span>
+            <span className="text-white font-bold text-sm truncate">{userName}</span>
             <span className="text-white/40 text-[10px] uppercase font-bold tracking-widest">{reaction.duration}s Reaction</span>
           </div>
         </div>
 
         <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-4">
-                <button className="flex items-center gap-1.5 text-white/40 hover:text-red-500 transition-colors group/action">
+                <button className="flex items-center gap-1.5 text-white/40 hover:text-red-500 transition-colors group/action" onClick={(e) => e.preventDefault()}>
                     <Heart className="w-4 h-4 group-hover/action:fill-red-500" />
                     <span className="text-xs font-bold leading-none">{reaction.likesCount}</span>
                 </button>
-                <button className="flex items-center gap-1.5 text-white/40 hover:text-blue-400 transition-colors group/action">
+                <button className="flex items-center gap-1.5 text-white/40 hover:text-blue-400 transition-colors group/action" onClick={(e) => e.preventDefault()}>
                     <Share2 className="w-4 h-4" />
                     <span className="text-xs font-bold leading-none">{reaction.sharesCount}</span>
                 </button>
             </div>
+            {isPrivate && (
+              <span className="text-[10px] text-purple-400 font-semibold">Private</span>
+            )}
         </div>
       </div>
     </motion.div>

@@ -4,8 +4,9 @@ import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/db";
 import Collection from "@/models/Collection";
 import CollectionItem from "@/models/CollectionItem";
+import { withContentFilter } from "@/lib/contentFilterMiddleware";
 
-export async function GET(req: NextRequest) {
+async function collectionsHandler(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
@@ -69,9 +70,18 @@ export async function POST(req: NextRequest) {
       color: color || "blue",
     });
 
-    return NextResponse.json({ success: true, collection: newCollection });
+    return NextResponse.json({ 
+      success: true, 
+      data: { collection: newCollection }
+    });
   } catch (error: any) {
     console.error("CREATE COLLECTION ERROR:", error);
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || "Internal Server Error" 
+    }, { status: 500 });
   }
 }
+
+// Export the handler with content filtering applied
+export const GET = withContentFilter(collectionsHandler);

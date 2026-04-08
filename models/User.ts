@@ -74,6 +74,24 @@ const UserSchema = new mongoose.Schema(
       min: 1,
       max: 10
     },
+    subscription: {
+      type: String,
+      enum: ["mobile", "basic", "premium", "none"],
+      default: "none",
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: ["active", "inactive", "cancelled", "past_due", "trialing"],
+      default: "inactive",
+    },
+    subscriptionExpiry: {
+      type: Date,
+      default: null,
+    },
+    watchPartyRooms: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'WatchPartyRoom'
+    }],
   },
   {
     timestamps: true,

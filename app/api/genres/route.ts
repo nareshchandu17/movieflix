@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { api } from "@/lib/api";
+import { withContentFilter } from "@/lib/contentFilterMiddleware";
 
 // Fallback genres in case TMDB API is unavailable
 const fallbackGenres = {
@@ -26,7 +27,7 @@ const fallbackGenres = {
   ]
 };
 
-export async function GET() {
+async function genresHandler(request: NextRequest) {
   try {
     console.log("Fetching genres from TMDB API...");
     
@@ -41,12 +42,21 @@ export async function GET() {
     const data = await api.getGenres();
     console.log("Successfully fetched genres:", data);
     
-    return NextResponse.json(data);
+    return NextResponse.json({
+      success: true,
+      data: data
+    });
   } catch (error) {
     console.error("Error fetching genres:", error);
     
     // Return fallback genres instead of error
     console.log("Using fallback genres due to API error");
-    return NextResponse.json(fallbackGenres);
+    return NextResponse.json({
+      success: true,
+      data: fallbackGenres
+    });
   }
 }
+
+// Export the handler with content filtering applied
+export const GET = withContentFilter(genresHandler);

@@ -24,6 +24,7 @@ export default function TasteDNAPage() {
   const { prefersReducedMotion, config } = useOptimizedAnimation();
   const { getScrollTriggerConfig } = useScrollTriggerOptimization();
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Prevent blinking with scroll stabilization
@@ -52,6 +53,7 @@ export default function TasteDNAPage() {
     // Skip complex animations if reduced motion is preferred
     if (prefersReducedMotion) {
       document.documentElement.style.scrollBehavior = 'auto';
+      setIsLoaded(true);
       return;
     }
 
@@ -63,13 +65,6 @@ export default function TasteDNAPage() {
     
     // Wait for sections to mount and create their ScrollTriggers
     const timer = setTimeout(() => {
-      // Prevent initial blinking
-      document.body.style.opacity = '0.99';
-      
-      setTimeout(() => {
-        document.body.style.opacity = '1';
-      }, 100);
-      
       // Ensure all DOM elements are rendered and measured
       ScrollTrigger.refresh();
       
@@ -99,6 +94,11 @@ export default function TasteDNAPage() {
       
       const maxScroll = ScrollTrigger.maxScroll(window);
       
+      // Remove preload class by updating state immediately before any potential early returns
+      setTimeout(() => {
+        setIsLoaded(true);
+      }, 50);
+
       if (!maxScroll || pinned.length === 0) return;
 
       const pinnedRanges = pinned.map(st => ({
@@ -135,15 +135,6 @@ export default function TasteDNAPage() {
       ScrollTrigger.create({
         snap: snapConfig,
       });
-      
-      // Remove preload class and show content
-      setTimeout(() => {
-        const container = document.querySelector('.taste-dna-preload');
-        if (container) {
-          container.classList.remove('taste-dna-preload');
-          container.classList.add('taste-dna-loaded', 'gsap-initialized');
-        }
-      }, 100);
     }, performance.isLowPerformance ? 200 : 500); // Faster init for low performance devices
 
     return () => {
@@ -156,7 +147,6 @@ export default function TasteDNAPage() {
       // Reset scroll behavior
       document.documentElement.style.scrollBehavior = '';
       document.body.style.background = '';
-      document.body.style.opacity = '';
       
       // Clean up main element styles
       if (main) {
@@ -192,7 +182,7 @@ export default function TasteDNAPage() {
   }, [performance.isLowPerformance]);
 
   return (
-    <div ref={mainRef} className={`relative bg-dark-200 taste-dna-container overflow-x-hidden taste-dna-preload`}>
+    <div ref={mainRef} className={`relative bg-dark-200 taste-dna-container overflow-x-hidden ${isLoaded ? 'taste-dna-loaded gsap-initialized' : 'taste-dna-preload'}`}>
       {/* Performance Monitor (development only) */}
       {process.env.NODE_ENV === 'development' && (
         <div className="performance-monitor">

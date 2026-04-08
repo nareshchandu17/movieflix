@@ -94,7 +94,7 @@ export default function GenreMapSection({
 
       scrollTl.fromTo(
         chartRef.current,
-        { x: '18vw', opacity: 0, scale: 0.96 },
+        { x: '18vw', opacity: 1, scale: 0.96 },
         { x: 0, opacity: 1, scale: 1, ease: 'none' },
         0
       );
@@ -247,14 +247,14 @@ export default function GenreMapSection({
               }} />
             </div>
 
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+            <div className="absolute inset-0 w-full h-full flex items-center justify-center">
+              <PieChart width={400} height={400}>
                 <Pie
                   data={genreData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={chartAnimated ? '55%' : '0%'}
-                  outerRadius={chartAnimated ? '85%' : '0%'}
+                  innerRadius={'55%'}
+                  outerRadius={'85%'}
                   paddingAngle={4}
                   dataKey="value"
                   animationBegin={0}
@@ -270,7 +270,7 @@ export default function GenreMapSection({
                   ))}
                 </Pie>
               </PieChart>
-            </ResponsiveContainer>
+            </div>
 
             {/* Center text */}
             <div className="absolute inset-0 flex items-center justify-center">

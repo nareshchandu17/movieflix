@@ -2,17 +2,20 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Play, Plus, Info, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TMDBMovie, TMDBTVShow } from "@/lib/types";
 import { api } from "@/lib/api";
+import CollectionPopup from "../collections/CollectionPopup";
 
 interface HeroSpotlightProps {
   media: (TMDBMovie | TMDBTVShow)[];
 }
 
 const HeroSpotlight = ({ media }: HeroSpotlightProps) => {
+  const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -20,6 +23,11 @@ const HeroSpotlight = ({ media }: HeroSpotlightProps) => {
   const [matchPercentage, setMatchPercentage] = useState(85);
   const [badges, setBadges] = useState<Array<{type: string, color: string}>>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Collection Popup state
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | undefined>(undefined);
+  const plusButtonRef = useRef<HTMLButtonElement>(null);
 
   const currentMedia = media[currentIndex];
 
@@ -47,18 +55,23 @@ const HeroSpotlight = ({ media }: HeroSpotlightProps) => {
   }; 
 
   const handlePlay = () => {
-    // Navigate to detail page or play trailer
-    console.log("Play:", currentMedia);
+    if (!currentMedia) return;
+    const mediaType = 'first_air_date' in currentMedia ? 'tv' : 'movie';
+    router.push(`/new-popular/${currentMedia.id}?type=${mediaType}`);
   };
 
   const handleMoreInfo = () => {
-    // Navigate to detail page
-    console.log("More Info:", currentMedia);
+    if (!currentMedia) return;
+    const mediaType = 'first_air_date' in currentMedia ? 'tv' : 'movie';
+    router.push(`/new-popular/${currentMedia.id}?type=${mediaType}`);
   };
 
-  const handleAddToList = () => {
-    // Add to watchlist
-    console.log("Add to List:", currentMedia);
+  const handleAddToList = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (plusButtonRef.current) {
+      setAnchorRect(plusButtonRef.current.getBoundingClientRect());
+    }
+    setIsPopupOpen(!isPopupOpen);
   };
 
   const nextSlide = () => {
@@ -203,6 +216,7 @@ const HeroSpotlight = ({ media }: HeroSpotlightProps) => {
               </Button>
               
               <Button
+                ref={plusButtonRef}
                 onClick={handleAddToList}
                 size="lg"
                 variant="outline"
@@ -254,6 +268,16 @@ const HeroSpotlight = ({ media }: HeroSpotlightProps) => {
           ))}
         </div>
       )}
+      
+      <AnimatePresence>
+        {isPopupOpen && currentMedia && (
+          <CollectionPopup
+            media={currentMedia}
+            anchorRect={anchorRect}
+            onClose={() => setIsPopupOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

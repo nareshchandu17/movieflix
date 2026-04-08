@@ -19,7 +19,24 @@ export async function GET(req: Request) {
 
     console.log(`Fetching reactions - movieId: ${movieId}, page: ${page}, limit: ${limit}`);
 
-    const query: any = { visibility: "public" };
+    // Get the current session to include user's private reactions
+    let currentUserId: string | null = null;
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user) {
+        currentUserId = (session.user as any).id;
+      }
+    } catch {
+      // No session — only show public reactions
+    }
+
+    // Build query: public reactions + current user's private reactions
+    const orConditions: any[] = [{ visibility: "public" }];
+    if (currentUserId) {
+      orConditions.push({ userId: currentUserId, visibility: "private" });
+    }
+
+    const query: any = { $or: orConditions };
     if (movieId) {
       query.movieId = movieId;
     }
