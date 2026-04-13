@@ -1,35 +1,52 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Plus, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { X, Plus, Loader2, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface Collection {
+  id: string;
+  name: string;
+}
 
 interface CreateCollectionFormProps {
   onCancel: () => void;
-  onCreated: (collection: any) => void;
+  onCreated: (collection: Collection) => void;
 }
 
-const CreateCollectionForm: React.FC<CreateCollectionFormProps> = ({
+export default function CreateCollectionForm({
   onCancel,
   onCreated,
-}) => {
+}: CreateCollectionFormProps) {
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const validateName = () => {
+    const trimmed = name.trim();
+
+    if (trimmed.length < 2) {
+      setError("Name must be at least 2 characters");
+      return false;
+    }
+
+    if (trimmed.length > 60) {
+      setError("Name must be under 60 characters");
+      return false;
+    }
+
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || name.trim().length < 2) {
-      setError("Name must be at least 2 characters");
-      return;
-    }
-    if (name.length > 60) {
-      setError("Name must be less than 60 characters");
-      return;
-    }
+
+    setError(null);
+
+    if (!validateName()) return;
 
     setIsSubmitting(true);
-    setError(null);
 
     try {
       const response = await fetch("/api/collections", {
@@ -38,15 +55,22 @@ const CreateCollectionForm: React.FC<CreateCollectionFormProps> = ({
         body: JSON.stringify({ name: name.trim() }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create collection");
+        const err = await response.json().catch(() => null);
+        throw new Error(err?.error || "Failed to create collection");
       }
 
-      onCreated(data.collection);
-    } catch (err: any) {
-      setError(err.message);
+      const data = await response.json();
+
+      setSuccess(true);
+
+      setTimeout(() => {
+        onCreated(data.collection);
+      }, 600);
+
+    } catch (err) {
+      if (err instanceof Error) setError(err.message);
+      else setError("Something went wrong");
     } finally {
       setIsSubmitting(false);
     }
@@ -54,56 +78,114 @@ const CreateCollectionForm: React.FC<CreateCollectionFormProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
-      className="p-4 border-t border-white/10"
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      className="p-4 border-t border-white/10 space-y-4"
     >
-      <h3 className="text-white text-sm font-semibold mb-3">Create New Collection</h3>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-white text-sm font-semibold">
+          Create New Collection
+        </h3>
+
+        <button
+          onClick={onCancel}
+          className="cursor-pointer hover:bg-white/10 p-1 rounded transition pointer-events-auto"
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <input
+        <div className="relative">
+
+          <motion.input
+            layout
             autoFocus
-            type="text"
-            placeholder="Collection Name (e.g. Weekend Binge)"
+            maxLength={60}
             value={name}
             onChange={(e) => {
               setName(e.target.value);
-              if (error) setError(null);
+              setError(null);
             }}
             disabled={isSubmitting}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-500"
+            placeholder="Collection name (Weekend Binge)"
+            className={`
+              w-full px-3 py-2 rounded-lg
+              bg-white/5 border
+              text-white text-sm
+              cursor-text pointer-events-auto
+              focus:outline-none focus:ring-2
+              transition-all
+              ${error ? "border-red-500 ring-red-500/40" : "border-white/10 focus:ring-red-500/50"}
+            `}
           />
-          {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
+
+          {/* Validation hint */}
+          <p className="text-xs text-gray-400 mt-1">
+            2–60 characters
+          </p>
+
+          {/* Error message */}
+          <AnimatePresence>
+            {error && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-red-400 text-xs mt-1"
+              >
+                {error}
+              </motion.p>
+            )}
+          </AnimatePresence>
+
         </div>
 
+        {/* Buttons */}
         <div className="flex gap-2">
+
           <button
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-white text-sm font-medium transition-colors cursor-pointer"
+            className="flex-1 px-4 py-2 rounded-lg
+              bg-white/5 hover:bg-white/10
+              text-white text-sm font-medium
+              cursor-pointer pointer-events-auto
+              transition disabled:opacity-40"
           >
             Cancel
           </button>
+
           <button
             type="submit"
-            disabled={isSubmitting || !name.trim()}
-            className="flex-1 px-4 py-2 bg-red-600 text-white hover:bg-red-500 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+            disabled={isSubmitting || name.trim().length < 2}
+            className="flex-1 px-4 py-2 rounded-lg
+              bg-red-600 hover:bg-red-500
+              text-white text-sm font-bold
+              flex items-center justify-center gap-2
+              cursor-pointer pointer-events-auto
+              transition disabled:opacity-40"
           >
+
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
+            ) : success ? (
+              <Check className="w-4 h-4 text-green-400" />
             ) : (
               <>
                 <Plus className="w-4 h-4" />
                 Create
               </>
             )}
+
           </button>
+
         </div>
       </form>
     </motion.div>
   );
-};
-
-export default CreateCollectionForm;
+}
