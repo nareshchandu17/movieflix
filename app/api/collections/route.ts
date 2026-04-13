@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      data: { collection: newCollection }
+      collection: newCollection,
     });
   } catch (error: any) {
     console.error("CREATE COLLECTION ERROR:", error);
