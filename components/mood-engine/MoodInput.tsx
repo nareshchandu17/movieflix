@@ -39,42 +39,42 @@ export default function MoodInput({ onMatch }: { onMatch: (results: any[]) => vo
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-5xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-white/80 to-white/40"
+          className="text-5xl md:text-7xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/60 tracking-tighter"
         >
-          How are you feeling?
+          How's the <span className="text-purple-400">vibe?</span>
         </motion.h1>
         <motion.p 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="text-xl text-white/50"
+          className="text-xl text-white/40 font-medium tracking-wide uppercase text-[10px]"
         >
-          Describe your emotional journey, we'll find the perfect cinematic match.
+          Ai-Powered Cinematic Matching Engine
         </motion.p>
       </div>
 
-      <div className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-        <div className="relative bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex items-center gap-4">
-          <Sparkles className="w-6 h-6 text-purple-400 ml-2" />
+      <div className="relative group max-w-2xl mx-auto">
+        <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/50 to-purple-600/50 rounded-2xl blur-lg opacity-25 group-hover:opacity-60 transition duration-1000 group-hover:duration-200"></div>
+        <div className="relative bg-[#0a0a0a]/80 backdrop-blur-3xl border border-white/10 rounded-2xl p-3 flex items-center gap-4 transition-all group-hover:border-white/20">
+          <Sparkles className="w-5 h-5 text-purple-400 ml-3" />
           <input
             type="text"
             value={moodText}
             onChange={(e) => setMoodText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleMatch()}
-            placeholder='e.g., "I want to cry but feel hope at the end" or "Cozy but not boring"'
-            className="flex-1 bg-transparent border-none outline-none text-xl text-white placeholder:text-white/20 py-4"
+            placeholder='e.g., "A dark slow-burn with a hopeful ending"'
+            className="flex-1 bg-transparent border-none outline-none text-lg text-white placeholder:text-white/10 py-3"
           />
           <button
             onClick={handleMatch}
             disabled={isProcessing || !moodText.trim()}
-            className="bg-white text-black px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="bg-white text-black px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-purple-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95"
           >
             {isProcessing ? (
-              <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
+              <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
             ) : (
               <>
-                Engine <ChevronRight className="w-4 h-4" />
+                Engine <ChevronRight className="w-3 h-3" />
               </>
             )}
           </button>
