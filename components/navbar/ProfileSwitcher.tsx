@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { AVATAR_MAP } from "@/lib/avatars";
 import { useProfile } from "@/contexts/ProfileContext";
-import { ChevronDown, Plus, UserCircle, Edit3, Settings, SwitchCamera, Sparkles, Download, LogOut, User } from "lucide-react";
+import { ChevronDown, Plus, UserCircle, Settings, SwitchCamera, Sparkles, Download, LogOut, User, Dna } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import PinModal from "@/components/profiles/PinModal";
@@ -65,14 +65,14 @@ export default function ProfileSwitcher() {
         profileId={pendingProfile?.profileId}
       />
 
-      {/* Active Profile Trigger */}
+      {/* Active Profile Trigger — Circle Avatar */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 group p-1 rounded-lg hover:bg-white/5 transition-all"
+        className="flex items-center gap-2 group p-1 rounded-full hover:bg-white/5 transition-all"
         aria-label="Profile Switcher"
       >
         <div 
-          className={`w-9 h-9 rounded-lg bg-gradient-to-br ${currentAvatar?.gradient || "from-gray-700 to-gray-800"} flex items-center justify-center border border-white/20 group-hover:border-white/40 transition-all shadow-lg active:scale-95`}
+          className={`w-9 h-9 rounded-full bg-gradient-to-br ${currentAvatar?.gradient || "from-gray-700 to-gray-800"} flex items-center justify-center border-2 border-white/20 group-hover:border-white/50 transition-all shadow-lg active:scale-95 ring-2 ring-transparent group-hover:ring-white/10`}
         >
           {currentAvatar ? (
             <span className="text-xl leading-none">{currentAvatar.emoji}</span>
@@ -92,100 +92,151 @@ export default function ProfileSwitcher() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="absolute right-0 mt-3 w-56 bg-black/90 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl z-[1200] overflow-hidden"
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute right-0 mt-3 w-60 bg-[#0a0a0a]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_24px_80px_-12px_rgba(0,0,0,0.9)] z-[1200] overflow-hidden"
             >
-              <div className="p-3 space-y-2">
-                {/* Profiles List */}
-                {profiles
-                  .filter(p => !activeProfile || p.profileId !== activeProfile.profileId)
-                  .map(profile => {
-                    const avatar = AVATAR_MAP[profile.avatarId];
-                    return (
-                      <button
-                        key={profile.profileId}
-                        onClick={() => handleProfileClick(profile)}
-                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition group"
-                      >
-                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${avatar?.gradient} flex items-center justify-center border border-white/10 group-hover:border-white/30 transition-all`}>
-                          <span className="text-base">{avatar?.emoji}</span>
-                        </div>
-                        <span className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">{profile.name}</span>
-                        {profile.pin && (
-                          <div className="ml-auto w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]" />
-                        )}
-                      </button>
-                    );
-                  })}
-
-                {profiles.length === 0 && !activeProfile && (
-                  <div className="px-2 py-4 text-center">
-                    <p className="text-sm text-white/50 mb-3">No profiles found</p>
+              {/* ── Current Profile Header ── */}
+              <div className="p-4 pb-3">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className={`w-11 h-11 rounded-full bg-gradient-to-br ${currentAvatar?.gradient || "from-gray-700 to-gray-800"} flex items-center justify-center border-2 border-white/20 shadow-lg flex-shrink-0`}
+                  >
+                    {currentAvatar ? (
+                      <span className="text-2xl leading-none">{currentAvatar.emoji}</span>
+                    ) : (
+                      <UserCircle className="w-7 h-7 text-white/70" />
+                    )}
                   </div>
-                )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-white truncate">{activeProfile?.name || "Guest"}</p>
+                    <p className="text-[10px] text-white/40 font-medium uppercase tracking-widest">Current Profile</p>
+                  </div>
+                </div>
+              </div>
 
-                {/* Management Options */}
-                <div className="my-2 border-t border-white/10" />
-
-                <Link
-                  href="/for-you"
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition group text-white/70 hover:text-white"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Sparkles className="w-4 h-4 text-[#00E5FF]" />
-                  <span className="text-xs font-semibold uppercase tracking-wider">For You</span>
-                </Link>
-
-                <Link
-                  href="/downloads"
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition group text-white/70 hover:text-white"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="text-xs font-semibold uppercase tracking-wider">Downloads</span>
-                </Link>
-
-                <div className="my-2 border-t border-white/10" />
-
-                <Link
-                  href="/account"
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition group text-white/70 hover:text-white"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <User className="w-4 h-4" />
-                  <span className="text-xs font-semibold uppercase tracking-wider">Account & Profile</span>
-                </Link>
-
+              {/* ── Switch / Add Profile ── */}
+              <div className="px-2 pb-1 space-y-0.5">
                 <button
                   onClick={() => {
                     setIsOpen(false);
                     switchProfile();
                   }}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition group text-white/70 hover:text-white w-full"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group"
                 >
-                  <SwitchCamera className="w-4 h-4" />
-                  <span className="text-xs font-semibold uppercase tracking-wider">Switch Profile</span>
+                  <SwitchCamera className="w-4 h-4 text-white/40 group-hover:text-white/70 transition-colors" />
+                  <span className="text-sm text-white/70 group-hover:text-white transition-colors">Switch Profile</span>
                 </button>
 
                 <Link
                   href="/profiles/create"
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition group text-white/70 hover:text-white"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group"
                   onClick={() => setIsOpen(false)}
                 >
-                  <Plus className="w-4 h-4" />
-                  <span className="text-xs font-semibold uppercase tracking-wider">Add Profile</span>
+                  <Plus className="w-4 h-4 text-white/40 group-hover:text-white/70 transition-colors" />
+                  <span className="text-sm text-white/70 group-hover:text-white transition-colors">Add Profile</span>
                 </Link>
 
-                <div className="my-2 border-t border-white/10" />
+                {/* Other profiles as compact switchers */}
+                {profiles
+                  .filter(p => !activeProfile || p.profileId !== activeProfile.profileId)
+                  .length > 0 && (
+                  <div className="flex gap-2 px-3 pt-2 pb-1">
+                    {profiles
+                      .filter(p => !activeProfile || p.profileId !== activeProfile.profileId)
+                      .slice(0, 4)
+                      .map(profile => {
+                        const avatar = AVATAR_MAP[profile.avatarId];
+                        return (
+                          <button
+                            key={profile.profileId}
+                            onClick={() => handleProfileClick(profile)}
+                            className="relative group/avatar"
+                            title={profile.name}
+                          >
+                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatar?.gradient} flex items-center justify-center border border-white/10 group-hover/avatar:border-white/40 group-hover/avatar:scale-110 transition-all`}>
+                              <span className="text-sm">{avatar?.emoji}</span>
+                            </div>
+                            {profile.pinEnabled && (
+                              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 border border-black" />
+                            )}
+                          </button>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
 
+              {/* ── Divider ── */}
+              <div className="mx-3 my-1 border-t border-white/[0.06]" />
+
+              {/* ── Navigation Links ── */}
+              <div className="px-2 py-1 space-y-0.5">
+                <Link
+                  href="/taste-dna"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-cyan/5 transition-colors group"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Dna className="w-4 h-4 text-cyan group-hover:text-cyan transition-colors" />
+                  <span className="text-sm text-white/70 group-hover:text-white transition-colors">Taste DNA</span>
+                </Link>
+
+                <Link
+                  href="/mood-engine"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-purple-500/10 transition-colors group"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Sparkles className="w-4 h-4 text-purple-400 group-hover:text-purple-300 transition-colors" />
+                  <span className="text-sm text-white/70 group-hover:text-white transition-colors">AI Mood Engine</span>
+                </Link>
+
+                <Link
+                  href="/for-you"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Sparkles className="w-4 h-4 text-white/40 group-hover:text-[#00E5FF] transition-colors" />
+                  <span className="text-sm text-white/70 group-hover:text-white transition-colors">For You</span>
+                </Link>
+
+                <Link
+                  href="/downloads"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Download className="w-4 h-4 text-white/40 group-hover:text-white/70 transition-colors" />
+                  <span className="text-sm text-white/70 group-hover:text-white transition-colors">Downloads</span>
+                </Link>
+              </div>
+
+              {/* ── Divider ── */}
+              <div className="mx-3 my-1 border-t border-white/[0.06]" />
+
+              {/* ── Account & Settings ── */}
+              <div className="px-2 py-1">
+                <Link
+                  href="/account"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Settings className="w-4 h-4 text-white/40 group-hover:text-white/70 transition-colors" />
+                  <span className="text-sm text-white/70 group-hover:text-white transition-colors">Account & Settings</span>
+                </Link>
+              </div>
+
+              {/* ── Divider ── */}
+              <div className="mx-3 my-1 border-t border-white/[0.06]" />
+
+              {/* ── Sign Out ── */}
+              <div className="px-2 pt-1 pb-2">
                 <button
                   onClick={() => {
                     setIsOpen(false);
                     signOut({ callbackUrl: '/' });
                   }}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-red-500/10 transition group text-red-500/70 hover:text-red-500 w-full"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-red-500/10 transition-colors group"
                 >
-                  <LogOut className="w-4 h-4" />
-                  <span className="text-xs font-semibold uppercase tracking-wider">Sign Out</span>
+                  <LogOut className="w-4 h-4 text-red-500/60 group-hover:text-red-500 transition-colors" />
+                  <span className="text-sm text-red-500/70 group-hover:text-red-500 transition-colors">Sign Out</span>
                 </button>
               </div>
             </motion.div>
