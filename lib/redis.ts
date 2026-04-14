@@ -1,23 +1,51 @@
 import Redis from 'ioredis';
 
+// Parse REDIS_URL if available
+const redisUrl = process.env.REDIS_URL;
+let connectionOptions: any = {};
+
+if (redisUrl) {
+  try {
+    const parsed = new URL(redisUrl);
+    connectionOptions = {
+      host: parsed.hostname,
+      port: parseInt(parsed.port) || 6379,
+      password: parsed.password || process.env.REDIS_PASSWORD || undefined,
+      username: parsed.username || undefined,
+    };
+  } catch (e) {
+    console.warn('⚠️ Failed to parse REDIS_URL, falling back to individual variables');
+  }
+}
+
 // Redis configuration
-const redis = new Redis({
-  port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 18823,
-  host: process.env.REDIS_HOST || 'redis-18823.crce295.us-east-1-1.ec2.cloud.redislabs.com',
-  password: process.env.REDIS_PASSWORD || 'lKhZRJdKmdFJf4J4z8M9ToqWquSMZKsd',
-  username: process.env.REDIS_USERNAME || 'default',
+export const redisConfig = {
+  port: connectionOptions.port || (process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379),
+  host: connectionOptions.host || process.env.REDIS_HOST || 'localhost',
+  password: connectionOptions.password || process.env.REDIS_PASSWORD || undefined,
+  username: connectionOptions.username || process.env.REDIS_USERNAME || undefined,
   db: process.env.REDIS_DB ? parseInt(process.env.REDIS_DB) : 0,
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: null, 
   lazyConnect: true,
+  retryStrategy(times: number) {
+    if (times > 10) {
+      console.warn('❌ Redis: Max retries reached. Stopping reconnection attempts.');
+      return null; // Stop retrying
+    }
+    const delay = Math.min(times * 1000, 5000);
+    return delay;
+  },
   keepAlive: 30000,
   family: 4,
   keyPrefix: 'MovieFlix:',
   connectTimeout: 10000,
-  commandTimeout: 5000,
-});
+};
+
+export const redis = new Redis(redisConfig);
 
 // Redis connection status
 let isConnected = false;
+let lastErrorTime = 0;
 
 redis.on('connect', () => {
   isConnected = true;
@@ -25,7 +53,12 @@ redis.on('connect', () => {
 });
 
 redis.on('error', (err) => {
-  console.error('❌ Redis connection error:', err);
+  const now = Date.now();
+  // Only log error once every 5 seconds to prevent spam
+  if (now - lastErrorTime > 5000) {
+    console.error('❌ Redis connection error:', err.message || err);
+    lastErrorTime = now;
+  }
   isConnected = false;
 });
 
@@ -37,46 +70,72 @@ redis.on('close', () => {
 // Redis utility functions
 export class RedisManager {
   static async connect(): Promise<void> {
-    if (!isConnected) {
-      await redis.connect();
+    try {
+      if (!isConnected) {
+        await redis.connect();
+      }
+    } catch (error) {
+      // If max retries reached, ioredis emits error and retryStrategy returns null.
+      // We log but don't throw to allow API routes to fall back to DB.
+      if (Date.now() - lastErrorTime > 30000) {
+        console.warn('⚠️ Redis: Connection unavailable. Operating in DB-only mode.');
+        lastErrorTime = Date.now();
+      }
     }
   }
 
   static async disconnect(): Promise<void> {
-    if (isConnected) {
-      await redis.quit();
+    try {
+      if (isConnected) {
+        await redis.quit();
+      }
+    } catch (error) {
+      console.warn('⚠️ Redis: Graceful disconnect failed:', error);
+      isConnected = false;
     }
   }
 
   static async set(key: string, value: any, ttl?: number): Promise<void> {
-    await this.connect();
-    
-    const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
-    
-    if (ttl) {
-      await redis.setex(key, ttl, stringValue);
-    } else {
-      await redis.set(key, stringValue);
+    try {
+      await this.connect();
+      
+      const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+      
+      if (ttl) {
+        await redis.setex(key, ttl, stringValue);
+      } else {
+        await redis.set(key, stringValue);
+      }
+    } catch (error) {
+      console.error(`❌ Redis: set failed for key ${key}:`, error);
     }
   }
 
   static async get(key: string): Promise<any> {
-    await this.connect();
-    
-    const value = await redis.get(key);
-    
-    if (!value) return null;
-    
     try {
-      return JSON.parse(value);
-    } catch {
-      return value;
+      await this.connect();
+      
+      const value = await redis.get(key);
+      if (!value) return null;
+      
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    } catch (error) {
+      console.error(`❌ Redis: get failed for key ${key}:`, error);
+      return null;
     }
   }
 
   static async del(key: string): Promise<void> {
-    await this.connect();
-    await redis.del(key);
+    try {
+      await this.connect();
+      await redis.del(key);
+    } catch (error) {
+      console.error(`❌ Redis: del failed for key ${key}:`, error);
+    }
   }
 
   static async exists(key: string): Promise<boolean> {
