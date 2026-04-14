@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, PlayCircle, Loader2, Dna, Sparkles, Download, User } from "lucide-react";
+import { LogOut, PlayCircle, Loader2, Download, User } from "lucide-react";
 import Logo from "./Logo";
 import MobileMenu from "./MobileMenu";
 import SmartSearchNew from "@/components/search/SmartSearch";
@@ -11,6 +11,7 @@ import { useSession, signOut } from "next-auth/react";
 import { GoogleAuthModal } from "@/components/auth/GoogleAuthModal";
 import ProfileSwitcher from "./ProfileSwitcher";
 import { useProfile } from "@/contexts/ProfileContext";
+import NotificationBell from "../notifications/NotificationBell";
 
 const Header = () => {
   const { data: session, status } = useSession();
@@ -66,6 +67,7 @@ const Header = () => {
           {[
             { href: "/movie", label: "Movies" },
             { href: "/series", label: "Series" },
+            { href: "/mood-engine", label: "AI Mood" },
             { href: "/new-popular", label: "New & Popular" },
             { href: "/my-list", label: "My List" },
             { href: "/scenes", label: "Scenes" },
@@ -86,9 +88,12 @@ const Header = () => {
           {/* Search */}
           {isClient && <SmartSearchNew />}
 
+          {/* Bell Icon */}
+          {isSignedIn && isClient && <NotificationBell />}
+
           {/* Profile Section */}
           {isSignedIn && isClient ? (
-            <div className="hidden sm:block">
+            <div className="flex items-center">
               <ProfileSwitcher />
             </div>
           ) : isClient && (
