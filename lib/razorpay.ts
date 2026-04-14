@@ -69,7 +69,6 @@ export async function createRazorpayOrder({
   return order;
 }
 
-// ─── Verify Payment Signature ─────────────────────────────────
 export function verifyRazorpaySignature({
   orderId,
   paymentId,
@@ -79,13 +78,24 @@ export function verifyRazorpaySignature({
   paymentId: string;
   signature: string;
 }): boolean {
-  const keySecret = process.env.RAZORPAY_KEY_SECRET!;
-  const body = `${orderId}|${paymentId}`;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET || process.env.NEXT_PUBLIC_RAZORPAY_KEY_SECRET;
+  
+  if (!keySecret) {
+    console.error("❌ Razorpay Signature Error: Missing RAZORPAY_KEY_SECRET");
+    return false;
+  }
 
+  const body = `${orderId}|${paymentId}`;
   const expectedSignature = crypto
     .createHmac("sha256", keySecret)
     .update(body)
     .digest("hex");
+
+  // Safety check: timingSafeEqual throws if lengths differ
+  if (expectedSignature.length !== signature.length) {
+    console.warn("⚠️ Razorpay Signature Mismatch: Length difference");
+    return false;
+  }
 
   return crypto.timingSafeEqual(
     Buffer.from(expectedSignature),

@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!isValid) {
+      console.warn("❌ Payment verification failed: Invalid signature for Order:", razorpay_order_id);
       return NextResponse.json(
         { error: "Payment verification failed. Invalid signature." },
         { status: 400 }
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!paymentRecord) {
+      console.warn("❌ Payment verification failed: Payment record not found for Order:", razorpay_order_id);
       return NextResponse.json(
         { error: "Payment record not found" },
         { status: 404 }
@@ -80,6 +82,7 @@ export async function POST(req: NextRequest) {
     const razorpayPayment = await fetchRazorpayPayment(razorpay_payment_id);
 
     if (razorpayPayment.status !== "captured") {
+      console.warn("❌ Payment verification failed: Payment not captured status:", razorpayPayment.status);
       return NextResponse.json(
         { error: "Payment not captured yet" },
         { status: 400 }
@@ -109,6 +112,7 @@ export async function POST(req: NextRequest) {
     );
 
     if (!subscription) {
+      console.warn("❌ Payment verification failed: Subscription ID mismatch:", subscriptionId);
       return NextResponse.json(
         { error: "Subscription not found" },
         { status: 404 }
@@ -122,6 +126,8 @@ export async function POST(req: NextRequest) {
       subscriptionExpiry: subscription.currentPeriodEnd,
     });
 
+    console.log("✅ Payment verification success for User:", userId, "Plan:", subscription.planId);
+
     return NextResponse.json({
       success: true,
       subscription: {
@@ -133,8 +139,8 @@ export async function POST(req: NextRequest) {
       },
       paymentId: razorpay_payment_id,
     });
-  } catch (error) {
-    console.error("[verify-payment] Error:", error);
+  } catch (error: any) {
+    console.error("❌ [verify-payment] Exception:", error.message || error);
     return NextResponse.json(
       { error: "Payment verification failed. Please contact support." },
       { status: 500 }
