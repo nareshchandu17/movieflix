@@ -227,7 +227,7 @@ const ProfilesSection = ({ profiles, editProfile }: { profiles: any[]; editProfi
                   <span className="flex items-center gap-1">
                     <Shield className="w-3 h-3" /> {profile.maturityRating || 'All Ratings'}
                   </span>
-                  {profile.pin && (
+                  {profile.pinEnabled && (
                     <span className="flex items-center gap-1">
                       <Lock className="w-3 h-3" /> PIN Protected
                     </span>
