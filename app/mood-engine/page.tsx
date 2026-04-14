@@ -48,8 +48,16 @@ export default function MoodEnginePage() {
         </AnimatePresence>
       </main>
 
+      {/* Premium Cinematic Overlays */}
+      <div className="fixed inset-0 pointer-events-none z-50 mix-blend-soft-light opacity-[0.15] grayscale contrast-150">
+        <div className="absolute inset-0 bg-[#050505] mix-blend-overlay" />
+        <div className="absolute inset-0 bg-repeat bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      </div>
+
+      <div className="fixed inset-0 bg-gradient-to-b from-black/0 via-black/20 to-[#050505] pointer-events-none" />
+
       {/* Background Grid Pattern */}
-      <div className="fixed inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] pointer-events-none opacity-20" />
+      <div className="fixed inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] pointer-events-none opacity-10" />
     </div>
   );
 }
