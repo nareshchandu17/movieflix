@@ -125,7 +125,7 @@ Create a `.env.local` file in the root directory:
 
 ```env
 # MongoDB Connection
-MONGODB_URI=mongodb://localhost:27017/cineworld
+MONGODB_URI=your-mongodb-uri
 
 # NextAuth Configuration
 NEXTAUTH_URL=http://localhost:3000
