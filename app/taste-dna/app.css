@@ -1,0 +1,94 @@
+/* App-specific styles for Taste DNA */
+
+/* Smooth scrolling for the entire app */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Ensure sections stack properly */
+main > section {
+  position: relative;
+}
+
+/* Fix for pinned sections */
+.pin-spacer {
+  overflow: visible !important;
+}
+
+/* DNA card hover effects */
+.dna-card {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dna-card:hover {
+  border-color: rgba(41, 215, 255, 0.2);
+}
+
+/* Chart animations */
+.recharts-surface {
+  overflow: visible;
+}
+
+/* Recommendation card image zoom */
+.recommendation-card img {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Button hover animations */
+button {
+  transition: all 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Link hover effects */
+a {
+  transition: color 0.2s ease;
+}
+
+/* Focus states for accessibility */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #29D7FF;
+  outline-offset: 2px;
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .dna-card {
+    padding: 1rem;
+    border-radius: 20px;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: 0.01em;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .dna-card {
+    border-color: rgba(244, 246, 250, 0.3);
+  }
+  
+  .text-\[\#A7B0B7\] {
+    color: #C0C8D0;
+  }
+}
