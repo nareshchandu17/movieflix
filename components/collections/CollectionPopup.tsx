@@ -33,7 +33,7 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
     message: "",
     isOpen: false,
   });
-  
+
   const popupRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -49,10 +49,10 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
         setIsLoading(true);
         const response = await fetch("/api/collections");
         const data = await response.json();
-        
+
         if (data.success) {
           setCollections(data.collections);
-          
+
           const checkResponse = await fetch(`/api/collections/check?tmdbId=${media.id}`);
           if (checkResponse.ok) {
             const checkData = await checkResponse.json();
@@ -81,7 +81,7 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ collectionId, tmdbId: media.id }),
         });
-        
+
         if (response.ok) {
           setSavedCollectionIds(prev => prev.filter(id => id !== collectionId));
           showToast(`Removed from ${collectionName}`);
@@ -102,7 +102,7 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
             voteAverage: media.vote_average,
           }),
         });
-        
+
         if (response.ok) {
           setSavedCollectionIds(prev => [...prev, collectionId]);
           showToast(`Added to ${collectionName}`);
@@ -131,7 +131,7 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
 
     const POPUP_WIDTH = 300;
     const MARGIN = 16;
-    
+
     let left = anchorRect.left - POPUP_WIDTH / 2 + anchorRect.width / 2;
     let top = anchorRect.bottom + 12;
 
@@ -141,21 +141,21 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
       if (left + POPUP_WIDTH > window.innerWidth - MARGIN) {
         left = window.innerWidth - POPUP_WIDTH - MARGIN;
       }
-      
+
       // If there isn't enough space below, show above
       if (top + 300 > window.innerHeight && anchorRect.top > 300) {
-        return { 
-          left, 
+        return {
+          left,
           bottom: window.innerHeight - anchorRect.top + 12,
           transform: "none",
-          transformOrigin: "bottom" 
+          transformOrigin: "bottom"
         };
       }
     }
 
-    return { 
-      left, 
-      top, 
+    return {
+      left,
+      top,
       transform: "none",
       transformOrigin: "top"
     };
@@ -166,14 +166,14 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
   const content = (
     <div className="fixed inset-0 z-[9999] pointer-events-none">
       {/* Click-outside Overlay - pointer-events-auto */}
-      <div 
-        className="absolute inset-0 bg-black/5 pointer-events-auto" 
+      <div
+        className="absolute inset-0 bg-black/5 pointer-events-auto"
         onClick={(e) => {
           e.stopPropagation();
           onClose();
         }}
       />
-      
+
       <motion.div
         ref={popupRef}
         initial={{ opacity: 0, scale: 0.95, y: -10 }}
@@ -188,11 +188,11 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
             <Bookmark className="w-4 h-4 text-red-500 fill-red-500" />
             Save to Collection
           </h2>
-          <button 
+          <button
             onClick={(e) => {
               e.stopPropagation();
               onClose();
-            }} 
+            }}
             className="text-gray-400 hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
@@ -216,7 +216,7 @@ const CollectionPopup: React.FC<CollectionPopupProps> = ({
                   isUpdating={updatingId === col._id}
                 />
               ))}
-              
+
               {!isCreating && (
                 <button
                   onClick={() => setIsCreating(true)}

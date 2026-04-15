@@ -5,13 +5,14 @@ import { X, Plus, Loader2, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Collection {
-  id: string;
+  _id: string;
   name: string;
+  itemCount?: number;
 }
 
 interface CreateCollectionFormProps {
   onCancel: () => void;
-  onCreated: (collection: Collection) => void;
+  onCreated: (collection: Collection) => void | Promise<void>;
 }
 
 export default function CreateCollectionForm({
