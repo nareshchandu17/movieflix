@@ -17,6 +17,8 @@ export interface Profile {
   isDefault: boolean;
   color: string;
   pin?: string;
+  pinEnabled?: boolean;
+  pinLockedUntil?: string;
   maturityRating?: 'G' | 'PG' | 'PG-13' | 'R' | 'TV-MA';
   language?: string;
   createdAt: string;

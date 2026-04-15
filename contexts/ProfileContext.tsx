@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import Cookies from 'js-cookie';
 import type { Profile, CreateProfilePayload } from '@/types/profiles';
 import { toast } from 'sonner';
+import { useProfileLoading } from './ProfileLoadingContext';
 
 interface UserPreferences {
   watchlist: number[];
@@ -23,6 +24,7 @@ interface ProfileContextType {
   createProfile: (payload: CreateProfilePayload) => Promise<Profile | null>;
   editProfile: (profileId: string, data: Partial<CreateProfilePayload>) => Promise<void>;
   deleteProfile: (profileId: string) => Promise<void>;
+  switchProfile: () => Promise<void>;
   
   // Analytics
   getProfileAnalytics: (profileId: string) => Promise<any>;
@@ -51,36 +53,78 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
   const [isPinProtected, setIsPinProtected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { blockUI, unblockUI } = useProfileLoading();
   
   const [userPreferences, setUserPreferences] = useState<UserPreferences>({
     watchlist: [],
   });
 
   const fetchProfiles = useCallback(async () => {
+    // Block UI to prevent race condition and flicker
+    blockUI();
     setLoading(true);
     setError(null);
+    
     try {
-      const res = await fetch("/api/profiles");
-      const data = await res.json();
-      if (data.success) {
-        setProfiles(data.data);
-        setIsPinProtected(!!data.isPinProtected);
+      // Fetch profiles and active profile in parallel
+      const [profilesRes, activeRes] = await Promise.all([
+        fetch("/api/profiles"),
+        fetch("/api/profiles/active")
+      ]);
+
+      if (!profilesRes.ok) {
+        setError(profilesRes.status === 401 ? null : "Failed to load profiles");
+        return;
+      }
+
+      const profilesData = await profilesRes.json();
+      const activeData = activeRes.ok ? await activeRes.json() : { success: false };
+
+      if (profilesData.success) {
+        setProfiles(profilesData.data);
+        setIsPinProtected(!!profilesData.isPinProtected);
         
-        // Try to identify active profile from cookie
-        const activeId = Cookies.get('mf_active_profile');
-        if (activeId) {
-          const found = data.data.find((p: Profile) => p.profileId === activeId);
-          if (found) setActiveProfile(found);
+        // Netflix-level approach: Backend first, Cookie fallback + Session Sync
+        let activeProfileFound = null;
+
+        // 1. Try backend active profile (source of truth)
+        if (activeData.success && activeData.activeProfile) {
+          activeProfileFound = profilesData.data.find((p: Profile) => p.profileId === activeData.activeProfile.profileId);
         }
+
+        // 2. Try last used profile for session sync
+        if (!activeProfileFound) {
+          const lastUsedRes = await fetch("/api/profiles/last-used");
+          const lastUsedData = lastUsedRes.ok ? await lastUsedRes.json() : { success: false };
+          if (lastUsedData.success && lastUsedData.lastUsedProfile) {
+            activeProfileFound = profilesData.data.find((p: Profile) => p.profileId === lastUsedData.lastUsedProfile.profileId);
+            // If found, set it as active profile
+            if (activeProfileFound) {
+              await selectProfile(activeProfileFound);
+            }
+          }
+        }
+
+        // 3. Fallback to cookie (migration scenario)
+        if (!activeProfileFound) {
+          const activeId = Cookies.get('mf_active_profile');
+          if (activeId) {
+            activeProfileFound = profilesData.data.find((p: Profile) => p.profileId === activeId);
+          }
+        }
+
+        setActiveProfile(activeProfileFound || null);
       } else {
-        setError(data.error || "Failed to load profiles");
+        setError(profilesData.error || "Failed to load profiles");
       }
     } catch {
       setError("Couldn't connect to profile service.");
     } finally {
       setLoading(false);
+      // Unblock UI only after everything is ready
+      unblockUI();
     }
-  }, []);
+  }, [blockUI, unblockUI]);
 
   useEffect(() => {
     fetchProfiles();
@@ -93,10 +137,11 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ profileId: profile.profileId }),
       });
+      if (!res.ok) throw new Error(res.status === 401 ? "Please sign in" : "Failed to select profile");
       const data = await res.json();
       if (data.success) {
         setActiveProfile(profile);
-        Cookies.set('mf_active_profile', profile.profileId, { expires: 7 });
+        // Cookie is automatically set by API (backend-first approach)
       } else {
         throw new Error(data.error || "Failed to select profile");
       }
@@ -105,6 +150,27 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
       throw err;
     }
   }, []);
+
+  // Auto-selection logic (Netflix-level UX)
+  useEffect(() => {
+    const autoSelectProfile = async () => {
+      if (profiles.length > 0 && !activeProfile && !loading) {
+        // If only one profile, auto-select it
+        if (profiles.length === 1) {
+          await selectProfile(profiles[0]);
+        } 
+        // If multiple profiles, look for default
+        else {
+          const defaultProfile = profiles.find((p: Profile) => p.isDefault);
+          if (defaultProfile) {
+            await selectProfile(defaultProfile);
+          }
+        }
+      }
+    };
+
+    autoSelectProfile();
+  }, [profiles, activeProfile, loading, selectProfile]);
 
   const createProfile = useCallback(async (payload: CreateProfilePayload) => {
     try {
@@ -153,14 +219,33 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
       if (result.success) {
         setProfiles(prev => prev.filter(p => p.profileId !== profileId));
         if (activeProfile?.profileId === profileId) {
+          // Clear from backend (source of truth)
+          await fetch("/api/profiles/active", { method: "DELETE" });
           setActiveProfile(null);
-          Cookies.remove('mf_active_profile');
+          // Cookie is automatically cleared by the API
         }
       }
     } catch {
       toast.error("Failed to delete profile");
     }
   }, [activeProfile]);
+
+  const switchProfile = useCallback(async () => {
+    try {
+      const res = await fetch("/api/profiles/switch", { method: "POST" });
+      const result = await res.json();
+      if (result.success) {
+        setActiveProfile(null);
+        // Redirect to profile selection page
+        window.location.href = "/profiles/select";
+      } else {
+        throw new Error(result.error || "Failed to switch profile");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to switch profile");
+      throw err;
+    }
+  }, []);
 
   // Watchlist logic (stubbed for now, should ideally be profile-specific in DB)
   const addToWatchlist = useCallback((id: number) => {
@@ -325,6 +410,7 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
       createProfile,
       editProfile,
       deleteProfile,
+      switchProfile,
       getProfileAnalytics,
       updateProfileAnalytics,
       getParentalSettings,
