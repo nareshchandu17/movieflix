@@ -8,7 +8,7 @@ import WatchHistory from '@/models/WatchHistory';
 // GET /api/profiles/analytics/:profileId - get analytics for a specific profile
 export async function GET(
   req: NextRequest,
-  { params }: { params: { profileId: string } }
+  { params }: { params: Promise<{ profileId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -21,7 +21,7 @@ export async function GET(
 
     await connectDB();
 
-    const { profileId } = params;
+    const { profileId } = await params;
 
     // Get or create analytics for this profile
     let analytics = await ProfileAnalytics.findOne({ 
@@ -87,7 +87,7 @@ export async function GET(
 // POST /api/profiles/analytics/:profileId - update analytics
 export async function POST(
   req: NextRequest,
-  { params }: { params: { profileId: string } }
+  { params }: { params: Promise<{ profileId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -100,7 +100,7 @@ export async function POST(
 
     await connectDB();
 
-    const { profileId } = params;
+    const { profileId } = await params;
     const body = await req.json();
 
     const analytics = await ProfileAnalytics.findOneAndUpdate(

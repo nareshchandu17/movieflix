@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import "@/styles/movie-insights.css";
 import CollectionPopup from "../collections/CollectionPopup";
+import DetailedNarrativeMap from "./DetailedNarrativeMap";
 
 interface BingeSeriesInfoProps {
   id: number;
@@ -37,51 +38,82 @@ interface SeriesInsights {
 }
 
 // AI Insights Sidebar Component
-const AIInsights = () => {
+const AIInsights = ({ seriesId, seriesTitle, onShowMap }: { seriesId: number, seriesTitle: string, onShowMap: () => void }) => {
   const [openSection, setOpenSection] = useState<number | null>(0);
+  const [dynamicInsights, setDynamicInsights] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const insights = [
-    {
-      id: 0,
-      title: "Narrative Style Analysis",
-      icon: <Brain className="w-4 h-4" />,
-      header: "1️⃣ Narrative Style Analysis",
-      content: "This series follows a character-driven narrative where relationships and emotional conflicts gradually shape the story. The pacing focuses more on dialogue and personal motivations than constant action.",
-      benefit: "Why this works: It helps viewers understand what kind of storytelling style they will experience."
-    },
-    {
-      id: 1,
-      title: "Viewer Experience Prediction",
-      icon: <Eye className="w-4 h-4" />,
-      header: "2️⃣ Viewer Experience Prediction",
-      content: "Fans of slow-burn psychological dramas will find this highly engaging. The series rewards patient viewers who pay attention to subtle subtext and visual storytelling cues.",
-      benefit: "Why this works: Helps viewers manage their expectations and mood."
-    },
-    {
-      id: 2,
-      title: "Engagement & Retention Patterns",
-      icon: <Zap className="w-4 h-4" />,
-      header: "3️⃣ Engagement & Retention Patterns",
-      content: "The mid-season 'turning point' is designed to keep viewers hooked. Data shows that once viewers reach the 4th episode, they are 85% likely to complete the entire series in one sitting.",
-      benefit: "Why this works: Encourages viewers to push through the early slow-burn phases."
-    },
-    {
-      id: 3,
-      title: "Cultural & Social Impact",
-      icon: <Globe className="w-4 h-4" />,
-      header: "4️⃣ Cultural & Social Impact",
-      content: "This series touches upon relevant contemporary themes such as digital isolation and the search for authentic connection in a tech-driven world.",
-      benefit: "Why this works: Connects the show's story to real-world issues."
-    },
-    {
-      id: 4,
-      title: "Series Trivia & Lore",
-      icon: <Stars className="w-4 h-4" />,
-      header: "5️⃣ Series Trivia & Lore",
-      content: "The lead actor spent six months researching the historical background of their character, leading to an incredibly nuanced and authentic performance that has been praised by critics.",
-      benefit: "Why this works: Deepens appreciation for the craftsmanship of the show."
-    }
-  ];
+  useEffect(() => {
+    const fetchInsights = async () => {
+      if (!seriesId || !seriesTitle) return;
+      
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await fetch('/api/ai-insights/series', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: seriesId,
+            title: seriesTitle,
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch AI insights');
+        }
+        
+        const data = await response.json();
+        
+        if (data.insights && Array.isArray(data.insights)) {
+          // Map incoming data to include icons and maintain consistency
+          const icons = [
+            <Brain className="w-4 h-4" />,
+            <Eye className="w-4 h-4" />,
+            <Zap className="w-4 h-4" />,
+            <Globe className="w-4 h-4" />,
+            <Stars className="w-4 h-4" />
+          ];
+          
+          const mappedInsights = data.insights.map((insight: any, index: number) => ({
+            ...insight,
+            id: index,
+            icon: icons[index % icons.length]
+          }));
+          
+          setDynamicInsights(mappedInsights);
+        } else {
+          throw new Error('Invalid insights data format');
+        }
+      } catch (err) {
+        console.error('AI Insights Error:', err);
+        setError('Unable to load AI analysis at this moment.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInsights();
+  }, [seriesId, seriesTitle]);
+
+  if (error) {
+    return (
+      <div className="rounded-[2.5rem] bg-black/40 border border-white/10 p-8 text-center backdrop-blur-3xl">
+        <Bot className="w-10 h-10 text-red-500/50 mx-auto mb-4 animate-pulse" />
+        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-6 px-6 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+        >
+          Retry Analysis
+        </button>
+      </div>
+    );
+  }
 
   return (
     <motion.div 
@@ -108,28 +140,41 @@ const AIInsights = () => {
           </div>
 
           <div className="mb-8 p-5 rounded-3xl bg-white/5 border border-white/5">
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-4">
               <div className="mt-1">
-                <div className="text-yellow-500">⭐</div>
+                <div className="text-yellow-500 animate-pulse">⭐</div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-white mb-1">AI HIGHLIGHT</h3>
-                <p className="text-xs text-gray-400 italic leading-relaxed">
-                  "This series gradually builds emotional tension through subtle character dynamics rather than traditional plot points."
-                </p>
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-tighter">AI HIGHLIGHT</h3>
+                {isLoading ? (
+                  <div className="space-y-2">
+                    <div className="h-2 w-full bg-white/10 rounded-full animate-pulse" />
+                    <div className="h-2 w-2/3 bg-white/10 rounded-full animate-pulse" />
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400 italic leading-relaxed">
+                    "{dynamicInsights[0]?.content.split('.')[0]}."
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
           <div className="space-y-3">
-            {insights.map((item) => (
-              <div key={item.id} className="group/item border border-white/5 rounded-[1.5rem] overflow-hidden bg-white/[0.02] hover:bg-white/[0.05] transition-all duration-300">
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-16 bg-white/5 rounded-[1.5rem] border border-white/5 animate-pulse relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                </div>
+              ))
+            ) : dynamicInsights.map((item) => (
+              <div key={item.id} className="group/item border border-white/5 rounded-[1.5rem] overflow-hidden bg-white/[0.02] hover:bg-white/[0.05] transition-all duration-300 shadow-xl">
                 <button
                   onClick={() => setOpenSection(openSection === item.id ? null : item.id)}
                   className="w-full flex items-center justify-between p-4 px-5 text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-xl transition-colors ${openSection === item.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-500'}`}>
+                    <div className={`p-2 rounded-xl transition-all duration-500 ${openSection === item.id ? 'bg-blue-600 text-white scale-110 shadow-lg shadow-blue-600/20' : 'bg-white/5 text-gray-500'}`}>
                       {item.icon}
                     </div>
                     <span className={`text-xs font-bold transition-colors ${openSection === item.id ? 'text-white' : 'text-gray-400'}`}>
@@ -148,16 +193,16 @@ const AIInsights = () => {
                       transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
                     >
                       <div className="px-5 pb-5 pt-0">
-                        <div className="h-[1px] w-full bg-white/5 mb-4" />
+                        <div className="h-[1px] w-full bg-white/5 mb-4 shadow-sm" />
                         <div className="space-y-4">
                           <h4 className="text-[11px] font-black text-blue-400 uppercase tracking-widest">{item.header}</h4>
-                          <p className="text-xs text-gray-300 leading-relaxed font-medium">
+                          <p className="text-xs text-gray-300 leading-relaxed font-bold">
                             {item.content}
                           </p>
-                          <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                          <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10 backdrop-blur-sm">
                             <div className="flex items-start gap-2">
                               <Info className="w-3 h-3 text-blue-500 mt-0.5" />
-                              <p className="text-[10px] text-blue-400 leading-normal italic">
+                              <p className="text-[10px] text-blue-400 leading-normal italic font-medium">
                                 {item.benefit}
                               </p>
                             </div>
@@ -171,7 +216,10 @@ const AIInsights = () => {
             ))}
           </div>
 
-          <button className="w-full mt-8 flex items-center justify-center gap-2 p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all group/btn">
+          <button 
+            onClick={onShowMap}
+            className="w-full mt-8 flex items-center justify-center gap-2 p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all group/btn shadow-lg"
+          >
             <span className="text-xs font-bold text-gray-400 group-hover:text-white">Detailed Narrative Map</span>
             <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-blue-500 transition-colors" />
           </button>
@@ -231,6 +279,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
   const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'popular'>('latest');
   const [episodeSortOrder, setEpisodeSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
+  const [showNarrativeMap, setShowNarrativeMap] = useState(false);
   const episodesContainerRef = useRef<HTMLDivElement>(null);
 
   // Collection Popup State
@@ -545,24 +594,10 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
 
   // Handle episode play
   const handleEpisodePlay = (episode: TMDBEpisodeDetail) => {
-    // Update episode progress functionality removed
-    // updateEpisodeProgress(id, selectedSeason, episode.episode_number, 0);
-
-    // Navigate to player or start playing
-    toast.success(`Starting ${episode.name}`);
+    // Navigate to player
+    router.push(`/watch/${id}?type=tv&season=${selectedSeason}&episode=${episode.episode_number}`);
     
-    // Simulate auto-binge countdown
-    setAutoPlayCountdown(5);
-    const countdown = setInterval(() => {
-      setAutoPlayCountdown(prev => {
-        if (prev === null || prev <= 1) {
-          clearInterval(countdown);
-          // Auto-play next episode logic would go here
-          return null;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    toast.success(`Starting ${episode.name}`);
   };
 
   // Sort episodes based on order
@@ -855,7 +890,20 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                         Continue Watching
                       </button>
                     ) : (
-                      <button className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          const firstEp = episodes.find(e => e.episode.episode_number === 1);
+                          if (firstEp) {
+                            handleEpisodePlay(firstEp.episode);
+                          } else if (episodes.length > 0) {
+                            handleEpisodePlay(episodes[0].episode);
+                          } else {
+                            // Fallback if episodes not loaded correctly
+                            router.push(`/watch/${id}?type=tv&season=1&episode=1`);
+                          }
+                        }}
+                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                      >
                         <Play className="w-5 h-5" />
                         Start from S1E1
                       </button>
@@ -1022,6 +1070,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                             alt={ep.episode.name}
                             fill
                             className="object-cover group-hover:scale-110 transition-transform duration-700"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 256px"
                           />
                         ) : (
                           <div className="w-full h-full bg-gray-900 flex items-center justify-center">
@@ -1096,10 +1145,24 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
 
             {/* AI Insights (30%) */}
             <div className="lg:col-span-4">
-              <AIInsights />
+              <AIInsights 
+                seriesId={id} 
+                seriesTitle={title} 
+                onShowMap={() => setShowNarrativeMap(true)}
+              />
             </div>
           </div>
         </div>
+
+        <AnimatePresence>
+          {showNarrativeMap && (
+            <DetailedNarrativeMap 
+              contentId={id.toString()}
+              title={title}
+              onClose={() => setShowNarrativeMap(false)}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Trailer Video Container */}

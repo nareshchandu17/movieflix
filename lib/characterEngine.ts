@@ -38,11 +38,12 @@ export async function getCharacterCompassData(characterId: string) {
 
   // 5. Format for SVG Visualization
   // Coordinate system: X = Normalized Time (0-100), Y = Normalized State (-10 to 10)
-  const maxTime = Math.max(...logs.map(l => l.timestamp), 1);
-  const minTime = Math.min(...logs.map(l => l.timestamp), 0);
-  const timeRange = maxTime - minTime;
+  const timestamps = logs.length > 0 ? logs.map(l => l.timestamp) : [0];
+  const maxTime = Math.max(...timestamps, 1);
+  const minTime = Math.min(...timestamps, 0);
+  const timeRange = maxTime - minTime || 1;
 
-  const arcPoints = logs.map(log => ({
+  let arcPoints = logs.map(log => ({
     x: ((log.timestamp - minTime) / timeRange) * 100,
     y: log.moralAlignment,
     stability: log.stabilityScore,
@@ -50,6 +51,18 @@ export async function getCharacterCompassData(characterId: string) {
     emotion: log.emotionalState,
     timestamp: log.timestamp
   }));
+
+  // SAFETY: If no points exist, provide a neutral starting point
+  if (arcPoints.length === 0) {
+    arcPoints = [{
+      x: 0,
+      y: character.initialArchetype ? 0 : 0,
+      stability: 10,
+      power: 1,
+      emotion: "Neutral",
+      timestamp: 0
+    }];
+  }
 
   const inflectionMarkers = inflectionPoints.map(p => ({
     x: ((p.timestamp - minTime) / timeRange) * 100,

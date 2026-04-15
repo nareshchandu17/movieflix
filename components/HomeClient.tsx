@@ -29,12 +29,18 @@ import BingeWorthySeriesCarousel from "@/components/special/BingeWorthySeriesCar
 import CreepyCarouselSimple from "@/components/carousels/CreepyCarouselSimple";
 import { SubscriptionGate } from "@/components/payments/SubscriptionGate";
 import { useProfile } from "@/contexts/ProfileContext";
+import { useProfileLoading } from "@/contexts/ProfileLoadingContext";
+import type { ServerSideProfileState } from "@/lib/server-side-profile";
 
-export default function HomePage() {
-  return <HomeClient />;
+export default function HomePage(props: HomeClientProps) {
+  return <HomeClient {...props} />;
 }
 
-function HomeClient() {
+interface HomeClientProps {
+  serverProfileState?: ServerSideProfileState;
+}
+
+function HomeClient({ serverProfileState }: HomeClientProps = {}) {
   const { data: session, status } = useSession();
   const { activeProfile } = useProfile();
   const [lastWatchedMovie, setLastWatchedMovie] = useState<{ name: string; id: string } | null>(null);

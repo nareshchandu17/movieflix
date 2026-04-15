@@ -577,17 +577,33 @@ Return ONLY the JSON object, no other text.`;
         throw new Error("Empty response from Gemini API");
       }
 
-      const cleanedText = response.text
-        .replace(/^```json\s*/i, "")
-        .replace(/```\s*$/i, "")
-        .trim();
+      // Robust JSON extraction
+      let cleanedText = response.text.trim();
+      const jsonMatch = cleanedText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+      
+      if (jsonMatch) {
+        cleanedText = jsonMatch[0];
+      } else {
+        // Fallback: manually strip typical markdown
+        cleanedText = cleanedText
+          .replace(/^```json\s*/i, "")
+          .replace(/```\s*$/i, "")
+          .trim();
+      }
 
       const insights = JSON.parse(cleanedText);
 
-      return { insights, success: true };
+      if (!Array.isArray(insights)) {
+        throw new Error("AI response is not an array");
+      }
+
+      return { insights: insights.slice(0, 5), success: true };
     } catch (error) {
       const errorMessage = this.handleError(error as Error);
-      this.logger.error("Error generating series insights", { error: errorMessage });
+      this.logger.error("Error generating series insights", { 
+        error: errorMessage,
+        rawResponse: "truncated" 
+      });
       return { insights: [], success: false, error: errorMessage };
     }
   }

@@ -9,6 +9,8 @@ import mongoose from 'mongoose';
 import connectDB from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import Redis from 'ioredis';
+import { redisConfig } from '@/lib/redis';
 
 // Models
 import User from '@/models/User';
@@ -35,6 +37,7 @@ class SocketServer {
   private io: Server;
   private rooms: Map<string, RoomParticipant[]> = new Map();
   private userSockets: Map<string, string> = new Map(); // userId -> socketId
+  private redisSub: Redis;
 
   constructor() {
     this.io = new Server(this.createHttpServer(), {
@@ -46,11 +49,39 @@ class SocketServer {
         credentials: true
       },
       transports: ['websocket', 'polling'],
-      pingTimeout: 60000,
       pingInterval: 25000
     });
 
+    this.redisSub = new Redis(redisConfig);
+    this.setupRedisSubscriber();
     this.setupEventHandlers();
+  }
+
+  private setupRedisSubscriber(): void {
+    this.redisSub.subscribe('NOTIFICATIONS_CHANNEL', (err) => {
+      if (err) {
+        console.error('❌ Failed to subscribe to NOTIFICATIONS_CHANNEL:', err);
+      } else {
+        console.log('📡 Subscribed to NOTIFICATIONS_CHANNEL');
+      }
+    });
+
+    this.redisSub.on('message', (channel, message) => {
+      if (channel === 'NOTIFICATIONS_CHANNEL') {
+        try {
+          const payload = JSON.parse(message);
+          const { userId, notification } = payload;
+          
+          const socketId = this.userSockets.get(userId);
+          if (socketId) {
+            this.io.to(socketId).emit('new-notification', notification);
+            console.log(`🔔 Real-time notification sent to user: ${userId}`);
+          }
+        } catch (error) {
+          console.error('Failed to parse Redis notification message:', error);
+        }
+      }
+    });
   }
 
   private createHttpServer() {

@@ -54,8 +54,9 @@ export const authOptions: AuthOptions = {
         token.email = user.email;
         token.id = user.id;
         token.onboardingCompleted = user.onboardingCompleted;
+        token.verifiedProfiles = []; // Track PIN-verified profiles in the session
       } else {
-        // Subsequent requests - refresh onboarding status from database
+        // Subsequent requests
         try {
           await connectDB();
           const dbUser = await User.findById(token.id).select('onboardingCompleted');
@@ -74,6 +75,7 @@ export const authOptions: AuthOptions = {
         session.user.email = token.email;
         session.user.id = token.id;
         session.user.onboardingCompleted = token.onboardingCompleted;
+        session.user.verifiedProfiles = token.verifiedProfiles || []; // Expose to client
       }
       return session;
     },

@@ -23,6 +23,7 @@ const SeriesSchema = new mongoose.Schema(
         ],
       },
     ],
+    tmdbId: { type: Number, index: true },
   },
   {
     timestamps: true,

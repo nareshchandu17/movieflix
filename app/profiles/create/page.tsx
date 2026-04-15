@@ -40,7 +40,9 @@ export default function CreateProfilePage() {
       setSuccess(true);
 
       // Auto-select the new profile and redirect
-      await selectProfile(profile);
+      if (profile) {
+        await selectProfile(profile);
+      }
       setTimeout(() => {
         router.push("/profiles/select");
       }, 800);

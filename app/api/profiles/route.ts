@@ -27,12 +27,20 @@ export async function GET(_req: NextRequest) {
 
     const isPinProtected = !!(settings?.parentalControls?.enabled && settings?.parentalControls?.pin);
 
-    const serialized = profiles.map((p: any) => ({
-      ...p,
-      _id: String(p._id),
-      createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : p.createdAt,
-      updatedAt: p.updatedAt instanceof Date ? p.updatedAt.toISOString() : p.updatedAt,
-    }));
+    const serialized = profiles.map((p: any) => {
+      // Strip sensitive fields — never leak pin hash to frontend
+      const { pin, pinAttempts, ...safe } = p;
+      return {
+        ...safe,
+        _id: String(safe._id),
+        pinEnabled: !!safe.pinEnabled,
+        pinLockedUntil: safe.pinLockedUntil instanceof Date
+          ? safe.pinLockedUntil.toISOString()
+          : safe.pinLockedUntil || null,
+        createdAt: safe.createdAt instanceof Date ? safe.createdAt.toISOString() : safe.createdAt,
+        updatedAt: safe.updatedAt instanceof Date ? safe.updatedAt.toISOString() : safe.updatedAt,
+      };
+    });
 
     return NextResponse.json({ 
       success: true, 

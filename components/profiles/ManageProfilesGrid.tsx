@@ -6,6 +6,7 @@ import ProfileCard from "./ProfileCard";
 import ProfileNameInput from "./ProfileNameInput";
 import AvatarCarousel from "./AvatarCarousel";
 import KidsToggle from "./KidsToggle";
+import PinSettings from "./PinSettings";
 import { AVATAR_MAP } from "@/lib/avatars";
 import type { Profile } from "@/types/profiles";
 import { Loader2 } from "lucide-react";
@@ -14,12 +15,14 @@ interface ManageProfilesGridProps {
   profiles: Profile[];
   onDeleteProfile: (profileId: string) => Promise<void>;
   onEditProfile: (profileId: string, data: Partial<{ name: string; avatarId: string; isKids: boolean }>) => Promise<void>;
+  onRefreshProfiles?: () => Promise<void>;
 }
 
 export default function ManageProfilesGrid({
   profiles,
   onDeleteProfile,
   onEditProfile,
+  onRefreshProfiles,
 }: ManageProfilesGridProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -153,6 +156,18 @@ export default function ManageProfilesGrid({
               <div className="w-full max-w-[320px]">
                 <KidsToggle enabled={editKids} onChange={setEditKids} />
               </div>
+
+              {/* PIN Settings */}
+              {!editKids && (
+                <div className="w-full max-w-[320px]">
+                  <PinSettings
+                    profileId={editingProfile.profileId}
+                    profileName={editName || editingProfile.name}
+                    pinEnabled={!!editingProfile.pinEnabled}
+                    onPinChanged={() => onRefreshProfiles?.()}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-center gap-3 mt-6">

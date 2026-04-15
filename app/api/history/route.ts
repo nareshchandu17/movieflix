@@ -3,6 +3,7 @@ import connectDB from "@/lib/db";
 import WatchHistory from "@/models/WatchHistory";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { cookies } from "next/headers";
 
 // GET user's watch history for the active profile
 export async function GET(req: NextRequest) {
@@ -21,14 +22,14 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
 
-    const history = await WatchHistory.find({ 
+    const history = await WatchHistory.find({
       userId: session.user.id,
-      profileId 
+      profileId
     }).sort({ lastWatched: -1 }).limit(20);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       history,
-      success: true 
+      success: true
     }, { status: 200 });
   } catch (error) {
     console.error("History GET error:", error);

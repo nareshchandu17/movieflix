@@ -135,103 +135,120 @@ export default function DownloadsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      
+    <div className="min-h-screen bg-[#141414] text-white font-['DM_Sans']">
 
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-3.5rem)]">
-        {/* Sidebar */}
-        <div className="w-52 min-w-[13rem] bg-gray-900 border-r border-gray-800 flex flex-col overflow-y-auto flex-shrink-0">
-          <div className="py-5 pb-2">
-            <div className="text-xs font-semibold tracking-wider text-gray-500 px-4 pb-2 uppercase">
+      <div className="flex h-screen">
+        {/* Sidebar — matches /account */}
+        <aside className="w-[210px] min-w-[210px] bg-[#0a0a0a] border-r border-[#2A2A2A] flex flex-col overflow-y-auto">
+          <div className="py-6 pb-2">
+            <div className="text-[10px] font-semibold tracking-[2px] text-[#6B6B6B] px-[18px] pb-2 uppercase">
               Downloads
             </div>
             
-            <div
-              className={`flex items-center gap-3 px-4 py-3 cursor-pointer relative transition-all ${
+            <button
+              className={`w-full flex items-center gap-[11px] px-[18px] py-[10px] relative transition-colors text-[13px] ${
                 activeTab === "queue"
-                  ? "text-white font-medium bg-red-900/10"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                  ? "text-white font-medium bg-[rgba(229,9,20,0.06)]"
+                  : "text-[#B3B3B3] hover:bg-[#1F1F1F] hover:text-white"
               }`}
               onClick={() => setActiveTab("queue")}
             >
-              <Download className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              <Download className="w-4 h-4 opacity-50" />
               My Downloads
               {activeTab === "queue" && (
-                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                  7
-                </span>
+                <>
+                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E50914] rounded-r-[2px]" />
+                  <span className="ml-auto bg-[#E50914] text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                    7
+                  </span>
+                </>
               )}
-            </div>
+            </button>
             
-            <div
-              className={`flex items-center gap-3 px-4 py-3 cursor-pointer relative transition-all ${
+            <button
+              className={`w-full flex items-center gap-[11px] px-[18px] py-[10px] relative transition-colors text-[13px] ${
                 activeTab === "recommendations"
-                  ? "text-white font-medium bg-red-900/10"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                  ? "text-white font-medium bg-[rgba(229,9,20,0.06)]"
+                  : "text-[#B3B3B3] hover:bg-[#1F1F1F] hover:text-white"
               }`}
               onClick={() => setActiveTab("recommendations")}
             >
-              <Download className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              <Zap className="w-4 h-4 opacity-50" />
               Smart Picks
-            </div>
+              {activeTab === "recommendations" && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E50914] rounded-r-[2px]" />
+              )}
+            </button>
             
-            <div
-              className={`flex items-center gap-3 px-4 py-3 cursor-pointer relative transition-all ${
+            <button
+              className={`w-full flex items-center gap-[11px] px-[18px] py-[10px] relative transition-colors text-[13px] ${
                 activeTab === "travel"
-                  ? "text-white font-medium bg-red-900/10"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                  ? "text-white font-medium bg-[rgba(229,9,20,0.06)]"
+                  : "text-[#B3B3B3] hover:bg-[#1F1F1F] hover:text-white"
               }`}
               onClick={() => setActiveTab("travel")}
             >
-              <Globe className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              <Globe className="w-4 h-4 opacity-50" />
               Travel Mode
-            </div>
+              {activeTab === "travel" && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E50914] rounded-r-[2px]" />
+              )}
+            </button>
             
-            <div
-              className={`flex items-center gap-3 px-4 py-3 cursor-pointer relative transition-all ${
+            <button
+              className={`w-full flex items-center gap-[11px] px-[18px] py-[10px] relative transition-colors text-[13px] ${
                 activeTab === "storage"
-                  ? "text-white font-medium bg-red-900/10"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                  ? "text-white font-medium bg-[rgba(229,9,20,0.06)]"
+                  : "text-[#B3B3B3] hover:bg-[#1F1F1F] hover:text-white"
               }`}
               onClick={() => setActiveTab("storage")}
             >
-              <HardDrive className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              <HardDrive className="w-4 h-4 opacity-50" />
               Storage
+              {activeTab === "storage" && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E50914] rounded-r-[2px]" />
+              )}
+            </button>
+            
+            <div className="border-t border-[#2A2A2A] my-[10px]" />
+            <div className="text-[10px] font-semibold tracking-[2px] text-[#6B6B6B] px-[18px] pb-2 uppercase">
+              Configure
             </div>
             
-            <div className="border-t border-gray-700 my-2"></div>
-            
-            <div
-              className={`flex items-center gap-3 px-4 py-3 cursor-pointer relative transition-all ${
+            <button
+              className={`w-full flex items-center gap-[11px] px-[18px] py-[10px] relative transition-colors text-[13px] ${
                 activeTab === "settings"
-                  ? "text-white font-medium bg-red-900/10"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                  ? "text-white font-medium bg-[rgba(229,9,20,0.06)]"
+                  : "text-[#B3B3B3] hover:bg-[#1F1F1F] hover:text-white"
               }`}
               onClick={() => setActiveTab("settings")}
             >
-              <Settings className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              <Settings className="w-4 h-4 opacity-50" />
               Preferences
-            </div>
+              {activeTab === "settings" && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E50914] rounded-r-[2px]" />
+              )}
+            </button>
           </div>
-        </div>
+        </aside>
 
-        {/* Main Content Area */}
-        <div className="flex-1 min-w-0 overflow-y-auto bg-gray-950 px-9 py-8">
+        {/* Main Content Area — matches /account */}
+        <main className="flex-1 min-w-0 overflow-y-auto bg-[#141414] p-9 pb-[60px]">
           {activeTab === "queue" && (
             <div className="space-y-6">
               {/* Page Header */}
               <div className="flex items-start justify-between mb-7">
                 <div>
-                  <h1 className="text-2xl font-semibold tracking-tight mb-1">My Downloads</h1>
-                  <p className="text-sm text-gray-400">7 items · 14.2 GB used</p>
+                  <h1 className="text-[28px] font-bold tracking-tight mb-2">My Downloads</h1>
+                  <p className="text-[14px] text-[#B3B3B3]">7 items · 14.2 GB used</p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
-                  <button className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-gray-400 text-xs font-medium rounded hover:bg-gray-700 transition-colors">
+                  <button className="flex items-center gap-2 px-3 py-2 bg-[#1F1F1F] border border-[#2A2A2A] text-[#B3B3B3] text-xs font-medium rounded hover:bg-[#252525] hover:text-white transition-colors">
                     <Zap className="w-3 h-3" />
                     Smart Cleanup
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-xs font-medium rounded hover:bg-red-700 transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2 bg-[#E50914] text-white text-xs font-bold rounded hover:bg-[#f40612] transition-colors">
                     <Download className="w-3 h-3" />
                     Add Download
                   </button>
@@ -239,14 +256,14 @@ export default function DownloadsPage() {
               </div>
 
               {/* Network Status */}
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-6 flex items-center gap-4">
+              <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-lg p-4 mb-6 flex items-center gap-4">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <div className="text-green-400 font-medium">Wi-Fi Connected</div>
+                <div className="text-green-400 font-medium text-[13px]">Wi-Fi Connected</div>
                 <div className="flex items-center gap-2 ml-auto">
                   <Wifi className="w-3 h-3 text-green-400" />
                   <span className="text-sm text-green-400 font-medium">94.2 Mbps</span>
                 </div>
-                <div className="text-sm text-gray-400">Downloading at Ultra HD quality automatically</div>
+                <div className="text-[13px] text-[#808080]">Downloading at Ultra HD quality automatically</div>
                 <div className="ml-auto">
                   <span className="text-xs text-green-400 font-medium">Auto 4K</span>
                 </div>
@@ -254,19 +271,19 @@ export default function DownloadsPage() {
 
               {/* Smart Banner */}
               {smartBanner && (
-                <div className="bg-gray-900 border-l-4 border-red-500 rounded-lg p-4 mb-6 flex items-center justify-between animate-slideIn">
+                <div className="bg-[#1F1F1F] border-l-4 border-[#E50914] rounded-lg p-4 mb-6 flex items-center justify-between animate-slideIn">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                      <Download className="w-4 h-4 text-red-500" />
+                    <div className="w-8 h-8 rounded-lg bg-[#E50914]/20 flex items-center justify-center flex-shrink-0">
+                      <Download className="w-4 h-4 text-[#E50914]" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium">Smart Downloads Active</div>
-                      <div className="text-xs text-gray-400">Episode 4 of Stranger Moon queued automatically after you finished Episode 3</div>
+                      <div className="text-[13px] font-medium">Smart Downloads Active</div>
+                      <div className="text-[12px] text-[#808080]">Episode 4 of Stranger Moon queued automatically after you finished Episode 3</div>
                     </div>
                   </div>
                   <button
                     onClick={() => setSmartBanner(false)}
-                    className="bg-gray-800 text-gray-400 text-xs px-3 py-2 rounded hover:bg-gray-700 transition-colors"
+                    className="bg-[#252525] border border-[#2A2A2A] text-[#B3B3B3] text-xs px-3 py-2 rounded hover:bg-[#333] hover:text-white transition-colors"
                   >
                     Dismiss
                   </button>
@@ -275,98 +292,98 @@ export default function DownloadsPage() {
 
               {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-4">
                   <div className="text-lg font-bold mb-2">3</div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Downloading</div>
+                  <div className="text-[10px] text-[#6B6B6B] uppercase tracking-[1.5px] font-semibold">Downloading</div>
                 </div>
-                <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-4">
                   <div className="text-lg font-bold mb-2">2</div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Queued</div>
+                  <div className="text-[10px] text-[#6B6B6B] uppercase tracking-[1.5px] font-semibold">Queued</div>
                 </div>
-                <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-4">
                   <div className="text-lg font-bold text-green-400 mb-2">6</div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Completed</div>
+                  <div className="text-[10px] text-[#6B6B6B] uppercase tracking-[1.5px] font-semibold">Completed</div>
                 </div>
-                <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-4">
                   <div className="text-lg font-bold mb-2">14.2 GB</div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Storage Used</div>
+                  <div className="text-[10px] text-[#6B6B6B] uppercase tracking-[1.5px] font-semibold">Storage Used</div>
                 </div>
               </div>
 
               {/* Active Downloads */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Active Downloads</h2>
-                  <button className="text-gray-400 text-xs hover:text-white transition-colors">Pause All</button>
+                  <h2 className="text-[14px] font-semibold">Active Downloads</h2>
+                  <button className="text-[#808080] text-xs hover:text-white transition-colors">Pause All</button>
                 </div>
 
                 {downloads.map((download) => (
-                  <div key={download.id} className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden transition-all hover:border-gray-700">
-                    <div className="flex items-center gap-4 p-4 cursor-pointer" onClick={() => {}}>
-                      <div className="text-gray-500 text-sm font-medium w-6 h-6 flex items-center justify-center">
+                  <div key={download.id} className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-lg overflow-hidden transition-all hover:border-[#444]">
+                    <div className="flex items-center gap-4 p-5 cursor-pointer" onClick={() => {}}>
+                      <div className="text-[#6B6B6B] text-sm font-medium w-6 h-6 flex items-center justify-center">
                         {download.id.split('-')[1]}
                       </div>
-                      <div className="w-16 h-20 rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <div className="w-16 h-20 rounded-lg bg-[#252525] flex items-center justify-center overflow-hidden flex-shrink-0">
                         <div className="text-lg font-bold text-white">{download.id.split('-')[1]}</div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="mb-2">
                           <h3 className="font-medium text-white">{download.title}</h3>
-                          <p className="text-sm text-gray-400">{download.subtitle}</p>
+                          <p className="text-[13px] text-[#808080]">{download.subtitle}</p>
                         </div>
                         <div className="flex gap-2 mb-3">
-                          <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-medium rounded">Ultra HD 4K</span>
-                          <span className="px-2 py-1 bg-gray-800 text-gray-400 text-xs font-medium rounded">3.8 GB</span>
-                          <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-medium rounded animate-pulse">● Downloading</span>
+                          <span className="px-2 py-1 bg-[#E50914]/10 text-[#E50914] text-[10px] font-bold uppercase rounded">Ultra HD 4K</span>
+                          <span className="px-2 py-1 bg-[#252525] border border-[#2A2A2A] text-[#808080] text-[10px] font-medium rounded">3.8 GB</span>
+                          <span className="px-2 py-1 bg-[#E50914]/10 text-[#E50914] text-[10px] font-bold rounded animate-pulse">● Downloading</span>
                         </div>
                         
                         {/* Progress Bar */}
                         <div className="mb-2">
-                          <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                          <div className="h-1 bg-[#252525] rounded-full overflow-hidden">
                             <div 
                               className={`h-full rounded-full transition-all duration-500 ${
-                                download.status === "paused" ? "bg-amber-500 w-[28%]" : "bg-red-500 w-[45%]"
+                                download.status === "paused" ? "bg-amber-500" : "bg-[#E50914]"
                               }`}
                               style={{
                                 width: download.status === "downloading" ? `${download.progress}%` : download.status === "paused" ? "28%" : "0%"
                               }}
                             >
                               {download.status === "downloading" && (
-                                <div className="h-full rounded-full bg-red-600 animate-shimmer relative">
+                                <div className="h-full rounded-full bg-[#E50914] animate-shimmer relative">
                                   <div className="absolute right-0 top-0 bottom-0 w-5 h-full bg-white/30 rounded-full"></div>
                                 </div>
                               )}
                             </div>
                           </div>
-                          <div className="flex justify-between items-center text-xs">
+                          <div className="flex justify-between items-center text-xs mt-1">
                             <span className="text-white font-medium">{download.progress}%</span>
-                            <span className="text-gray-400">{download.speed}</span>
-                            <span className="text-gray-400">{download.eta}</span>
+                            <span className="text-[#808080]">{download.speed}</span>
+                            <span className="text-[#808080]">{download.eta}</span>
                           </div>
                         </div>
 
                         {/* Episodes */}
                         {download.episodes && download.episodes.length > 0 && (
-                          <div className="border-t border-gray-700 pt-3">
+                          <div className="border-t border-[#2A2A2A] pt-3">
                             <div className="flex justify-between items-center mb-3">
-                              <button className="bg-gray-800 text-gray-400 text-xs px-3 py-2 rounded hover:bg-gray-700 transition-colors">
+                              <button className="bg-[#252525] border border-[#2A2A2A] text-[#B3B3B3] text-xs px-3 py-2 rounded hover:bg-[#333] hover:text-white transition-colors">
                                 Download All
                               </button>
-                              <button className="text-gray-400 text-xs px-3 py-2 rounded hover:bg-gray-700 transition-colors">
+                              <button className="text-[#808080] text-xs px-3 py-2 rounded hover:bg-[#252525] hover:text-white transition-colors">
                                 Pause All
                               </button>
                             </div>
                             {download.episodes.map((episode, index) => (
-                              <div key={index} className="flex items-center gap-3 p-3 hover:bg-gray-800/50 transition-colors">
-                                <div className="text-gray-500 text-xs font-medium w-8 flex-shrink-0">{episode.num}</div>
+                              <div key={index} className="flex items-center gap-3 p-3 hover:bg-[#252525] transition-colors rounded">
+                                <div className="text-[#6B6B6B] text-xs font-medium w-8 flex-shrink-0">{episode.num}</div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm text-white truncate">{episode.title}</div>
-                                  <div className="text-xs text-gray-400">{episode.duration}</div>
+                                  <div className="text-[13px] text-white truncate">{episode.title}</div>
+                                  <div className="text-[11px] text-[#808080]">{episode.duration}</div>
                                 </div>
                                 <div className={`w-2 h-2 rounded-full flex items-center justify-center flex-shrink-0 ${
                                   episode.status === "done" ? "bg-green-500" :
-                                  episode.status === "downloading" ? "bg-red-500" :
-                                  episode.status === "queued" ? "bg-gray-600" : "bg-gray-700"
+                                  episode.status === "downloading" ? "bg-[#E50914]" :
+                                  episode.status === "queued" ? "bg-[#555]" : "bg-[#333]"
                                 }`}>
                                   {episode.status === "done" && <Check className="w-2 h-2 text-white" />}
                                   {episode.status === "downloading" && <div className="w-1 h-1 rounded-full bg-white animate-pulse"></div>}
@@ -379,14 +396,14 @@ export default function DownloadsPage() {
 
                       {/* Controls */}
                       <div className="flex gap-2 flex-shrink-0">
-                        <button className="w-7 h-7 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center hover:bg-gray-700 transition-colors">
-                          <div className="w-3 h-3 text-gray-400"></div>
+                        <button className="w-7 h-7 rounded-full bg-[#252525] border border-[#2A2A2A] flex items-center justify-center hover:bg-[#333] hover:border-[#444] transition-colors">
+                          <div className="w-3 h-3 text-[#808080]"></div>
                         </button>
-                        <button className="w-7 h-7 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center hover:bg-gray-700 transition-colors">
-                          <div className="w-3 h-3 text-gray-400"></div>
+                        <button className="w-7 h-7 rounded-full bg-[#252525] border border-[#2A2A2A] flex items-center justify-center hover:bg-[#333] hover:border-[#444] transition-colors">
+                          <div className="w-3 h-3 text-[#808080]"></div>
                         </button>
-                        <button className="w-7 h-7 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center hover:bg-gray-700 transition-colors">
-                          <div className="w-4 h-4 text-gray-400"></div>
+                        <button className="w-7 h-7 rounded-full bg-[#252525] border border-[#2A2A2A] flex items-center justify-center hover:bg-[#333] hover:border-[#444] transition-colors">
+                          <div className="w-4 h-4 text-[#808080]"></div>
                         </button>
                       </div>
                     </div>
@@ -397,38 +414,38 @@ export default function DownloadsPage() {
               {/* Completed */}
               <div className="space-y-4">
                 <div className="flex items-start justify-between mb-4">
-                  <h2 className="text-lg font-semibold">
-                    Completed <span className="text-gray-400 font-normal text-sm">3 titles</span>
+                  <h2 className="text-[14px] font-semibold">
+                    Completed <span className="text-[#808080] font-normal text-[13px]">3 titles</span>
                   </h2>
-                  <button className="text-gray-400 text-xs hover:text-white transition-colors">Remove Watched</button>
+                  <button className="text-[#808080] text-xs hover:text-white transition-colors">Remove Watched</button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {completedDownloads.map((download) => (
-                    <div key={download.id} className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden hover:border-gray-700 transition-colors">
-                      <div className="flex items-center gap-4 p-4">
-                        <div className="w-16 h-20 rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <div key={download.id} className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-lg overflow-hidden hover:border-[#444] transition-colors">
+                      <div className="flex items-center gap-4 p-5">
+                        <div className="w-16 h-20 rounded-lg bg-[#252525] flex items-center justify-center overflow-hidden flex-shrink-0">
                           <div className="text-lg font-bold text-white">{download.id.split('-')[1]}</div>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="mb-2">
                             <h3 className="font-medium text-white">{download.title}</h3>
-                            <p className="text-sm text-gray-400">{download.subtitle}</p>
+                            <p className="text-[13px] text-[#808080]">{download.subtitle}</p>
                           </div>
                           <div className="flex gap-2 mb-3">
-                            <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-medium rounded">Ultra HD 4K</span>
-                            <span className="px-2 py-1 bg-gray-800 text-gray-400 text-xs font-medium rounded">7.8 GB</span>
-                            <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded">✓ Available Offline</span>
+                            <span className="px-2 py-1 bg-[#E50914]/10 text-[#E50914] text-[10px] font-bold uppercase rounded">Ultra HD 4K</span>
+                            <span className="px-2 py-1 bg-[#252525] border border-[#2A2A2A] text-[#808080] text-[10px] font-medium rounded">7.8 GB</span>
+                            <span className="px-2 py-1 bg-green-500/10 text-green-400 text-[10px] font-bold rounded">✓ Available Offline</span>
                           </div>
-                          <div className="text-xs text-gray-400 mt-1">Downloaded {download.downloadedDate} · Expires in {download.expiresIn}</div>
+                          <div className="text-[11px] text-[#6B6B6B] mt-1">Downloaded {download.downloadedDate} · Expires in {download.expiresIn}</div>
                         </div>
                       </div>
-                      <div className="flex gap-2 flex-shrink-0">
-                        <div className="w-7 h-7 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center">
+                      <div className="flex gap-2 flex-shrink-0 px-5 pb-4">
+                        <div className="w-7 h-7 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
                           <Check className="w-3 h-3 text-green-400" />
                         </div>
-                        <button className="w-7 h-7 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center hover:bg-gray-700 transition-colors">
-                          <Trash2 className="w-3 h-3 text-gray-400" />
+                        <button className="w-7 h-7 rounded-full bg-[#252525] border border-[#2A2A2A] flex items-center justify-center hover:bg-[#333] hover:border-[#444] transition-colors">
+                          <Trash2 className="w-3 h-3 text-[#808080]" />
                         </button>
                       </div>
                     </div>
@@ -443,11 +460,11 @@ export default function DownloadsPage() {
               {/* Page Header */}
               <div className="flex items-start justify-between mb-7">
                 <div>
-                  <h1 className="text-2xl font-semibold tracking-tight mb-1">Smart Picks</h1>
-                  <p className="text-sm text-gray-400">AI-curated downloads based on your taste profile</p>
+                  <h1 className="text-[28px] font-bold tracking-tight mb-2">Smart Picks</h1>
+                  <p className="text-[14px] text-[#B3B3B3]">AI-curated downloads based on your taste profile</p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
-                  <button className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-xs font-medium rounded hover:bg-red-700 transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2 bg-[#E50914] text-white text-xs font-bold rounded hover:bg-[#f40612] transition-colors">
                     <Download className="w-3 h-3" />
                     Download All
                   </button>
@@ -458,34 +475,34 @@ export default function DownloadsPage() {
               <div className="mb-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h2 className="text-lg font-semibold">Because you watched Breaking Bad</h2>
-                    <p className="text-sm text-gray-400">Crime dramas with complex anti-heroes</p>
+                    <h2 className="text-[14px] font-semibold">Because you watched Breaking Bad</h2>
+                    <p className="text-[13px] text-[#808080]">Crime dramas with complex anti-heroes</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {smartPicks.map((pick) => (
-                    <div key={pick.id} className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden hover:border-gray-700 transition-all hover:scale-105">
+                    <div key={pick.id} className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-lg overflow-hidden hover:border-[#444] transition-all hover:scale-105">
                       <div className="relative">
-                        <div className="w-36 h-52 rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden">
+                        <div className="w-36 h-52 rounded-lg bg-[#252525] flex items-center justify-center overflow-hidden">
                           <div className="text-2xl font-bold text-white">{pick.id.split('-')[1]}</div>
                         </div>
-                        <div className="absolute top-2 right-2 bg-red-500 text-black text-xs font-bold px-2 py-1 rounded">
+                        <div className="absolute top-2 right-2 bg-[#E50914] text-white text-[10px] font-bold px-2 py-1 rounded">
                           {pick.match}%
                         </div>
                         <button 
                           onClick={() => {}}
-                          className="absolute bottom-2 left-2 right-2 bg-red-600 text-white text-xs font-medium px-3 py-2 rounded hover:bg-red-700 transition-colors"
+                          className="absolute bottom-2 left-2 right-2 bg-[#E50914] text-white text-xs font-bold px-3 py-2 rounded hover:bg-[#f40612] transition-colors"
                         >
                           Download
                         </button>
                       </div>
                       <div className="p-4">
                         <h3 className="font-medium text-white mb-2">{pick.title}</h3>
-                        <p className="text-sm text-gray-400 mb-3">{pick.quality} · {pick.size}</p>
+                        <p className="text-[13px] text-[#808080] mb-3">{pick.quality} · {pick.size}</p>
                         <div className="flex gap-2">
-                          <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-medium rounded">HD 1080p</span>
-                          <span className="px-2 py-1 bg-gray-800 text-gray-400 text-xs font-medium rounded">3 Seasons · 63 Episodes</span>
+                          <span className="px-2 py-1 bg-[#E50914]/10 text-[#E50914] text-[10px] font-bold rounded">HD 1080p</span>
+                          <span className="px-2 py-1 bg-[#252525] border border-[#2A2A2A] text-[#808080] text-[10px] font-medium rounded">3 Seasons · 63 Episodes</span>
                         </div>
                       </div>
                     </div>
@@ -494,10 +511,10 @@ export default function DownloadsPage() {
 
               {/* Sci-Fi picks */}
               <div>
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-4 mt-8">
                   <div>
-                    <h2 className="text-lg font-semibold">Sci-Fi picks for your next trip</h2>
-                    <p className="text-sm text-gray-400">Under 2 hours · High engagement</p>
+                    <h2 className="text-[14px] font-semibold">Sci-Fi picks for your next trip</h2>
+                    <p className="text-[13px] text-[#808080]">Under 2 hours · High engagement</p>
                   </div>
                 </div>
 
@@ -508,24 +525,24 @@ export default function DownloadsPage() {
                     { id: "oz", title: "Ozark", quality: "HD 1080p", size: "4.4 GB", match: 91 },
                     { id: "we", title: "Westworld", quality: "HD 1080p", size: "4.0 GB", match: 89 }
                   ].map((pick) => (
-                    <div key={pick.id} className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden hover:border-gray-700 transition-all hover:scale-105">
+                    <div key={pick.id} className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-lg overflow-hidden hover:border-[#444] transition-all hover:scale-105">
                       <div className="relative">
-                        <div className="w-36 h-52 rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden">
+                        <div className="w-36 h-52 rounded-lg bg-[#252525] flex items-center justify-center overflow-hidden">
                           <div className="text-2xl font-bold text-white">{pick.id.split('-')[1]}</div>
                         </div>
-                        <div className="absolute top-2 right-2 bg-red-500 text-black text-xs font-bold px-2 py-1 rounded">
+                        <div className="absolute top-2 right-2 bg-[#E50914] text-white text-[10px] font-bold px-2 py-1 rounded">
                           {pick.match}%
                         </div>
                         <button 
                           onClick={() => {}}
-                          className="absolute bottom-2 left-2 right-2 bg-red-600 text-white text-xs font-medium px-3 py-2 rounded hover:bg-red-700 transition-colors"
+                          className="absolute bottom-2 left-2 right-2 bg-[#E50914] text-white text-xs font-bold px-3 py-2 rounded hover:bg-[#f40612] transition-colors"
                         >
                           Download
                         </button>
                       </div>
                       <div className="p-4">
                         <h3 className="font-medium text-white mb-2">{pick.title}</h3>
-                        <p className="text-sm text-gray-400">{pick.quality} · {pick.size}</p>
+                        <p className="text-[13px] text-[#808080]">{pick.quality} · {pick.size}</p>
                       </div>
                     </div>
                   ))}
@@ -538,19 +555,19 @@ export default function DownloadsPage() {
           {activeTab === "travel" && (
             <div className="space-y-6">
               {/* Travel Mode Header */}
-              <div className="bg-gray-900 border-l-4 border-red-500 rounded-lg p-5 mb-6 flex items-center justify-between">
+              <div className="bg-[#1F1F1F] border-l-4 border-[#E50914] rounded-lg p-5 mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                    <Globe className="w-5 h-5 text-red-500" />
+                  <div className="w-10 h-10 rounded-lg bg-[#E50914]/20 flex items-center justify-center flex-shrink-0">
+                    <Globe className="w-5 h-5 text-[#E50914]" />
                   </div>
                   <div>
-                    <div className="text-base font-medium">Prepare for Offline Travel</div>
-                    <div className="text-sm text-gray-400">MovieFlix will analyze your taste DNA and build an optimized offline library</div>
+                    <div className="text-[14px] font-medium">Prepare for Offline Travel</div>
+                    <div className="text-[13px] text-[#808080]">MovieFlix will build a personalized offline library for you.</div>
                   </div>
                 </div>
                 <button
                   onClick={() => setTravelMode(true)}
-                  className="bg-red-600 text-white text-sm font-medium px-4 py-2 rounded hover:bg-red-700 transition-colors"
+                  className="bg-[#E50914] text-white text-[13px] font-bold px-4 py-2 rounded hover:bg-[#f40612] transition-colors"
                 >
                   Activate Travel Mode
                 </button>
@@ -559,42 +576,42 @@ export default function DownloadsPage() {
               {/* Travel Status */}
               {travelMode && (
                 <div className="space-y-4">
-                  <div className="bg-gray-900 border border-gray-800 rounded-lg p-5">
+                  <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-lg p-5">
                     <div className="flex items-center gap-2 mb-4 text-green-400">
                       <Check className="w-4 h-4" />
-                      <span>Analyzing taste DNA</span>
+                      <span className="text-[13px]">Optimizing recommendations</span>
                     </div>
-                    <div className="text-sm text-gray-400 mb-4 px-0 py-3 border-b border-gray-700">
+                    <div className="text-[13px] text-[#808080] mb-4 px-0 py-3 border-b border-[#2A2A2A]">
                       <span className="text-green-400 font-medium">✓ Building offline library & Optimizing storage</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {travelItems.map((item, index) => (
-                        <div key={index} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                        <div key={index} className="bg-[#242424] border border-[#2A2A2A] rounded-lg p-4">
                           <div className="flex items-center justify-between mb-3">
                             <div>
-                              <div className="text-sm font-medium text-white">{item.title}</div>
-                              <div className="text-xs text-gray-400">{item.size}</div>
+                              <div className="text-[13px] font-medium text-white">{item.title}</div>
+                              <div className="text-[11px] text-[#808080]">{item.size}</div>
                             </div>
-                            <div className="text-xs text-gray-400">{item.progress}%</div>
+                            <div className="text-[11px] text-[#808080]">{item.progress}%</div>
                           </div>
-                          <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-2 bg-[#333] rounded-full overflow-hidden">
                             <div 
-                              className="h-full bg-red-500 transition-all duration-2000"
+                              className="h-full bg-[#E50914] transition-all duration-2000"
                               style={{ width: `${item.progress}%` }}
                             ></div>
                           </div>
                         </div>
                       ))}
                     </div>
-                    <div className="text-center text-sm text-gray-400 mt-4">
+                    <div className="text-center text-[13px] text-[#808080] mt-4">
                       Total: ~15.2 GB · Est. 8h 40m of offline content
                     </div>
                   </div>
 
                   {/* Travel History */}
-                  <div className="bg-gray-900 border border-gray-800 rounded-lg p-5">
-                    <h3 className="text-base font-medium mb-4">Travel Mode History</h3>
-                    <div className="text-center py-8 text-gray-400 text-sm">
+                  <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-lg p-5">
+                    <h3 className="text-[14px] font-semibold mb-4">Travel Mode History</h3>
+                    <div className="text-center py-8 text-[#808080] text-[13px]">
                       No previous travel sessions found.<br />
                       <span className="block mt-2">Activate Travel Mode above to get started.</span>
                     </div>
@@ -609,11 +626,11 @@ export default function DownloadsPage() {
               {/* Storage Header */}
               <div className="flex items-start justify-between mb-7">
                 <div>
-                  <h1 className="text-2xl font-semibold tracking-tight mb-1">Storage</h1>
-                  <p className="text-sm text-gray-400">Device storage used by MovieFlix downloads</p>
+                  <h1 className="text-[28px] font-bold tracking-tight mb-2">Storage</h1>
+                  <p className="text-[14px] text-[#B3B3B3]">Device storage used by MovieFlix downloads</p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
-                  <button className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-gray-400 text-xs font-medium rounded hover:bg-gray-700 transition-colors">
+                  <button className="flex items-center gap-2 px-3 py-2 bg-[#1F1F1F] border border-[#2A2A2A] text-[#B3B3B3] text-xs font-medium rounded hover:bg-[#252525] hover:text-white transition-colors">
                     <Zap className="w-3 h-3" />
                     Smart Cleanup
                   </button>
@@ -621,106 +638,106 @@ export default function DownloadsPage() {
               </div>
 
               {/* Storage Card */}
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-5 mb-6">
+              <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-lg p-5 mb-6">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase">Total Storage Usage</div>
-                  <div className="text-lg font-bold">{storageUsed} GB <span className="font-normal text-gray-400">/ {totalStorage} GB</span></div>
+                  <div className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase">Total Storage Usage</div>
+                  <div className="text-lg font-bold">{storageUsed} GB <span className="font-normal text-[#808080]">/ {totalStorage} GB</span></div>
                 </div>
-                <div className="h-2 bg-gray-700 rounded-full overflow-hidden mb-3">
+                <div className="h-2 bg-[#333] rounded-full overflow-hidden mb-3">
                   <div 
-                    className="h-full bg-red-500 rounded-full transition-all duration-500"
+                    className="h-full bg-[#E50914] rounded-full transition-all duration-500"
                     style={{ width: `${(storageUsed / totalStorage) * 100}%` }}
                   ></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                    <span className="text-sm">Movies — 8.4 GB</span>
+                    <div className="w-2 h-2 rounded-full bg-[#E50914]"></div>
+                    <span className="text-[13px] text-[#B3B3B3]">Movies — 8.4 GB</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                    <span className="text-sm">Series — 4.8 GB</span>
+                    <span className="text-[13px] text-[#B3B3B3]">Series — 4.8 GB</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                    <span className="text-sm">Kids — 0.7 GB</span>
+                    <span className="text-[13px] text-[#B3B3B3]">Kids — 0.7 GB</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-gray-600"></div>
-                    <span className="text-sm">Other — 0.3 GB</span>
+                    <div className="w-2 h-2 rounded-full bg-[#555]"></div>
+                    <span className="text-[13px] text-[#B3B3B3]">Other — 0.3 GB</span>
                   </div>
                 </div>
               </div>
 
               {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-4">
                   <div className="text-lg font-bold mb-2">{storageUsed} GB</div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Used</div>
+                  <div className="text-[10px] text-[#6B6B6B] uppercase tracking-[1.5px] font-semibold">Used</div>
                 </div>
-                <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-4">
                   <div className="text-lg font-bold text-green-400 mb-2">{totalStorage - storageUsed} GB</div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Available</div>
+                  <div className="text-[10px] text-[#6B6B6B] uppercase tracking-[1.5px] font-semibold">Available</div>
                 </div>
-                <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-4">
                   <div className="text-lg font-bold mb-2">11</div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Total Downloads</div>
+                  <div className="text-[10px] text-[#6B6B6B] uppercase tracking-[1.5px] font-semibold">Total Downloads</div>
                 </div>
-                <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-4">
                   <div className="text-lg font-bold mb-2">28d</div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Avg. Expiry</div>
+                  <div className="text-[10px] text-[#6B6B6B] uppercase tracking-[1.5px] font-semibold">Avg. Expiry</div>
                 </div>
               </div>
 
               {/* Storage Settings */}
               <div className="space-y-6">
-                <div className="bg-gray-900 border border-gray-800 rounded-lg p-5">
-                  <h3 className="text-base font-medium mb-4">Storage Settings</h3>
+                <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-lg p-5">
+                  <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">Storage Settings</div>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between py-3 border-b border-gray-700">
+                    <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
                       <div>
-                        <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-1">Auto-delete watched downloads</div>
-                        <div className="text-sm text-gray-400">Remove episodes you've already watched to free up space</div>
+                        <div className="text-[13.5px] text-white">Auto-delete watched downloads</div>
+                        <div className="text-[12px] text-[#808080] mt-[3px]">Remove episodes you've already watched to free up space</div>
                       </div>
                       <button 
                         onClick={() => setAutoDelete(!autoDelete)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          autoDelete ? 'bg-red-600' : 'bg-gray-700'
+                        className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 ${
+                          autoDelete ? 'bg-[#E50914]' : 'bg-[#333]'
                         }`}
                       >
-                        <div className={`absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                          autoDelete ? 'translate-x-6' : 'translate-x-1'
+                        <div className={`absolute top-[3px] w-4 h-4 rounded-full bg-white transition-transform ${
+                          autoDelete ? 'left-[20px]' : 'left-[3px]'
                         }`}></div>
                       </button>
                     </div>
                     
-                    <div className="flex items-center justify-between py-3 border-b border-gray-700">
+                    <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
                       <div>
-                        <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-1">Smart storage management</div>
-                        <div className="text-sm text-gray-400">Automatically free space when storage is below 2 GB</div>
+                        <div className="text-[13.5px] text-white">Smart storage management</div>
+                        <div className="text-[12px] text-[#808080] mt-[3px]">Automatically free space when storage is below 2 GB</div>
                       </div>
-                      <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-700 transition-colors">
-                        <div className="absolute left-1 top-1 w-4 h-4 rounded-full bg-white translate-x-1"></div>
+                      <button className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 bg-[#333]`}>
+                        <div className="absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white"></div>
                       </button>
                     </div>
                     
-                    <div className="flex items-center justify-between py-3 border-b border-gray-700">
+                    <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
                       <div>
-                        <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-1">Download only on Wi-Fi</div>
-                        <div className="text-sm text-gray-400">Prevent mobile data usage for downloads</div>
+                        <div className="text-[13.5px] text-white">Download only on Wi-Fi</div>
+                        <div className="text-[12px] text-[#808080] mt-[3px]">Prevent mobile data usage for downloads</div>
                       </div>
-                      <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-red-600 transition-colors">
-                        <div className="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform translate-x-6"></div>
+                      <button className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 bg-[#E50914]`}>
+                        <div className="absolute top-[3px] left-[20px] w-4 h-4 rounded-full bg-white"></div>
                       </button>
                     </div>
                     
-                    <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center justify-between py-[13px]">
                       <div>
-                        <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-1">Download quality limit on mobile data</div>
-                        <div className="text-sm text-gray-400">Cap downloads at 720p when using cellular</div>
+                        <div className="text-[13.5px] text-white">Download quality limit on mobile data</div>
+                        <div className="text-[12px] text-[#808080] mt-[3px]">Cap downloads at 720p when using cellular</div>
                       </div>
-                      <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-700 transition-colors">
-                        <div className="absolute left-1 top-1 w-4 h-4 rounded-full bg-white translate-x-1"></div>
+                      <button className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 bg-[#333]`}>
+                        <div className="absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white"></div>
                       </button>
                     </div>
                   </div>
@@ -734,75 +751,75 @@ export default function DownloadsPage() {
               {/* Settings Header */}
               <div className="flex items-start justify-between mb-7">
                 <div>
-                  <h1 className="text-2xl font-semibold tracking-tight mb-1">Download Preferences</h1>
-                  <p className="text-sm text-gray-400">Control how MovieFlix manages your offline library</p>
+                  <h1 className="text-[28px] font-bold tracking-tight mb-2">Download Preferences</h1>
+                  <p className="text-[14px] text-[#B3B3B3]">Control how MovieFlix manages your offline library</p>
                 </div>
               </div>
 
               {/* Network & Quality */}
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-5 mb-6">
-                <h3 className="text-base font-medium mb-4">Network & Quality</h3>
+              <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px] mb-6">
+                <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">Network & Quality</div>
                 <div className="space-y-4">
                   <div className="mb-4">
-                    <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-2">Download Quality</div>
+                    <label className="text-[10px] font-semibold tracking-[1.5px] text-[#6B6B6B] uppercase mb-[10px] block">Download Quality</label>
                     <div className="flex gap-2 mb-3">
                       {["Auto", "Ultra HD 4K", "HD 1080p", "HD 720p", "SD 480p"].map((quality) => (
                         <button
                           key={quality}
                           onClick={() => setDownloadQuality(quality)}
-                          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                          className={`px-4 py-2 rounded-[4px] text-[12.5px] font-['DM_Sans'] cursor-pointer transition-all ${
                             downloadQuality === quality
-                              ? 'bg-red-600 text-white'
-                              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                              ? 'bg-[#E50914] border-[#E50914] text-white'
+                              : 'bg-[#252525] border border-[#2A2A2A] text-[#B3B3B3] hover:border-[#555] hover:text-white'
                           }`}
                         >
                           {quality}
                         </button>
                       ))}
                     </div>
-                    <div className="text-xs text-gray-400">Auto adjusts quality based on available storage and network speed</div>
+                    <div className="text-[11.5px] text-[#6B6B6B]">Auto adjusts quality based on available storage and network speed</div>
                   </div>
                 </div>
               </div>
 
               {/* Smart Automation */}
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-5">
-                <h3 className="text-base font-medium mb-4">Smart Automation</h3>
+              <div className="bg-[#1F1F1F] border border-[#2A2A2A] rounded-[6px] p-[22px]">
+                <div className="text-[14px] font-semibold pb-[14px] border-b border-[#2A2A2A] mb-[18px]">Smart Automation</div>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between py-3 border-b border-gray-700">
+                  <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
                     <div>
-                      <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-1">Travel Mode Auto-Detect</div>
-                      <div className="text-sm text-gray-400">Prepare offline library automatically before calendar trips</div>
+                      <div className="text-[13.5px] text-white">Travel Mode Auto-Detect</div>
+                      <div className="text-[12px] text-[#808080] mt-[3px]">Prepare offline library automatically before calendar trips</div>
                     </div>
-                    <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-700 transition-colors">
-                      <div className="absolute left-1 top-1 w-4 h-4 rounded-full bg-white translate-x-1"></div>
+                    <button className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 bg-[#333]`}>
+                      <div className="absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white"></div>
                     </button>
                   </div>
                   
-                  <div className="flex items-center justify-between py-3 border-b border-gray-700">
+                  <div className="flex items-center justify-between py-[13px] border-b border-[#2A2A2A]">
                     <div>
-                      <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-1">Smart Cleanup</div>
-                      <div className="text-sm text-gray-400">Auto-remove expired and watched downloads</div>
+                      <div className="text-[13.5px] text-white">Smart Cleanup</div>
+                      <div className="text-[12px] text-[#808080] mt-[3px]">Auto-remove expired and watched downloads</div>
                     </div>
-                    <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-red-600 transition-colors">
-                      <div className="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform translate-x-6"></div>
+                    <button className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 bg-[#E50914]`}>
+                      <div className="absolute top-[3px] left-[20px] w-4 h-4 rounded-full bg-white"></div>
                     </button>
                   </div>
                   
-                  <div className="flex items-center justify-between py-3">
+                  <div className="flex items-center justify-between py-[13px]">
                     <div>
-                      <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-1">Download Recommendations</div>
-                      <div className="text-sm text-gray-400">Suggest downloads based on your watch patterns</div>
+                      <div className="text-[13.5px] text-white">Download Recommendations</div>
+                      <div className="text-[12px] text-[#808080] mt-[3px]">Suggest downloads based on your watch patterns</div>
                     </div>
-                    <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-red-600 transition-colors">
-                      <div className="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform translate-x-6"></div>
+                    <button className={`w-[40px] h-[22px] rounded-[11px] relative cursor-pointer transition-colors flex-shrink-0 bg-[#E50914]`}>
+                      <div className="absolute top-[3px] left-[20px] w-4 h-4 rounded-full bg-white"></div>
                     </button>
                   </div>
                 </div>
               </div>
             </div>
           )}
-        </div>
+        </main>
       </div>
 
       {/* Custom Styles */}
@@ -833,18 +850,6 @@ export default function DownloadsPage() {
         
         .animate-pulse {
           animation: pulse 2s infinite;
-        }
-        
-        .font-bebas-neue {
-          font-family: 'Bebas Neue', sans-serif;
-        }
-        
-        .tracking-wider {
-          letter-spacing: 0.1em;
-        }
-        
-        .tracking-tight {
-          letter-spacing: -0.025em;
         }
       `}</style>
     </div>

@@ -26,7 +26,7 @@ const ContinueWatchingSection = () => {
       <SectionHeader title="">
         <h2 className="text-2xl font-bold text-white">Continue Watching For You</h2>
       </SectionHeader>
-      
+
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {continueWatching.map((item) => {
           const href = item.type === "tv" ? `/series/${item.id}` : `/movie/${item.id}`;
@@ -47,6 +47,7 @@ const ContinueWatchingSection = () => {
                     alt={item.title}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-300"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 250px"
                     unoptimized
                   />
                   {/* Overlay gradient */}

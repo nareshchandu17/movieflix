@@ -166,6 +166,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
 
     try {
       const response = await fetch(`/api/history/progress?contentId=${contentId}`);
+      if (!response.ok) return null;
       const data = await response.json();
       
       if (data.success && data.data) {
@@ -190,6 +191,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
         method: 'DELETE'
       });
 
+      if (!response.ok) return;
       const data = await response.json();
       
       if (data.success) {

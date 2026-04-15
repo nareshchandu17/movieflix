@@ -1,7 +1,6 @@
-import { spawn } from 'child_process';
-
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { spawn } = require('child_process');
     console.log("🚀 Initializing MovieFlix Background Services...");
     
     // 1. Start Notification Worker
@@ -24,7 +23,7 @@ export async function register() {
           detached: false, // Tie to parent process
         });
 
-        socketServer.on('error', (err) => {
+        socketServer.on('error', (err: any) => {
           console.error('❌ Failed to start background Socket.io server:', err);
         });
 

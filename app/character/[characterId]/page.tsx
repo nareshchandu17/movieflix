@@ -14,17 +14,24 @@ export default function CharacterCompassPage() {
   const characterId = params?.characterId as string;
   
   const [data, setData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activePoint, setActivePoint] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
         const response = await fetch(`/api/character-compass/${characterId}`);
         const result = await response.json();
-        setData(result);
+        
+        if (result.error) {
+          setError(result.error);
+        } else {
+          setData(result);
+        }
       } catch (error) {
         console.error("Failed to fetch character compass:", error);
+        setError("Network error: Could not reach character engine.");
       } finally {
         setIsLoading(false);
       }
@@ -43,9 +50,30 @@ export default function CharacterCompassPage() {
     );
   }
 
-  if (!data) return null;
+  if (error || !data || !data.visualization?.arcPoints) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-8">
+        <div className="bg-red-500/5 border border-red-500/20 rounded-3xl p-12 max-w-lg w-full text-center space-y-6 backdrop-blur-xl">
+          <div className="w-16 h-16 bg-red-500/10 rounded-2xl border border-red-500/20 flex items-center justify-center mx-auto">
+            <Info className="w-8 h-8 text-red-500" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black uppercase tracking-tighter text-white">System Malfunction</h2>
+            <p className="text-white/40 font-medium">{error || "The character data has not been initialized or is incomplete."}</p>
+          </div>
+          <button 
+            onClick={() => router.push('/')}
+            className="w-full bg-white text-black font-bold py-4 rounded-2xl hover:bg-white/90 transition-all uppercase tracking-widest text-xs"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  const currentPoint = activePoint !== null ? data.visualization.arcPoints[activePoint] : data.visualization.arcPoints[data.visualization.arcPoints.length - 1];
+  const arcPoints = data.visualization.arcPoints;
+  const currentPoint = activePoint !== null ? arcPoints[activePoint] : arcPoints[arcPoints.length - 1];
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-display overflow-x-hidden">

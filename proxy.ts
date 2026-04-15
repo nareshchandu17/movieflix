@@ -1,4 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
+// Unified Proxy Handler (Next.js 16 Convention)
 import { getToken } from "next-auth/jwt";
 import { getProfile } from "./lib/profile-validation";
 import { getActiveProfile } from "./lib/active-profile-manager";
@@ -49,7 +50,21 @@ export async function proxy(req: NextRequest) {
           const response = NextResponse.next();
           return setProfileCookie(backendProfile.profileId, response);
         }
-        // Valid profile found, continue
+
+        // ── PIN Enforcement ──
+        const activeProfileId = backendProfile.profileId;
+        const isProfileSecure = req.cookies.get("mf_profile_secure")?.value === "true";
+        const isProfileVerified = req.cookies.get(`mf_verified_${activeProfileId}`)?.value === "true";
+
+        // If profile is secure but not verified, restrict access to sensitive features
+        if (isProfileSecure && !isProfileVerified) {
+          const protectedPaths = ["/watch", "/account", "/downloads", "/for-you", "/taste-dna"];
+          if (protectedPaths.some(path => pathname.startsWith(path))) {
+            return NextResponse.redirect(new URL("/profiles/select", req.url));
+          }
+        }
+
+        // Valid profile and verification state, continue
         return NextResponse.next();
       }
 
@@ -79,6 +94,8 @@ export async function proxy(req: NextRequest) {
 
   return NextResponse.next();
 }
+
+export default proxy;
 
 export const config = {
   matcher: ["/((?!_next|favicon.ico).*)"],
