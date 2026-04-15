@@ -22,7 +22,7 @@
 ### 🤖 **AI-Powered Insights**
 - **Google AI Integration** - Intelligent movie recommendations and summaries
 - **Mood Engine** - Content suggestions based on your current mood
-- **Taste DNA** - Personalized recommendations based on viewing history
+- **Smart Insights** - AI-powered content summaries and character analysis
 - **Character Analysis** - Deep dive into character profiles and actor filmography
 
 ### 👥 **Social Features**

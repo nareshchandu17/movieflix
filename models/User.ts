@@ -92,6 +92,28 @@ const UserSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'WatchPartyRoom'
     }],
+    activeProfile: {
+      type: String, // Store profileId
+      default: null,
+      index: true
+    },
+    lastUsedProfile: {
+      type: String, // Store profileId for session sync
+      default: null,
+      index: true
+    },
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+      default: null,
+    },
+    twoFactorRecoveryCodes: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,

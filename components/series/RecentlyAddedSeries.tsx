@@ -118,6 +118,7 @@ export default function RecentlyAddedSeries({
                     alt={show.name}
                     fill
                     className="object-cover transition-transform duration-500 group-hover/card:scale-110"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 220px"
                   />
                 </div>
 

@@ -42,12 +42,6 @@ export interface IUserPreferences extends Document {
     audioLanguage: string;
     videoQuality: 'auto' | 'low' | 'medium' | 'high';
   };
-  tasteDNA?: {
-    genres: Array<{ genre: string; score: number }>;
-    actors: Array<{ actor: string; score: number }>;
-    directors: Array<{ director: string; score: number }>;
-    lastUpdated: Date;
-  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -168,36 +162,6 @@ const UserPreferencesSchema: Schema = new Schema({
       default: 'auto'
     }
   },
-  tasteDNA: {
-    genres: [{
-      genre: String,
-      score: {
-        type: Number,
-        min: 0,
-        max: 1
-      }
-    }],
-    actors: [{
-      actor: String,
-      score: {
-        type: Number,
-        min: 0,
-        max: 1
-      }
-    }],
-    directors: [{
-      director: String,
-      score: {
-        type: Number,
-        min: 0,
-        max: 1
-      }
-    }],
-    lastUpdated: {
-      type: Date,
-      default: Date.now
-    }
-  }
 }, {
   timestamps: true
 });

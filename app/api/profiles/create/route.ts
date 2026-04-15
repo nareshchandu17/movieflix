@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     const body = await req.json();
-    const { name, avatarId, isKids, color, language } = body;
+    const { name, avatarId, isKids, color, language, pin } = body;
 
     // Validate name
     if (!name || typeof name !== 'string') {
@@ -29,6 +29,16 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'Profile name is required' },
         { status: 400 }
       );
+    }
+
+    // Validate PIN if provided
+    if (pin !== undefined && pin !== null && pin !== "") {
+      if (!/^\d{4}$/.test(pin)) {
+        return NextResponse.json(
+          { success: false, error: 'PIN must be a 4-digit number' },
+          { status: 400 }
+        );
+      }
     }
 
     const trimmedName = name.trim();
@@ -85,6 +95,8 @@ export async function POST(req: NextRequest) {
       isDefault: isFirstProfile,
       color: color || '#E50914',
       language: language || 'en-US',
+      pin: pin || null,
+      pinEnabled: !!pin,
     });
 
     const serialized = {

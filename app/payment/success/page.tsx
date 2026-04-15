@@ -17,8 +17,8 @@ export default function PaymentSuccessPage() {
   const [countdown, setCountdown] = useState(5);
   const [loading, setLoading] = useState(true);
 
-  const planId = (searchParams.get("planId") as any) || "basic";
-  const plan = getPlanById(planId);
+  const planId = (searchParams?.get("planId") as any) || "basic";
+  const plan = getPlanById(planId) || getPlanById("basic");
 
   useEffect(() => {
     // Trigger confetti
@@ -112,7 +112,7 @@ export default function PaymentSuccessPage() {
           <div className="flex justify-between">
             <span className="text-zinc-400 text-sm">Payment ID</span>
             <span className="text-zinc-300 text-sm font-mono uppercase">
-              {searchParams.get("paymentId")?.substring(0, 16) || "PAY-REF-XXXXX"}
+              {searchParams?.get("paymentId")?.substring(0, 16) || "PAY-REF-XXXXX"}
             </span>
           </div>
         </div>

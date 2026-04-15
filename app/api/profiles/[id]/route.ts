@@ -85,6 +85,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         );
       }
       profile.pin = pin || null;
+      profile.pinEnabled = !!pin;
     }
 
     if (maturityRating !== undefined) {

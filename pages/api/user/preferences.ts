@@ -253,18 +253,11 @@ async function handlePut(userId: string, profileId: string, body: any, res: Next
         preferences.settings = { ...preferences.settings, ...data };
         break;
 
-      case 'tasteDNA':
-        preferences.tasteDNA = {
-          ...preferences.tasteDNA,
-          ...data,
-          lastUpdated: new Date()
-        };
-        break;
 
       default:
         return res.status(400).json({
           success: false,
-          error: "Invalid type. Must be 'settings' or 'tasteDNA'"
+          error: "Invalid type. Must be 'settings'"
         });
     }
 

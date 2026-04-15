@@ -1,9 +1,12 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Play, Clock, CheckCircle } from 'lucide-react';
+import Image from 'next/image';
 import { useProfile } from '@/contexts/ProfileContext';
+import { api } from '@/lib/api';
+import { TMDBMovieDetail, TMDBTVDetail } from '@/lib/types';
 
 interface ContinueWatchingItem {
   _id: string;
@@ -20,6 +23,11 @@ interface ContinueWatchingItem {
   formattedTimeRemaining: string;
 }
 
+interface ContinueWatchingResponse {
+  success: boolean;
+  data: ContinueWatchingItem[];
+}
+
 interface ContentMetadata {
   id: string;
   title: string;
@@ -32,76 +40,16 @@ interface ContentMetadata {
 
 export default function ContinueWatching() {
   const router = useRouter();
-  const { currentProfile } = useProfile();
+  const { activeProfile } = useProfile();
   const [items, setItems] = useState<ContinueWatchingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [contentMetadata, setContentMetadata] = useState<Map<string, ContentMetadata>>(new Map());
 
-  useEffect(() => {
-    if (currentProfile) {
-      fetchContinueWatching();
-    }
-  }, [currentProfile]);
-
-  const fetchContinueWatching = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/history/continue?limit=10');
-      const data = await response.json();
-      
-      if (data.success) {
-        setItems(data.data);
-        
-        // Fetch content metadata for each item
-        const metadataPromises = data.data.map((item: ContinueWatchingItem) => 
-          fetchContentMetadata(item.contentId)
-        );
-        
-        const metadataResults = await Promise.all(metadataPromises);
-        const metadataMap = new Map();
-        
-        data.data.forEach((item: ContinueWatchingItem, index: number) => {
-          if (metadataResults[index]) {
-            metadataMap.set(item.contentId, metadataResults[index]);
-          }
-        });
-        
-        setContentMetadata(metadataMap);
-      }
-    } catch (error) {
-      console.error('Failed to fetch continue watching:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchContentMetadata = async (contentId: string): Promise<ContentMetadata | null> => {
-    try {
-      // Mock content metadata - in real app, fetch from your content API
-      return {
-        id: contentId,
-        title: `Content ${contentId}`,
-        thumbnail: `/thumbnails/${contentId}.jpg`,
-        description: 'Sample content description',
-        year: 2024,
-        rating: 'PG-13',
-        duration: 3600
-      };
-    } catch (error) {
-      console.error('Failed to fetch content metadata:', error);
-      return null;
-    }
-  };
-
-  const handleWatchClick = (contentId: string) => {
-    router.push(`/watch/${contentId}`);
-  };
-
-  const formatTimeAgo = (dateString: string): string => {
+  const formatTimeAgo = useCallback((dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    
+
     if (diffInHours < 1) {
       return 'Just now';
     } else if (diffInHours < 24) {
@@ -110,7 +58,97 @@ export default function ContinueWatching() {
       const diffInDays = Math.floor(diffInHours / 24);
       return `${diffInDays}d ago`;
     }
-  };
+  }, []);
+
+  const handleWatchClick = useCallback((contentId: string) => {
+    router.push(`/watch/${contentId}`);
+  }, [router]);
+
+  const fetchContentMetadata = useCallback(async (contentId: string, contentType: string): Promise<ContentMetadata | null> => {
+    try {
+      const tmdbType = (contentType === 'series' || contentType === 'episode') ? 'tv' : 'movie';
+      const id = parseInt(contentId);
+
+      if (isNaN(id)) return null;
+
+      const data = tmdbType === 'movie' 
+        ? await api.getDetails('movie', id) 
+        : await api.getDetails('tv', id);
+      
+      let title = 'Unknown Title';
+      let year: number | undefined = undefined;
+      let duration: number | undefined = undefined;
+
+      // Type-safe property access based on media type
+      if (tmdbType === 'movie') {
+        const movie = data as TMDBMovieDetail;
+        title = movie.title;
+        year = movie.release_date ? new Date(movie.release_date).getFullYear() : undefined;
+        duration = movie.runtime || undefined;
+      } else {
+        const tv = data as TMDBTVDetail;
+        title = tv.name;
+        year = tv.first_air_date ? new Date(tv.first_air_date).getFullYear() : undefined;
+        duration = tv.episode_run_time?.[0] || undefined;
+      }
+
+      return {
+        id: contentId,
+        title,
+        thumbnail: data.backdrop_path
+          ? `https://image.tmdb.org/t/p/w500${data.backdrop_path}`
+          : data.poster_path
+            ? `https://image.tmdb.org/t/p/w500${data.poster_path}`
+            : '/default-thumbnail.jpg',
+        description: data.overview || '',
+        year,
+        rating: data.vote_average ? data.vote_average.toFixed(1) : undefined,
+        duration
+      };
+    } catch (error) {
+      console.error('Failed to fetch content metadata:', error);
+      return null;
+    }
+  }, []);
+
+  const fetchContinueWatching = useCallback(async () => {
+    if (!activeProfile) return;
+    
+    try {
+      setLoading(true);
+      const response = await fetch('/api/history/continue?limit=10');
+      const result: ContinueWatchingResponse = await response.json();
+
+      if (result.success) {
+        setItems(result.data);
+
+        // Fetch content metadata for each item
+        const metadataPromises = result.data.map((item) =>
+          fetchContentMetadata(item.contentId, item.contentType)
+        );
+
+        const metadataResults = await Promise.all(metadataPromises);
+        const metadataMap = new Map<string, ContentMetadata>();
+
+        result.data.forEach((item, index) => {
+          const metadata = metadataResults[index];
+          if (metadata) {
+            metadataMap.set(item.contentId, metadata);
+          }
+        });
+
+        setContentMetadata(metadataMap);
+      }
+    } catch (error) {
+      console.error('Failed to fetch continue watching:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeProfile, fetchContentMetadata]);
+
+  useEffect(() => {
+    fetchContinueWatching();
+  }, [fetchContinueWatching]);
 
   if (loading) {
     return (
@@ -157,7 +195,7 @@ export default function ContinueWatching() {
       <div className="flex gap-4 overflow-x-scroll scrollbar-hide">
         {items.map((item, index) => {
           const metadata = contentMetadata.get(item.contentId);
-          
+
           return (
             <motion.div
               key={item._id}
@@ -170,12 +208,13 @@ export default function ContinueWatching() {
               <div className="relative mb-2">
                 {/* Thumbnail */}
                 <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-800">
-                  <img
+                  <Image
                     src={metadata?.thumbnail || '/default-thumbnail.jpg'}
                     alt={metadata?.title || 'Content'}
+                    fill
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                   />
-                  
+
                   {/* Play Button Overlay */}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                     <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -212,7 +251,7 @@ export default function ContinueWatching() {
                 <h3 className="font-semibold text-sm line-clamp-1 group-hover:text-blue-400 transition-colors">
                   {metadata?.title || `Content ${item.contentId}`}
                 </h3>
-                
+
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>{item.contentType}</span>
                   <span>{formatTimeAgo(item.lastWatchedAt)}</span>
@@ -224,7 +263,7 @@ export default function ContinueWatching() {
                     <span className="text-green-400">Completed</span>
                   ) : (
                     <span>
-                      {item.formattedProgress} / {item.formattedDuration} 
+                      {item.formattedProgress} / {item.formattedDuration}
                       ({Math.round(item.progressPercentage)}%)
                     </span>
                   )}

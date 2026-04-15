@@ -353,13 +353,13 @@ const SeriesHero = () => {
         
         {/* Slides container */}
         <div className="relative h-full overflow-hidden">
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             <motion.div
               key={currentIndex}
-              initial={{ opacity: 0, x: 300 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -300 }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8, ease: "easeInOut" }}
               className="absolute inset-0"
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
@@ -367,10 +367,7 @@ const SeriesHero = () => {
               onDragStart={handleTouchStart}
               onDrag={handleTouchMove}
               onDragEnd={handleTouchEnd}
-              style={{ 
-                x: dragOffset,
-                animation: 'heroZoom 20s ease-in-out infinite alternate'
-              }}
+              style={{ x: dragOffset }}
             >
               {/* Background image */}
               <div className="relative w-full h-full">

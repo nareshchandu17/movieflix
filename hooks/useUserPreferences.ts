@@ -52,12 +52,6 @@ export interface UserPreferences {
   watchHistory: WatchHistoryItem[];
   episodeProgress: EpisodeProgress[];
   settings: UserSettings;
-  tasteDNA?: {
-    genres: Array<{ genre: string; score: number }>;
-    actors: Array<{ actor: string; score: number }>;
-    directors: Array<{ director: string; score: number }>;
-    lastUpdated: Date;
-  };
   createdAt: Date;
   updatedAt: Date;
 }
