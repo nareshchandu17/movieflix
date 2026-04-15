@@ -17,6 +17,8 @@ const MovieSchema = new mongoose.Schema(
       default: 'G' 
     },
     duration: { type: Number }, // in minutes
+    tmdbId: { type: Number, index: true },
+    originalLanguage: { type: String, default: 'en' },
   },
   {
     timestamps: true,

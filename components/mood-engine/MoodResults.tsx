@@ -52,8 +52,18 @@ export default function MoodResults({ results, userMood }: { results: any[], use
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
 
-              <div className="absolute top-4 left-4 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold border border-white/20">
-                {Math.round(result.similarityScore * 100)}% Match
+              <div className="absolute top-4 left-4 flex flex-col gap-2">
+                <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold border border-white/20 text-white">
+                  {Math.round(result.similarityScore * 100)}% Match
+                </div>
+                {result.language && (
+                  <div className="bg-purple-600/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 text-white w-fit">
+                    {result.language === 'te' ? 'Tollywood' : 
+                     result.language === 'hi' ? 'Hindi' :
+                     result.language === 'ml' ? 'Malayalam' : 
+                     result.language === 'en' ? 'English' : result.language}
+                  </div>
+                )}
               </div>
 
               <div className="absolute bottom-6 left-6 right-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
@@ -84,7 +94,7 @@ export default function MoodResults({ results, userMood }: { results: any[], use
               </div>
 
               <p className="text-white/80 italic text-sm border-l-2 border-purple-500 pl-4 py-1">
-                "{result.explanation}"
+                &quot;{result.explanation}&quot;
               </p>
 
               <div className="pt-4 flex items-center justify-between border-t border-white/5">

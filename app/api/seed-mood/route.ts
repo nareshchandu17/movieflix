@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     await connectDB();
     console.log('✅ Connected to MongoDB');
 
-    const results = [];
+    const results: any[] = [];
 
     for (const data of sampleMoodData) {
       const movie = await Movie.findOne({ title: data.title });

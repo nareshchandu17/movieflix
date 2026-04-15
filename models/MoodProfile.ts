@@ -19,6 +19,7 @@ const MoodProfileSchema = new mongoose.Schema(
     pacing: { type: String, enum: ["slow-burn", "steady", "fast", "erratic"], required: true },
     tone: { type: String, enum: ["dark-but-hopeful", "purely dark", "warm", "satirical", "absurdist"], required: true },
     payoffReliability: { type: Number, min: 1, max: 10, required: true }, // How much it delivers on its promise
+    language: { type: String, index: true },
   },
   {
     timestamps: true,
