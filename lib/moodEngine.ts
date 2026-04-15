@@ -62,9 +62,17 @@ export async function matchMoodToMovies(
   const watchedRecentlyIds = new Set(recentHistory.map(h => h.contentId));
 
   // 4. Calculate scores and rank
-  const matches = profiles
-    .map((profile: any) => {
-      const profileVector = [
+  const allMatches = profiles
+    .map((profile: {
+      intensityScore: number;
+      cryProbability: number;
+      hopeIndex: number;
+      laughDensity: number;
+      tone: string;
+      contentId: string;
+      language: string;
+    }) => {
+      const profileVector: number[] = [
         profile.intensityScore,
         profile.cryProbability,
         profile.hopeIndex,
@@ -75,7 +83,7 @@ export async function matchMoodToMovies(
       
       // Weight tone requirement
       if (moodIntent.toneRequirement && profile.tone === moodIntent.toneRequirement) {
-        score += 0.2; // Significant boost for exact tone match
+        score += 0.2;
       }
 
       // Deprioritize recently watched
@@ -85,7 +93,7 @@ export async function matchMoodToMovies(
       
       // Familiarity filter
       if (options.familiarity === 'new' && watchedRecentlyIds.has(profile.contentId)) {
-        score = -1; // Exclude if strictly "new" requested
+        score = -1;
       }
 
       return {
@@ -94,13 +102,35 @@ export async function matchMoodToMovies(
       };
     })
     .filter(m => m.similarityScore > 0)
-    .sort((a, b) => b.similarityScore - a.similarityScore)
-    .slice(0, 5);
+    .sort((a, b) => b.similarityScore - a.similarityScore);
 
-  // 5. Generate explanations for top matches
+  // 5. Apply Language Weighting (60% Tollywood/Telugu, 40% Others)
+  const teluguMatches = allMatches.filter(m => m.language === 'te');
+  const otherMatches = allMatches.filter(m => m.language !== 'te');
+
+  // Take top 3 Telugu and top 2 Others
+  const weightedMatches = [
+    ...teluguMatches.slice(0, 3),
+    ...otherMatches.slice(0, 2)
+  ];
+
+  // If we don't have enough in one bucket, fill with remaining from allMatches
+  if (weightedMatches.length < 5) {
+    const combinedIds = new Set(weightedMatches.map(m => m.contentId));
+    const fillNeeded = 5 - weightedMatches.length;
+    const remainingMatches = allMatches
+      .filter(m => !combinedIds.has(m.contentId))
+      .slice(0, fillNeeded);
+    
+    weightedMatches.push(...remainingMatches);
+  }
+
+  // Sort again by similarity among the selected top 5
+  const finalMatches = weightedMatches.sort((a, b) => b.similarityScore - a.similarityScore);
+
+  // 6. Generate explanations for top matches
   const resultsWithExplanations = await Promise.all(
-    matches.map(async (match) => {
-      // Mocking title fetch here - in real app would join with Movie model
+    finalMatches.map(async (match) => {
       const explanation = await gemini.generateMoodExplanation(match.contentId, userPrompt);
       return {
         ...match,
