@@ -4,25 +4,22 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import gsap from "gsap";
 
-interface Particle {
-  id: number;
-  width: number;
-  height: number;
-  left: number;
-  top: number;
-  color: string;
-  opacity: number;
+import SceneSearch from "./SceneSearch";
+
+interface SceneHeroProps {
+  onSearch: (query: string) => void;
 }
 
-export default function SceneHero() {
+export default function SceneHero({ onSearch }: SceneHeroProps) {
   const heroRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const particlesRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [isClient, setIsClient] = useState(false);
 
-  // Generate particles only on client side to avoid hydration mismatch
+  // ... (keep useEffect for particles generation as is - skipping for brevity in thought, but must include in actual tool call)
   useEffect(() => {
     setIsClient(true);
     const colors = ["#ef4444", "#f97316", "#f59e0b", "#eab308"];
@@ -45,15 +42,22 @@ export default function SceneHero() {
       // Title reveal
       gsap.fromTo(
         titleRef.current,
-        { y: 80, opacity: 0, scale: 0.9 },
-        { y: 0, opacity: 1, scale: 1, duration: 1.4, ease: "power4.out", delay: 0.3 }
+        { y: 80, opacity: 0, scale: 0.95 },
+        { y: 0, opacity: 1, scale: 1, duration: 1.2, ease: "power4.out", delay: 0.3 }
       );
 
       // Subtitle reveal
       gsap.fromTo(
         subtitleRef.current,
         { y: 40, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, ease: "power3.out", delay: 0.8 }
+        { y: 0, opacity: 1, duration: 1, ease: "power3.out", delay: 0.6 }
+      );
+
+      // Search bar reveal
+      gsap.fromTo(
+        searchRef.current,
+        { y: 30, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8, ease: "power2.out", delay: 0.9 }
       );
 
       // Floating particles
@@ -78,9 +82,8 @@ export default function SceneHero() {
         import("gsap/ScrollTrigger").then(({ ScrollTrigger }) => {
           gsap.registerPlugin(ScrollTrigger);
           gsap.to(heroRef.current, {
-            y: -150,
+            y: -100,
             opacity: 0,
-            scale: 0.95,
             ease: "none",
             scrollTrigger: {
               trigger: heroRef.current,
@@ -99,13 +102,13 @@ export default function SceneHero() {
   return (
     <section
       ref={heroRef}
-      className="relative w-full h-[70vh] min-h-[500px] flex items-center justify-center overflow-hidden"
+      className="relative w-full h-[85vh] min-h-[600px] flex items-center justify-center overflow-hidden"
     >
       {/* Animated gradient background */}
       <div className="absolute inset-0 scene-hero-gradient" />
 
       {/* Film grain overlay */}
-      <div className="absolute inset-0 scene-grain-overlay opacity-30" />
+      <div className="absolute inset-0 scene-grain-overlay opacity-40" />
 
       {/* Floating particles */}
       {isClient && (
@@ -127,33 +130,30 @@ export default function SceneHero() {
         </div>
       )}
 
-      {/* Cinematic light beams */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-red-500/20 via-transparent to-transparent rotate-12" />
-        <div className="absolute top-0 right-1/3 w-px h-full bg-gradient-to-b from-orange-500/15 via-transparent to-transparent -rotate-6" />
-      </div>
-
       {/* Content */}
-      <div className="relative z-10 text-center px-6 max-w-4xl">
+      <div className="relative z-10 text-center px-6 w-full max-w-5xl">
+        {/* Clapperboard Icon */}
         <motion.div
-          initial={{ scale: 0, rotate: -180 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ duration: 0.8, ease: "backOut" }}
-          className="inline-block mb-6"
+          initial={{ scale: 0, scaleZ: 0 }}
+          animate={{ scale: 1, scaleZ: 1 }}
+          transition={{ duration: 1, type: "spring", bounce: 0.4 }}
+          className="inline-block mb-2 relative"
         >
-          <span className="text-5xl">🎬</span>
+          <div className="absolute inset-0 blur-2xl bg-red-500/30 rounded-full scale-150" />
+          <span className="text-5xl md:text-6xl relative z-10 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+            🎬
+          </span>
         </motion.div>
 
         <h1
           ref={titleRef}
-          className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight opacity-0"
+          className="text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter opacity-0 mt-2"
           style={{
-            background: "linear-gradient(135deg, #ffffff 0%, #ef4444 40%, #f97316 70%, #eab308 100%)",
+            background: "linear-gradient(to right, #ff4c4c, #f97316)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
-            textShadow: "none",
-            filter: "drop-shadow(0 0 40px rgba(239, 68, 68, 0.3))",
+            filter: "drop-shadow(0 0 30px rgba(239, 68, 68, 0.4))",
           }}
         >
           SCENES
@@ -161,25 +161,19 @@ export default function SceneHero() {
 
         <p
           ref={subtitleRef}
-          className="mt-4 text-lg md:text-xl text-gray-300 max-w-2xl mx-auto opacity-0 font-light tracking-wide"
+          className="mt-6 text-lg md:text-xl text-gray-300 max-w-3xl mx-auto opacity-0 font-medium tracking-wide drop-shadow-md"
         >
-          Discover the most iconic, spine-tingling, and unforgettable moments in cinema history
+          Discover the most iconic, spine-tingling, and unforgettable in cinema history
         </p>
 
-        {/* Scroll indicator */}
-        <motion.div
-          className="mt-12"
-          animate={{ y: [0, 12, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <div className="w-6 h-10 rounded-full border-2 border-white/30 mx-auto flex items-start justify-center pt-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-white/60" />
-          </div>
-        </motion.div>
+        {/* Integrated Search Bar */}
+        <div ref={searchRef} className="mt-10 opacity-0 w-full max-w-2xl mx-auto">
+          <SceneSearch onSearch={onSearch} />
+        </div>
       </div>
 
       {/* Bottom fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#000000] to-transparent" />
     </section>
   );
 }

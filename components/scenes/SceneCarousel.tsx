@@ -8,6 +8,7 @@ import ClipCard from "./ClipCard";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 interface SceneCarouselProps {
+  id: string; // Added for routing
   title: string;
   icon: string;
   query: string;
@@ -15,7 +16,7 @@ interface SceneCarouselProps {
   index: number;
 }
 
-export default function SceneCarousel({ title, icon, query, onPlayClip, index }: SceneCarouselProps) {
+export default function SceneCarousel({ id, title, icon, query, onPlayClip, index }: SceneCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -119,9 +120,19 @@ export default function SceneCarousel({ title, icon, query, onPlayClip, index }:
           {title}
         </h2>
         <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent ml-2" />
-        <span className="text-xs text-gray-500 font-mono">
-          {clips.length > 0 ? `${clips.length} clips` : ""}
-        </span>
+        
+        {/* Link to grid view - hidden until hover */}
+        {clips.length > 0 && (
+          <div className="opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 transform translate-x-2 group-hover/carousel:translate-x-0">
+            <a 
+              href={`/scenes/category/${id}`}
+              className="text-xs font-bold text-red-500 hover:text-red-400 flex items-center gap-1 group/link"
+            >
+              VIEW ALL
+              <FiChevronRight className="group-hover/link:translate-x-0.5 transition-transform" />
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Carousel */}

@@ -2,13 +2,13 @@
    Scenes Page — Cinematic Styles
    ═══════════════════════════════════════════════════════ */
 
-/* Hero gradient background */
+/* Hero nebula background - matching design image */
 .scene-hero-gradient {
-  background:
-    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(239, 68, 68, 0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 100% 60% at 80% 20%, rgba(249, 115, 22, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse 80% 50% at 20% 80%, rgba(234, 179, 8, 0.06) 0%, transparent 50%),
-    linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
+  background: 
+    radial-gradient(circle at 50% 30%, rgba(220, 38, 38, 0.15), transparent 70%),
+    radial-gradient(circle at 10% 20%, rgba(185, 28, 28, 0.05), transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(249, 115, 22, 0.05), transparent 40%),
+    linear-gradient(to bottom, #0a0101, #000000);
 }
 
 /* Film grain overlay */

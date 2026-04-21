@@ -41,17 +41,15 @@ export default function ScenesPage() {
 
   return (
     <div className="scenes-page-bg">
-      {/* Cinematic Hero */}
-      <SceneHero />
-
-      {/* Search Bar */}
-      <SceneSearch onSearch={handleSearch} />
+      {/* Cinematic Hero with Integrated Search */}
+      <SceneHero onSearch={handleSearch} />
 
       {/* Dynamic search results carousel */}
       {searchQuery && (
         <div className="mb-4">
           <SceneCarousel
             key={`search-${searchQuery}`}
+            id="search-results"
             title={`Results for "${searchQuery}"`}
             icon="🔍"
             query={searchQuery}
@@ -75,6 +73,7 @@ export default function ScenesPage() {
             )}
 
             <SceneCarousel
+              id={config.id}
               title={config.title}
               icon={config.icon}
               query={config.query}
