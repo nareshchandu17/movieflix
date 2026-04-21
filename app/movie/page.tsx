@@ -12,9 +12,10 @@ export const metadata: Metadata = {
 
 export default function MoviePage() {
   return (
-    <div className="app-bg-enhanced mt-24">
+    <div className="app-bg-enhanced pt-20">
       <PageTitle
-        segments={[{ text: "All" }, { text: " Movies", isPrimary: true }]}
+        segments={[{ text: "All" }, { text: " Movies", className: "text-red-500" }]}
+        subtitle="Browse our entire collection"
       />
 
       <Suspense fallback={<PageLoading>Loading movies...</PageLoading>}>

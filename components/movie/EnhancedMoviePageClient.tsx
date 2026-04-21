@@ -34,8 +34,10 @@ const EnhancedMoviePageClient = () => {
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [activePopover, setActivePopover] = useState<string | null>(null);
+  const [isInfiniteMode, setIsInfiniteMode] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const moviesRef = useRef<TMDBMovie[]>([]);
   const currentPageRef = useRef(currentPage);
 
@@ -186,8 +188,8 @@ const EnhancedMoviePageClient = () => {
 
   // Fetch movies when filters or page changes
   const fetchMovies = useCallback(async (isLoadMore = false, pageOverride?: number) => {
-    const actualPage = pageOverride || (isLoadMore ? currentPage : 1);
-    console.log("[EnhancedMoviePage] fetchMovies called", { isLoadMore, currentPage, actualPage, hasMore, isLoadingMore });
+    const actualPage = pageOverride || (isLoadMore ? currentPageRef.current + 1 : 1);
+    console.log("[EnhancedMoviePage] fetchMovies called", { isLoadMore, currentPage: currentPageRef.current, actualPage, hasMore, isLoadingMore });
     
     if (isLoadMore) {
       setIsLoadingMore(true);
@@ -335,15 +337,19 @@ const EnhancedMoviePageClient = () => {
     fetchMovies();
   }, [fetchMovies]);
 
-  // Infinite scroll observer
+  // Infinite scroll observer - only active in infinite mode
   useEffect(() => {
-    if (!hasMore || isLoadingMore) return;
+    if (!hasMore || isLoadingMore || !isInfiniteMode) {
+      if (observerRef.current) observerRef.current.disconnect();
+      return;
+    }
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          console.log("[EnhancedMoviePage] Intersection observer triggered");
-          fetchMovies(true, currentPageRef.current);
+          console.log("[EnhancedMoviePage] Intersection observer triggered", { currentPage: currentPageRef.current });
+          // Fetch the NEXT page
+          fetchMovies(true, currentPageRef.current + 1);
         }
       },
       { threshold: 0.1 }
@@ -358,12 +364,12 @@ const EnhancedMoviePageClient = () => {
         observerRef.current.disconnect();
       }
     };
-  }, [hasMore, isLoadingMore]);
+  }, [hasMore, isLoadingMore, isInfiniteMode]);
 
   const loadMore = () => {
-    console.log("[EnhancedMoviePage] Load more clicked", { hasMore, isLoadingMore, currentPage });
+    console.log("[EnhancedMoviePage] Load more clicked", { hasMore, isLoadingMore, nextPage: currentPage + 1 });
     if (hasMore && !isLoadingMore) {
-      fetchMovies(true, currentPage);
+      fetchMovies(true, currentPage + 1);
     } else {
       console.log("[EnhancedMoviePage] Cannot load more", { hasMore, isLoadingMore });
     }
@@ -400,6 +406,7 @@ const EnhancedMoviePageClient = () => {
     setFilters(newFilters);
     setCurrentPage(1);
     setHasMore(true);
+    setIsInfiniteMode(false); // Reset to manual mode on filter change
     updateURL(newFilters, 1);
   };
 
@@ -445,6 +452,7 @@ const EnhancedMoviePageClient = () => {
     setFilters(defaultFilters);
     setSearchQuery("");
     setCurrentPage(1);
+    setIsInfiniteMode(false); // Reset to manual mode
     updateURL(defaultFilters, 1, "");
   };
 
@@ -474,30 +482,22 @@ const EnhancedMoviePageClient = () => {
 
     {/* Search Input */}
     <motion.input
+      ref={inputRef}
       type="text"
-      placeholder=""
       value={searchQuery}
       onChange={handleSearchChange}
+      onFocus={() => {
+        setIsTyping(true);
+        setActivePopover(null);
+      }}
+      onBlur={() => setIsTyping(false)}
       onKeyDown={handleSearchKeyDown}
-      suppressHydrationWarning
-      className={`w-full pl-12 pr-20 py-3 bg-black border rounded-full text-white placeholder-gray-400 focus:outline-none transition-all duration-300 text-sm font-medium ${
-        isTyping
-          ? "border-blue-400 shadow-lg shadow-blue-400/30 ring-2 ring-blue-400/20"
-          : "border-gray-700 hover:border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:shadow-lg focus:shadow-blue-500/25"
+      className={`w-full bg-zinc-900/50 border rounded-2xl py-3.5 pl-12 pr-4 text-white focus:outline-none focus:bg-zinc-900 transition-all duration-300 ${
+        isTyping ? "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.1)]" : "border-zinc-800"
       }`}
-      animate={{
-        borderColor: isTyping
-          ? ["#3B82F6", "#8B5CF6", "#EC4899"]
-          : ["#374151", "#374151", "#374151"],
-      }}
-      transition={{
-        duration: isTyping ? 2 : 0,
-        repeat: isTyping ? Infinity : 0,
-        ease: "easeInOut",
-      }}
     />
 
-    {/* Rotating Placeholder */}
+    {/* Rotating Placeholder - Restored logic */}
     <AnimatePresence mode="wait">
       {!searchQuery && !isTyping && (
         <motion.div
@@ -506,22 +506,21 @@ const EnhancedMoviePageClient = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -5 }}
           transition={{ duration: 0.3 }}
-          className="absolute left-12 right-20 top-0 bottom-0 flex items-center pointer-events-none text-gray-400 text-sm font-medium"
+          className="absolute left-12 right-20 top-0 bottom-0 flex items-center pointer-events-none text-gray-500 text-sm font-medium italic"
         >
           {placeholders[placeholderIndex]}
         </motion.div>
       )}
     </AnimatePresence>
 
-    
-    {/* Enter Hint */}
+    {/* Enter Hint - Restored logic */}
     <AnimatePresence>
       {!searchQuery && !isTyping && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute right-14 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none"
+          className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-600 text-xs pointer-events-none border border-zinc-800 px-1.5 py-0.5 rounded uppercase font-bold"
         >
           ⏎
         </motion.div>
@@ -531,17 +530,24 @@ const EnhancedMoviePageClient = () => {
   </motion.div>
 </div>
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-3 flex-wrap popover-container">
+            {/* Filter Pills - Improved to prevent clipping */}
+            <div className="flex flex-wrap items-center gap-3 popover-container">
               {/* Type Filter Pill */}
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <motion.button
                   onClick={() => setActivePopover(activePopover === 'type' ? null : 'type')}
-                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
+                  className={`backdrop-blur-md border rounded-full px-4 py-2 text-sm focus:outline-none cursor-pointer transition-all duration-300 flex items-center gap-2 ${
+                    filters.category !== 'popular' 
+                      ? 'bg-red-600/20 border-red-500/50 text-white shadow-lg shadow-red-500/10' 
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span>{filters.category === 'popular' ? 'Type' : filters.category === 'top_rated' ? 'Top Rated' : filters.category === 'now_playing' ? 'Now Playing' : 'Upcoming'}</span>
+                  <div className="flex items-center gap-2">
+                    {filters.category !== 'popular' && <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                    <span>{filters.category === 'popular' ? 'Type' : filters.category === 'top_rated' ? 'Top Rated' : filters.category === 'now_playing' ? 'Now Playing' : 'Upcoming'}</span>
+                  </div>
                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${activePopover === 'type' ? 'rotate-180' : ''}`} />
                 </motion.button>
 
@@ -584,14 +590,21 @@ const EnhancedMoviePageClient = () => {
               </div>
 
               {/* Genre Filter Pill */}
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <motion.button
                   onClick={() => setActivePopover(activePopover === 'genre' ? null : 'genre')}
-                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
+                  className={`backdrop-blur-md border rounded-full px-4 py-2 text-sm focus:outline-none cursor-pointer transition-all duration-300 flex items-center gap-2 ${
+                    filters.genre 
+                      ? 'bg-red-600/20 border-red-500/50 text-white shadow-lg shadow-red-500/10' 
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span>{filters.genre ? getGenreName(filters.genre) : 'Genre'}</span>
+                  <div className="flex items-center gap-2">
+                    {filters.genre && <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                    <span>{filters.genre ? getGenreName(filters.genre) : 'Genre'}</span>
+                  </div>
                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${activePopover === 'genre' ? 'rotate-180' : ''}`} />
                 </motion.button>
 
@@ -634,14 +647,21 @@ const EnhancedMoviePageClient = () => {
               </div>
 
               {/* Year Filter Pill */}
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <motion.button
                   onClick={() => setActivePopover(activePopover === 'year' ? null : 'year')}
-                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
+                  className={`backdrop-blur-md border rounded-full px-4 py-2 text-sm focus:outline-none cursor-pointer transition-all duration-300 flex items-center gap-2 ${
+                    filters.year 
+                      ? 'bg-red-600/20 border-red-500/50 text-white shadow-lg shadow-red-500/10' 
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span>{filters.year || 'Year'}</span>
+                  <div className="flex items-center gap-2">
+                    {filters.year && <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                    <span>{filters.year || 'Year'}</span>
+                  </div>
                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${activePopover === 'year' ? 'rotate-180' : ''}`} />
                 </motion.button>
 
@@ -685,14 +705,21 @@ const EnhancedMoviePageClient = () => {
               </div>
 
               {/* Country Filter Pill */}
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <motion.button
                   onClick={() => setActivePopover(activePopover === 'country' ? null : 'country')}
-                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
+                  className={`backdrop-blur-md border rounded-full px-4 py-2 text-sm focus:outline-none cursor-pointer transition-all duration-300 flex items-center gap-2 ${
+                    filters.country 
+                      ? 'bg-red-600/20 border-red-500/50 text-white shadow-lg shadow-red-500/10' 
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span>{filters.country ? getCountryName(filters.country) : 'Country'}</span>
+                  <div className="flex items-center gap-2">
+                    {filters.country && <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                    <span>{filters.country ? getCountryName(filters.country) : 'Country'}</span>
+                  </div>
                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${activePopover === 'country' ? 'rotate-180' : ''}`} />
                 </motion.button>
 
@@ -733,14 +760,21 @@ const EnhancedMoviePageClient = () => {
               </div>
 
               {/* Rating Filter Pill */}
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <motion.button
                   onClick={() => setActivePopover(activePopover === 'rating' ? null : 'rating')}
-                  className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
+                  className={`backdrop-blur-md border rounded-full px-4 py-2 text-sm focus:outline-none cursor-pointer transition-all duration-300 flex items-center gap-2 ${
+                    filters.rating 
+                      ? 'bg-red-600/20 border-red-500/50 text-white shadow-lg shadow-red-500/10' 
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span>{filters.rating ? getRatingName(filters.rating) : 'Rating'}</span>
+                  <div className="flex items-center gap-2">
+                    {filters.rating && <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                    <span>{filters.rating ? getRatingName(filters.rating) : 'Rating'}</span>
+                  </div>
                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${activePopover === 'rating' ? 'rotate-180' : ''}`} />
                 </motion.button>
 
@@ -780,12 +814,12 @@ const EnhancedMoviePageClient = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Reset Button Pill */}
+              {/* Reset Button Pill - Secondary Outline Style */}
               <motion.button
                 onClick={handleReset}
-                className="bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:bg-white/20 hover:text-white px-4 py-2 text-sm rounded-full hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10 flex items-center gap-2"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                className="flex-shrink-0 border border-zinc-700 text-zinc-400 hover:border-red-500 hover:text-red-500 px-5 py-2 text-xs rounded-full transition-all duration-300 flex items-center gap-2 font-bold uppercase tracking-wider bg-transparent"
+                whileHover={{ scale: 1.02, backgroundColor: "rgba(239, 68, 68, 0.05)" }}
+                whileTap={{ scale: 0.98 }}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 Reset
@@ -798,32 +832,85 @@ const EnhancedMoviePageClient = () => {
       {/* Loading State */}
       {isLoading && <PageLoading>Loading movies, please wait...</PageLoading>}
 
-      {/* Movies Display with Infinite Scroll */}
+      {/* Movies Display - Seamless Infinite Scroll */}
       {!isLoading && movies.length > 0 && (
-        <>
-          {/* Results Header */}
-          <div className="container mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold bg-gradient-to-r from-red-500 via-red-600 to-red-700 bg-clip-text text-transparent">
-                All Movies <span className="text-gray-400 font-normal">({movies.length} results)</span>
-              </h2>
-            </div>
-            
-            {/* Sort Dropdown */}
-            <div className="relative group">
-              <select
-                value={filters.sortBy}
-                onChange={(e) => handleFiltersChange({ ...filters, sortBy: e.target.value })}
-                className="appearance-none bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 pr-8 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-white/10"
-                suppressHydrationWarning={true}
-              >
-                <option value="popularity.desc" className="bg-gray-800">Sort: Popularity</option>
-                <option value="vote_average.desc" className="bg-gray-800">Sort: Rating</option>
-                <option value="release_date.desc" className="bg-gray-800">Sort: Release Date</option>
-                <option value="title.asc" className="bg-gray-800">Sort: A-Z</option>
-                <option value="title.desc" className="bg-gray-800">Sort: Z-A</option>
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-white/60 w-4 h-4 pointer-events-none" />
+        <div className="mt-8">
+          {/* Results Header - Sticky & Dynamic */}
+          <div className="sticky top-[72px] z-30 bg-black/80 backdrop-blur-xl border-b border-zinc-800/50 mb-6 py-4 shadow-2xl">
+            <div className="container mx-auto px-4 md:px-8 flex items-center justify-between">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-white tracking-tight">
+                    {searchQuery ? "Search Results" : "Discovery"}
+                  </h2>
+                  <div className="h-4 w-[1px] bg-zinc-700 mx-1" />
+                  <span className="text-zinc-500 text-xs font-medium uppercase tracking-widest">
+                    {movies.length} {movies.length === 1 ? 'Title' : 'Titles'}
+                  </span>
+                </div>
+                {searchQuery && (
+                  <p className="text-zinc-500 text-xs italic">
+                    Showing results for <span className="text-red-500 font-bold">"{searchQuery}"</span>
+                  </p>
+                )}
+              </div>
+              
+              {/* Custom Sort Dropdown - Premium Style */}
+              <div className="flex items-center gap-3">
+                <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest hidden sm:block">Sort By:</span>
+                <div className="relative group popover-container">
+                  <motion.button
+                    onClick={() => setActivePopover(activePopover === 'sort' ? null : 'sort')}
+                    className="flex items-center gap-2 bg-zinc-900/80 border border-zinc-800 rounded-lg px-4 py-1.5 text-white text-[11px] font-bold hover:bg-zinc-800 hover:border-zinc-700 transition-all duration-300"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span>
+                      {filters.sortBy === 'popularity.desc' ? 'Popularity' : 
+                       filters.sortBy === 'vote_average.desc' ? 'Rating' : 
+                       filters.sortBy === 'release_date.desc' ? 'Latest' : 
+                       filters.sortBy === 'title.asc' ? 'A-Z' : 'Z-A'}
+                    </span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-zinc-500 transition-transform duration-200 ${activePopover === 'sort' ? 'rotate-180' : ''}`} />
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {activePopover === 'sort' && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full mt-2 right-0 w-36 rounded-xl bg-zinc-900 border border-zinc-800 shadow-xl p-1 z-50 overflow-hidden"
+                      >
+                        {[
+                          { value: 'popularity.desc', label: 'Popularity' },
+                          { value: 'vote_average.desc', label: 'Rating' },
+                          { value: 'release_date.desc', label: 'Latest' },
+                          { value: 'title.asc', label: 'A-Z' },
+                          { value: 'title.desc', label: 'Z-A' }
+                        ].map((option) => (
+                          <motion.button
+                            key={option.value}
+                            onClick={() => {
+                              handleFiltersChange({ ...filters, sortBy: option.value });
+                              setActivePopover(null);
+                            }}
+                            className={`w-full px-3 py-2 rounded-lg text-[11px] text-left transition-colors font-medium ${
+                              filters.sortBy === option.value
+                                ? 'bg-red-600 text-white'
+                                : 'text-gray-300 hover:bg-zinc-800'
+                            }`}
+                            whileHover={{ x: 2 }}
+                          >
+                            {option.label}
+                          </motion.button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -836,49 +923,80 @@ const EnhancedMoviePageClient = () => {
             infiniteScroll={true}
           />
           
-          {/* Load More Trigger */}
-          <div ref={loadMoreRef} className="w-full py-8 flex justify-center">
-            {/* Empty - dots removed */}
-          </div>
-          
-          {/* Load More Button (fallback) */}
-          {hasMore && !isLoadingMore && (
-            <div className="w-full py-4 flex justify-center">
-              <Button
-                onClick={loadMore}
-                className="relative bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:via-red-700 hover:to-red-800 text-white px-8 py-3 rounded-full font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-red-500/50 overflow-hidden group"
-              >
-                <span className="relative z-10">Load More</span>
-                {/* Subtle glow effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                {/* Shadow effect */}
-                <div className="absolute inset-0 shadow-lg shadow-red-500/30 group-hover:shadow-red-500/60 transition-shadow duration-300"></div>
-              </Button>
-            </div>
-          )}
-          
-          {/* Loading More Indicator */}
-          {isLoadingMore && (
-            <div className="w-full py-4 flex justify-center">
-              <div className="flex items-center gap-2 text-gray-400">
-                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <span>Loading more movies...</span>
+          {/* Load More Area - Hybrid Logic */}
+          <div ref={loadMoreRef} className="w-full py-16 flex flex-col justify-center items-center">
+            {isLoadingMore ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex gap-1.5">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="w-2 h-2 bg-red-600 rounded-full"
+                      animate={{ opacity: [0.3, 1, 0.3], y: [0, -4, 0] }}
+                      transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.2 }}
+                    />
+                  ))}
+                </div>
+                <span className="text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
+                  Loading the next reel...
+                </span>
               </div>
-            </div>
-          )}
-          
-          {/* End of Results */}
-          {!hasMore && movies.length > 0 && (
-            <div className="w-full py-8 text-center text-gray-500">
-              <p>You've reached the end of the catalog</p>
-            </div>
-          )}
-        </>
+            ) : !hasMore ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-[1px] bg-zinc-800" />
+                <p className="text-zinc-500 text-[11px] font-medium italic">
+                  That's all for now. You've reached the end of the collection.
+                </p>
+                <div className="w-12 h-[1px] bg-zinc-800" />
+              </div>
+            ) : !isInfiniteMode ? (
+              <motion.button
+                onClick={() => {
+                  loadMore();
+                  setIsInfiniteMode(true);
+                }}
+                className="group relative px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-full font-bold transition-all duration-300 shadow-xl shadow-red-600/20 overflow-hidden"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-white/20 to-red-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <div className="flex items-center gap-2">
+                  <span>Load More Movies</span>
+                  <ChevronDown className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
+                </div>
+              </motion.button>
+            ) : null}
+          </div>
+        </div>
       )}
 
-      {/* Empty State */}
+      {/* Empty State - Improved Messaging */}
       {!isLoading && movies.length === 0 && (
-        <PageEmpty>No movies found</PageEmpty>
+        <div className="py-32 flex flex-col items-center justify-center text-center px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-12 rounded-[2rem] max-w-md shadow-2xl"
+          >
+            <div className="w-20 h-20 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <RotateCcw className="w-10 h-10 text-zinc-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-3">No movies match your criteria</h3>
+            <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
+              We couldn't find any titles fitting these specific filters. Try adjusting your search or resetting the view.
+            </p>
+            <motion.button
+              onClick={handleReset}
+              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full font-bold transition-all duration-300 shadow-lg shadow-red-600/20"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Clear All Filters
+            </motion.button>
+          </motion.div>
+        </div>
       )}
     </>
   );
