@@ -191,17 +191,22 @@ export default function TopPicksForYou({ title = "Top Picks for You", userName }
             {show.name}
           </h3>
 
-          {/* META */}
-          <div className="flex items-center gap-2 text-xs mb-2">
-            <span className="text-green-400 font-semibold">
-              {Math.round((show.vote_average || 0) * 10)}% Match
-            </span>
-            <span className="text-gray-300">
-              {show.first_air_date
-                ? new Date(show.first_air_date).getFullYear()
-                : "N/A"}
-            </span>
-          </div>
+                {/* META */}
+                <div className="flex items-center gap-2 text-xs mb-2">
+                  <span className="text-green-400 font-semibold">
+                    {Math.round((show.vote_average || 0) * 10)}% Match
+                  </span>
+                  <span className="text-gray-300">
+                    {show.first_air_date
+                      ? new Date(show.first_air_date).getFullYear()
+                      : "N/A"}
+                  </span>
+                </div>
+
+                {/* Description added */}
+                <p className="text-gray-300 text-[10px] leading-tight line-clamp-2 mb-3 opacity-90">
+                  {show.overview}
+                </p>
 
           {/* ACTION BUTTONS */}
           <div className="flex items-center gap-2">

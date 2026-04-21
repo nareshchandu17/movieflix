@@ -155,14 +155,20 @@ export default function PopularOnMovieFlix({ title = "Popular on MovieFlix" }: P
                   sizes="220px"
                 />
 
-                {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center"
-                  >
-                    <BarChart3 className="w-6 h-6 text-white" />
-                  </motion.div>
+                {/* Hover Overlay - Updated to show description */}
+                <div className="absolute inset-0 bg-black/80 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                  <h3 className="text-white font-bold text-sm mb-1">{show.name}</h3>
+                  <p className="text-gray-300 text-[10px] leading-tight line-clamp-3 mb-3 opacity-90">
+                    {show.overview}
+                  </p>
+                  <div className="flex gap-2">
+                    <button className="flex-1 bg-white text-black text-[10px] py-1.5 rounded flex items-center justify-center gap-1 font-bold">
+                      <Play className="w-3 h-3" /> Play
+                    </button>
+                    <button className="w-8 h-8 bg-white/20 rounded flex items-center justify-center">
+                      <BarChart3 className="w-4 h-4 text-white" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Platform Popular Badge */}

@@ -98,7 +98,7 @@ const SeriesCarousel = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 px-6 md:px-12 lg:px-20">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-white">{title}</h2>
         <button 
@@ -139,8 +139,8 @@ const SeriesCarousel = ({
                 {/* Individual hover overlay with 1-second delay - removed group class */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 transition-all duration-500 delay-150">
                   <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h3 className="text-white font-semibold text-sm line-clamp-2 mb-2">{item.name}</h3>
-                    <div className="flex items-center gap-2 mb-3">
+                    <h3 className="text-white font-semibold text-sm line-clamp-2 mb-1">{item.name}</h3>
+                    <div className="flex items-center gap-2 mb-2">
                       <div className="flex items-center gap-1">
                         <Star className="w-3 h-3 text-yellow-400" />
                         <span className="text-white text-xs">{item.vote_average.toFixed(1)}</span>
@@ -151,6 +151,11 @@ const SeriesCarousel = ({
                         </span>
                       )}
                     </div>
+
+                    {/* Description added */}
+                    <p className="text-gray-300 text-[10px] leading-tight line-clamp-3 mb-3 opacity-90">
+                      {item.overview}
+                    </p>
                     
                     {/* Buttons with 75% and 25% width */}
                     <div className="flex gap-2">

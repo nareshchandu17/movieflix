@@ -80,8 +80,14 @@ export default function RecentlyAddedSeries({
   return (
     <div className="relative">
       {/* HEADER (LEFT SAFE) */}
-      <div className="px-4 md:px-12 lg:px-20 mb-6">
+      <div className="px-6 md:px-12 lg:px-20 mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">{title}</h2>
+        <button 
+          onClick={() => router.push('/series?category=popular')}
+          className="text-red-500 hover:text-red-400 text-sm font-medium flex items-center gap-1 transition-colors"
+        >
+          See All <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* CAROUSEL */}
@@ -91,13 +97,9 @@ export default function RecentlyAddedSeries({
           className="
             flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory
             py-4
-            pl-4 md:pl-12 lg:pl-20
-            pr-0
-            -mr-[50vw] w-[calc(100vw+50vw)]
+            px-6 md:px-12 lg:px-20
           "
         >
-          {/* LEFT SPACER */}
-          <div className="flex-shrink-0 w-4 md:w-12 lg:w-20" />
 
           {series.map((show) => (
             <motion.div
@@ -152,11 +154,16 @@ export default function RecentlyAddedSeries({
                         </div>
                       </div>
 
+                      {/* Description added */}
+                      <p className="text-gray-400 text-[10px] leading-tight line-clamp-2 mt-2 opacity-90">
+                        {show.overview}
+                      </p>
+
                       {/* ACTIONS */}
                       <div className="flex items-center gap-2 mt-3">
                         <button className="flex-1 bg-white text-black text-xs py-1.5 rounded flex items-center justify-center gap-1 font-semibold">
                           <Play className="w-3 h-3" />
-                          Play
+                          Play Now
                         </button>
 
                         <button className="w-8 h-8 bg-white/20 rounded flex items-center justify-center">
@@ -169,9 +176,6 @@ export default function RecentlyAddedSeries({
               </div>
             </motion.div>
           ))}
-
-          {/* RIGHT FULL BLEED SPACE */}
-          <div className="flex-shrink-0 w-20 md:w-32 lg:w-40" />
         </div>
 
         {/* NAV BUTTONS */}

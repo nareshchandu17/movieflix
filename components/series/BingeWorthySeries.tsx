@@ -154,8 +154,8 @@ const BingeWorthySeriesCarousel = () => {
     <div className="w-full">
       {/* HEADER */}
   
-        <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold text-white mb-2">
+        <div className="px-6 md:px-12 lg:px-20 mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-white mb-2">
               Binge Worthy Series
             </h2>
             
@@ -192,13 +192,7 @@ const BingeWorthySeriesCarousel = () => {
         <div
           ref={carouselRef}
           className="
-            flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-6
-            
-            /* FULL BLEED */
-            -mx-[5vw] w-[calc(100%+10vw)]
-            
-            /* INTERNAL PADDING */
-            px-[5vw]
+            flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-6 px-6 md:px-12 lg:px-20
           "
           style={{
             scrollbarWidth: "none",
@@ -206,8 +200,6 @@ const BingeWorthySeriesCarousel = () => {
             scrollPaddingLeft: "5rem",
           }}
         >
-          {/* LEFT SPACER */}
-          <div className="flex-shrink-0 w-12 md:w-20" />
           {loading
             ? Array.from({ length: 8 }).map((_, i) => (
                 <div
@@ -270,11 +262,16 @@ const BingeWorthySeriesCarousel = () => {
                             </h3>
 
                             {/* Info */}
-                            <div className="flex items-center gap-2 text-gray-300 text-xs mb-3">
+                            <div className="flex items-center gap-2 text-gray-300 text-xs mb-2">
                               <span>{show.first_air_date?.split('-')[0]}</span>
                               <span>•</span>
                               <span>{show.vote_count} votes</span>
                             </div>
+
+                            {/* Description added */}
+                            <p className="text-gray-400 text-[10px] leading-tight line-clamp-2 mb-3 opacity-90">
+                              {show.overview}
+                            </p>
 
                             {/* Action Buttons */}
                             <div className="flex gap-2">
@@ -284,7 +281,7 @@ const BingeWorthySeriesCarousel = () => {
                                 className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg flex items-center justify-center gap-1 text-xs font-medium transition-colors"
                               >
                                 <Play className="w-3 h-3" />
-                                Play
+                                Play Now
                               </motion.button>
                               <motion.button
                                 whileHover={{ scale: 1.05 }}
@@ -313,8 +310,6 @@ const BingeWorthySeriesCarousel = () => {
                 </div>
               ))}
 
-          {/* RIGHT SPACER */}
-          <div className="flex-shrink-0 w-12 md:w-20" />
         </div>
       </div>
     </div>

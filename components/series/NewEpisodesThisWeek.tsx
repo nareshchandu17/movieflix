@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Play, Calendar } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Calendar, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { TMDBTVShow } from "@/lib/types";
@@ -37,8 +37,8 @@ export default function NewEpisodesThisWeek({
         // Get shows with recent air dates using proper API filtering
         const responses = await Promise.all([
           api.getTrending("tv", "week", 1),
-          api.discover('tv', { 
-            sortBy: 'first_air_date.desc', 
+          api.discover('tv', {
+            sortBy: 'first_air_date.desc',
             page: 1,
             airDateGte: formatDate(thirtyDaysAgo),
             airDateLte: formatDate(today)
@@ -54,7 +54,7 @@ export default function NewEpisodesThisWeek({
         ];
 
         // Remove duplicates and limit to 8
-        const uniqueSeries = allSeries.filter((show, index, self) => 
+        const uniqueSeries = allSeries.filter((show, index, self) =>
           index === self.findIndex((s) => s.id === show.id)
         ).slice(0, 8);
 
@@ -101,8 +101,14 @@ export default function NewEpisodesThisWeek({
   return (
     <div className="relative">
       {/* HEADER (LEFT SAFE) */}
-      <div className="px-6 md:px-12 lg:px-20 mb-6">
+      <div className="px-6 md:px-12 lg:px-20 mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">{title}</h2>
+        <button 
+          onClick={() => router.push('/series?category=on_the_air')}
+          className="text-red-500 hover:text-red-400 text-sm font-medium flex items-center gap-1 transition-colors"
+        >
+          See All <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* 🔥 FULL BLEED RIGHT ONLY */}
@@ -116,8 +122,6 @@ export default function NewEpisodesThisWeek({
             -mr-[50vw] w-[calc(100vw+50vw)]
           "
         >
-          {/* LEFT SPACER */}
-          <div className="flex-shrink-0 w-12 md:w-20" />
 
           {series.map((show, index) => (
             <motion.div
@@ -176,12 +180,19 @@ export default function NewEpisodesThisWeek({
                 <div className="absolute inset-0 flex flex-col justify-end p-3 opacity-0 group-hover/card:opacity-100 transition">
                   <div className="bg-black/80 backdrop-blur-sm rounded-lg p-2">
                     <div className="flex items-center gap-2">
-                      <button className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:bg-green-600 hover:text-white transition-colors">
-                        <Play className="w-4 h-4 ml-[1px]" />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/series/${show.id}`);
+                        }}
+                        className="flex-1 h-9 rounded-lg bg-white text-black flex items-center justify-center gap-2 hover:bg-green-600 hover:text-white transition-all duration-300 text-[11px] font-bold"
+                      >
+                        <Play className="w-4 h-4 fill-current" />
+                        Play Now
                       </button>
 
-                      <button className="w-8 h-8 rounded-full bg-black/70 border border-white/40 text-white hover:bg-white/20 transition-colors">
-                        +
+                      <button className="w-9 h-9 rounded-lg bg-black/70 border border-white/40 text-white hover:bg-white/20 transition-colors flex items-center justify-center">
+                        <Plus className="w-4 h-4" />
                       </button>
 
                       <button className="ml-auto text-xs text-gray-300 flex items-center gap-1 hover:text-white transition-colors">
@@ -195,8 +206,6 @@ export default function NewEpisodesThisWeek({
             </motion.div>
           ))}
 
-          {/* RIGHT SPACER */}
-          <div className="flex-shrink-0 w-12 md:w-20" />
         </div>
 
         {/* ARROWS */}
