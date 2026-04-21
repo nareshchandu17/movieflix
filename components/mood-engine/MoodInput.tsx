@@ -41,7 +41,7 @@ export default function MoodInput({ onMatch }: { onMatch: (results: any[]) => vo
           animate={{ opacity: 1, y: 0 }}
           className="text-5xl md:text-7xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/60 tracking-tighter"
         >
-          How's the <span className="text-purple-400">vibe?</span>
+          How's the <span className="text-red-500">vibe?</span>
         </motion.h1>
         <motion.p 
           initial={{ opacity: 0 }}
@@ -54,9 +54,9 @@ export default function MoodInput({ onMatch }: { onMatch: (results: any[]) => vo
       </div>
 
       <div className="relative group max-w-2xl mx-auto">
-        <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/50 to-purple-600/50 rounded-2xl blur-lg opacity-25 group-hover:opacity-60 transition duration-1000 group-hover:duration-200"></div>
+        <div className="absolute -inset-1 bg-gradient-to-r from-red-600/50 to-orange-600/50 rounded-2xl blur-lg opacity-25 group-hover:opacity-60 transition duration-1000 group-hover:duration-200"></div>
         <div className="relative bg-[#0a0a0a]/80 backdrop-blur-3xl border border-white/10 rounded-2xl p-3 flex items-center gap-4 transition-all group-hover:border-white/20">
-          <Sparkles className="w-5 h-5 text-purple-400 ml-3" />
+          <Sparkles className="w-5 h-5 text-red-500 ml-3" />
           <input
             type="text"
             value={moodText}
@@ -68,7 +68,7 @@ export default function MoodInput({ onMatch }: { onMatch: (results: any[]) => vo
           <button
             onClick={handleMatch}
             disabled={isProcessing || !moodText.trim()}
-            className="bg-white text-black px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-purple-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95"
+            className="bg-white text-black px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-red-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95"
           >
             {isProcessing ? (
               <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>

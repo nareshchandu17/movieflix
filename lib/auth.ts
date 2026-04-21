@@ -36,6 +36,7 @@ export const authOptions: AuthOptions = {
           user.onboardingCompleted = false;
         } else {
           existingUser.lastLogin = new Date();
+          // Profile selection is now forced by the absence of session cookies
           await existingUser.save();
           user.id = existingUser._id.toString();
           user.onboardingCompleted = existingUser.onboardingCompleted;

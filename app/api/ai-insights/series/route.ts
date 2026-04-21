@@ -30,12 +30,15 @@ export async function POST(request: NextRequest) {
   const corsHeaders = getCorsHeaders(request);
 
   try {
+    // Service selection will handle missing API key by entering Simulation Mode
+    /*
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
         { error: "AI service not configured", success: false },
         { status: 503, headers: corsHeaders }
       );
     }
+    */
 
     const body = await request.json();
     const { title, name } = body;

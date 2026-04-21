@@ -43,21 +43,21 @@ export default function ProfileCard({
         className="flex flex-col items-center gap-4 cursor-pointer group focus:outline-none"
       >
         {/* Card container */}
-        <div className="relative bg-white/[0.03] backdrop-blur-sm rounded-2xl p-6 border border-dashed border-white/10 group-hover:border-[#E50914]/50 group-hover:bg-white/[0.06] transition-all duration-500">
-          <div className="w-[120px] h-[120px] md:w-[140px] md:h-[140px] rounded-full border-2 border-dashed border-[#333] flex items-center justify-center transition-all duration-500 group-hover:border-[#E50914]/60">
+        <div className="relative bg-white/[0.03] backdrop-blur-sm rounded-xl p-6 border border-white/5 group-hover:border-[#E50914] group-hover:bg-white/[0.06] transition-all duration-300">
+          <div className="w-[120px] h-[120px] md:w-[150px] md:h-[150px] rounded-full border-2 border-dashed border-[#333] flex items-center justify-center transition-all duration-500 group-hover:border-white/20">
             <motion.div
               whileHover={{ rotate: 90 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
             >
-              <Plus className="w-10 h-10 text-[#444] group-hover:text-[#E50914] transition-colors duration-300" />
+              <Plus className="w-12 h-12 text-[#444] group-hover:text-white/80 transition-colors duration-300" />
             </motion.div>
           </div>
 
           {/* Subtle glow on hover */}
-          <div className="absolute inset-0 rounded-2xl bg-[#E50914]/0 group-hover:bg-[#E50914]/[0.02] transition-all duration-500 pointer-events-none" />
+          <div className="absolute inset-0 rounded-xl group-hover:ring-2 group-hover:ring-[#E50914] transition-all duration-300 pointer-events-none" />
         </div>
 
-        <span className="text-[13px] font-medium text-[#555] group-hover:text-white/80 transition-colors duration-300 tracking-wide">
+        <span className="text-[14px] font-medium text-[#777] group-hover:text-white transition-colors duration-300 tracking-wide mt-2">
           Add Profile
         </span>
       </motion.button>
@@ -89,28 +89,28 @@ export default function ProfileCard({
           ${managing ? "animate-[wiggle_0.5s_ease-in-out_infinite]" : ""}
         `}
       >
-        {/* Card container with glassmorphism */}
-        <div className="relative bg-white/[0.03] backdrop-blur-sm rounded-2xl p-6 border border-white/[0.06] group-hover:border-white/15 group-hover:bg-white/[0.06] transition-all duration-500">
-          {/* Avatar circle */}
+        {/* Card container with square design */}
+        <div className="relative bg-white/[0.03] backdrop-blur-sm rounded-xl p-4 border border-white/5 group-hover:border-[#E50914] group-hover:bg-white/[0.06] transition-all duration-300">
+          {/* Avatar Area */}
           <div
             className={`
-              w-[120px] h-[120px] md:w-[140px] md:h-[140px]
-              rounded-full bg-gradient-to-br ${avatar?.gradient || "from-gray-800 to-gray-900"}
+              w-[120px] h-[120px] md:w-[150px] md:h-[150px]
+              rounded-lg bg-gradient-to-br ${avatar?.gradient || "from-gray-800 to-gray-900"}
               flex items-center justify-center
-              ring-[3px] ring-transparent
-              group-hover:ring-[#E50914]/60
-              transition-all duration-500
-              shadow-xl group-hover:shadow-[0_8px_40px_-8px_rgba(229,9,20,0.3)]
-              relative
+              transition-all duration-300
+              relative overflow-hidden
             `}
           >
-            <span className="text-[56px] md:text-[64px] select-none" style={{ lineHeight: 1 }}>
+            <span className="text-[56px] md:text-[64px] select-none z-10" style={{ lineHeight: 1 }}>
               {avatar?.emoji || "👤"}
             </span>
 
-            {/* Ambient glow behind avatar */}
-            <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${avatar?.gradient || "from-gray-800 to-gray-900"} opacity-0 group-hover:opacity-30 blur-2xl transition-opacity duration-700 -z-10 scale-150`} />
+            {/* Ambient inner glow */}
+            <div className={`absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
           </div>
+
+          {/* Red Border Overlay on Hover */}
+          <div className="absolute inset-0 rounded-xl group-hover:ring-2 group-hover:ring-[#E50914] transition-all duration-300 pointer-events-none" />
 
           {/* Kids badge */}
           {profile.isKids && (
@@ -128,15 +128,12 @@ export default function ProfileCard({
 
           {/* Manage mode: edit pencil overlay */}
           {managing && (
-            <div className="absolute inset-0 rounded-2xl bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center">
+            <div className="absolute inset-0 rounded-xl bg-black/50 flex items-center justify-center transition-opacity duration-300">
+              <div className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center border border-white/20">
                 <Pencil className="w-5 h-5 text-white" />
               </div>
             </div>
           )}
-
-          {/* Hover glow overlay */}
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-[#E50914]/0 via-transparent to-transparent group-hover:from-[#E50914]/[0.04] transition-all duration-500 pointer-events-none" />
         </div>
       </motion.button>
 

@@ -22,15 +22,16 @@ export default function ProfileNameInput({
   const isFloating = isFocused || hasValue;
 
   return (
-    <div className="relative w-full max-w-[320px] mx-auto">
+    <div className="relative w-full max-w-[400px] group">
       {/* Floating label */}
       <motion.label
         htmlFor={inputId}
-        className="absolute left-3 pointer-events-none origin-top-left text-[#555] z-10"
+        className="absolute left-4 pointer-events-none origin-top-left text-[#555] z-10"
+        initial={false}
         animate={{
-          y: isFloating ? -8 : 14,
+          y: isFloating ? 8 : 16,
           scale: isFloating ? 0.75 : 1,
-          color: isFloating ? "#8a8a8a" : "#555",
+          color: isFocused ? "#E50914" : isFloating ? "#777" : "#555",
         }}
         transition={{ duration: 0.2, ease: "easeOut" }}
       >
@@ -49,40 +50,27 @@ export default function ProfileNameInput({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className={`
-          w-full h-[52px] bg-[#1a1a1a] rounded-lg px-3 pt-4 pb-1
-          text-[15px] font-normal text-white
-          border transition-colors duration-200
+          w-full h-[56px] bg-[#0d0d0d] rounded-lg px-4 pt-6 pb-2
+          text-[16px] font-medium text-white
+          border transition-all duration-300
           focus:outline-none
-          ${error ? "border-[#E50914]" : isFocused ? "border-white/50" : "border-[#333]"}
+          ${error 
+            ? "border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.1)]" 
+            : isFocused 
+              ? "border-[#E50914] shadow-[0_0_20px_rgba(229,9,20,0.1)]" 
+              : "border-white/5 hover:border-white/10"
+          }
         `}
         autoComplete="off"
         spellCheck={false}
       />
 
-      {/* Animated underline */}
-      <motion.div
-        className="absolute bottom-0 left-1/2 h-[2px] bg-[#E50914] rounded-full"
-        initial={{ width: 0, x: 0 }}
-        animate={{
-          width: isFocused ? "100%" : "0%",
-          x: isFocused ? "-50%" : "0%",
-        }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      />
-
-      {/* Character counter */}
-      <AnimatePresence>
-        {isFocused && (
-          <motion.span
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            className="absolute right-3 -bottom-5 text-[11px] text-[#555]"
-          >
-            {value.length}/{maxLength}
-          </motion.span>
-        )}
-      </AnimatePresence>
+      {/* Character counter (Fixed position matching mockup) */}
+      <div className="absolute right-3 bottom-1.5 flex items-center h-4">
+        <span className={`text-[10px] font-medium transition-colors duration-300 ${isFocused ? "text-[#E50914]" : "text-[#444]"}`}>
+          {value.length}/{maxLength}
+        </span>
+      </div>
 
       {/* Error message */}
       <AnimatePresence>
@@ -91,7 +79,7 @@ export default function ProfileNameInput({
             initial={{ opacity: 0, y: -4, height: 0 }}
             animate={{ opacity: 1, y: 0, height: "auto" }}
             exit={{ opacity: 0, y: -4, height: 0 }}
-            className="text-[#E50914] text-xs mt-1.5 ml-1"
+            className="text-red-500 text-[11px] font-medium mt-1.5 ml-1"
           >
             {error}
           </motion.p>

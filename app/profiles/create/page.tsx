@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, ChevronLeft, Pencil } from "lucide-react";
 import AvatarCarousel from "@/components/profiles/AvatarCarousel";
 import ProfileNameInput from "@/components/profiles/ProfileNameInput";
 import KidsToggle from "@/components/profiles/KidsToggle";
@@ -62,14 +62,26 @@ export default function CreateProfilePage() {
       transition={{ duration: 0.45 }}
       className="min-h-screen bg-[#111] text-white flex flex-col font-sans"
     >
-      {/* Header */}
-      <header className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-50">
-        <h1
-          className="text-3xl font-black tracking-wider text-[#E50914] select-none"
-          style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+      {/* Header with Back Button and Centered Logo */}
+      <header className="absolute top-0 left-0 w-full p-6 flex items-center justify-between z-50">
+        <button 
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-[#8a8a8a] hover:text-white transition-colors group"
         >
-          MOVIEFLIX
-        </h1>
+          <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-sm font-bold tracking-wide">Back</span>
+        </button>
+
+        <div className="absolute left-1/2 -translate-x-1/2">
+          <h1
+            className="text-[34px] md:text-[44px] font-black tracking-[0.2em] text-[#E50914] select-none"
+            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+          >
+            MOVIEFLIX
+          </h1>
+        </div>
+        
+        <div className="w-12" /> {/* Spacer for symmetry */}
       </header>
 
       {/* Main Content */}
@@ -96,37 +108,41 @@ export default function CreateProfilePage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-2xl bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/5 rounded-2xl p-6 md:p-10 shadow-2xl"
+          className="w-full max-w-4xl bg-[#0a0a0a]/60 backdrop-blur-2xl border border-white/10 rounded-[32px] p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden group/container"
         >
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
+          {/* Subtle Ambient Red Glow on container focus */}
+          <div className="absolute inset-0 bg-gradient-to-br from-red-600/[0.03] to-transparent opacity-0 group-hover/container:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-12 md:gap-20 relative z-10">
             
-            {/* Avatar Selector Box */}
-            <div className="flex flex-col items-center gap-4">
+            {/* Avatar Selector Section */}
+            <div className="flex flex-col items-center gap-6">
               <div 
                 onClick={() => setShowAvatars(prev => !prev)}
-                className="relative cursor-pointer group"
+                className="relative cursor-pointer group/avatar"
               >
-                <div className={`w-[140px] h-[140px] rounded-full bg-gradient-to-br ${selectedAvatar?.gradient || "from-gray-800 to-gray-900"} flex items-center justify-center shadow-xl transition-transform duration-300 group-hover:scale-105 ring-4 ring-transparent group-hover:ring-white/20`}>
-                  <span className="text-[64px] select-none pointer-events-none" style={{ lineHeight: 1 }}>
+                <div className={`w-[160px] h-[160px] md:w-[180px] md:h-[180px] rounded-full bg-gradient-to-br ${selectedAvatar?.gradient || "from-gray-800 to-gray-900"} flex items-center justify-center shadow-2xl transition-all duration-500 group-hover/avatar:scale-[1.02] ring-1 ring-white/10 group-hover/avatar:ring-[#E50914]/50 overflow-hidden`}>
+                  <span className="text-[80px] md:text-[90px] select-none pointer-events-none z-10" style={{ lineHeight: 1 }}>
                     {selectedAvatar?.emoji || "👤"}
                   </span>
-                </div>
-                {/* Edit Overlay */}
-                <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-white text-sm font-bold tracking-wide">EDIT</span>
+                  
+                  {/* Subtle inner shadow reflection */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-500" />
                 </div>
               </div>
+
               <button 
                 onClick={() => setShowAvatars(prev => !prev)}
-                className="text-xs text-[#8a8a8a] hover:text-white uppercase tracking-widest font-semibold transition-colors"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 text-[11px] text-white font-bold uppercase tracking-[2px] hover:bg-white/10 hover:border-[#E50914]/40 hover:text-white transition-all duration-300 shadow-lg group/btn"
                 type="button"
               >
+                <Pencil className="w-3 h-3 text-[#E50914] group-hover/btn:scale-110 transition-transform" />
                 Change Avatar
               </button>
             </div>
 
             {/* Inputs Container */}
-            <div className="flex-1 w-full flex flex-col gap-6 pt-2">
+            <div className="flex-1 w-full flex flex-col gap-10 pt-2">
               <ProfileNameInput
                 value={name}
                 onChange={(v) => {
@@ -136,7 +152,7 @@ export default function CreateProfilePage() {
                 error={error}
               />
               
-              <div className="w-full pt-2">
+              <div className="w-full">
                 <KidsToggle enabled={isKids} onChange={setIsKids} />
               </div>
             </div>
@@ -160,11 +176,11 @@ export default function CreateProfilePage() {
           </AnimatePresence>
 
           {/* Action Buttons */}
-          <div className="mt-10 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center gap-4 justify-end">
+          <div className="mt-12 pt-10 border-t border-white/5 flex flex-col sm:flex-row items-center gap-4 justify-center">
             <button
               type="button"
               onClick={() => router.push("/profiles/select")}
-              className="w-full sm:w-auto px-8 py-3 rounded-lg bg-transparent text-white font-semibold text-sm hover:bg-white/10 transition-all border border-[#555] cursor-pointer"
+              className="w-full sm:w-[160px] py-3 rounded-md bg-transparent text-[#777] font-bold text-[13px] uppercase tracking-[2px] transition-all border border-[#333] hover:border-white hover:text-white cursor-pointer active:scale-95"
             >
               Cancel
             </button>
@@ -173,20 +189,20 @@ export default function CreateProfilePage() {
               onClick={handleCreate}
               disabled={!canSubmit}
               className={`
-                w-full sm:w-auto min-w-[140px] px-8 py-3 rounded-lg font-bold text-sm transition-all cursor-pointer
+                w-full sm:w-[180px] py-3 rounded-md font-bold text-[13px] uppercase tracking-[2px] transition-all cursor-pointer active:scale-95
                 flex items-center justify-center gap-2
                 ${success
                   ? "bg-emerald-600 text-white"
                   : canSubmit
-                    ? "bg-[#E50914] text-white hover:bg-[#f40612] shadow-lg shadow-red-600/20"
-                    : "bg-[#2a2a2a] text-[#555] cursor-not-allowed"
+                    ? "bg-[#E50914] text-white hover:bg-[#f40612] shadow-[0_0_20px_rgba(229,9,20,0.3)]"
+                    : "bg-[#222] text-[#444] cursor-not-allowed border border-white/5"
                 }
               `}
             >
               {success ? (
                 <>
-                  <Check className="w-5 h-5" />
-                  Created!
+                  <Check className="w-4 h-4" />
+                  Created
                 </>
               ) : isSubmitting ? (
                 <>

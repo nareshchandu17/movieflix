@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { matchMoodToMovies } from "@/lib/moodEngine";
 import Movie from "@/models/Movie";
+import Series from "@/models/Series";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,13 +25,21 @@ export async function POST(request: NextRequest) {
       familiarity
     });
 
-    // Populate full movie details
+    // Populate full details (Movie or Series)
     const populatedRecommendations = await Promise.all(
       recommendations.map(async (rec) => {
-        const movie = await Movie.findById(rec.contentId).lean();
+        let content = null;
+        if (rec.contentType === "Series") {
+          content = await Series.findById(rec.contentId).lean();
+        } else {
+          content = await Movie.findById(rec.contentId).lean();
+        }
+        
         return {
           ...rec,
-          movie
+          movie: content,
+          // Explicitly pass tmdbId to the result for easier routing
+          routingId: (content as any)?.tmdbId || rec.contentId 
         };
       })
     );

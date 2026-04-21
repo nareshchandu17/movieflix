@@ -92,13 +92,8 @@ const UserSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'WatchPartyRoom'
     }],
-    activeProfile: {
-      type: String, // Store profileId
-      default: null,
-      index: true
-    },
     lastUsedProfile: {
-      type: String, // Store profileId for session sync
+      type: String, // Store profileId for cross-device memory (default picker)
       default: null,
       index: true
     },

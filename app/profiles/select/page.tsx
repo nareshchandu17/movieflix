@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Pencil, ShieldCheck, Lock, HelpCircle } from "lucide-react";
 import ProfileCard from "@/components/profiles/ProfileCard";
 import ManageProfilesGrid from "@/components/profiles/ManageProfilesGrid";
 import { AVATAR_MAP } from "@/lib/avatars";
@@ -165,13 +165,13 @@ export default function ProfileSelectPage() {
 
       {/* ── Logo ── */}
       <motion.div 
-        className="absolute top-8 left-1/2 -translate-x-1/2"
+        className="absolute top-10 left-0 right-0 flex justify-center z-[100]"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       >
         <h1
-          className="text-3xl md:text-4xl font-black tracking-[0.15em] text-[#E50914] select-none"
+          className="text-[38px] md:text-[48px] font-black tracking-[0.25em] text-[#E50914] select-none pointer-events-none drop-shadow-[0_0_15px_rgba(229,9,20,0.2)]"
           style={{ fontFamily: "'Bebas Neue', sans-serif" }}
         >
           MOVIEFLIX
@@ -275,8 +275,9 @@ export default function ProfileSelectPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.45 }}
               onClick={() => setManaging(!managing)}
-              className="mt-14 md:mt-16 px-10 py-3 border border-white/15 rounded-xl text-[11px] font-bold uppercase tracking-[3px] text-[#777] hover:text-white hover:border-white/40 hover:bg-white/[0.03] transition-all duration-300 cursor-pointer backdrop-blur-sm"
+              className="mt-14 md:mt-16 px-8 py-2.5 border border-[#555] rounded-md flex items-center gap-3 text-[12px] font-semibold uppercase tracking-[2px] text-[#777] hover:text-white hover:border-white transition-all duration-300 cursor-pointer backdrop-blur-sm group"
             >
+              <Pencil className="w-3.5 h-3.5 text-[#E50914] group-hover:scale-110 transition-transform" />
               {managing ? "Done" : "Manage Profiles"}
             </motion.button>
           </>
@@ -340,6 +341,33 @@ export default function ProfileSelectPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Footer Link Footer ── */}
+      <motion.div 
+        className="absolute bottom-12 w-full max-w-lg px-6 flex items-center justify-between z-10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8, duration: 0.6 }}
+      >
+        <div className="flex items-center gap-2 text-[#555] hover:text-white transition-colors cursor-pointer group">
+          <ShieldCheck className="w-4 h-4 text-[#E50914]/60 group-hover:text-[#E50914]" />
+          <span className="text-[12px] font-medium tracking-wide">Parental Controls</span>
+        </div>
+        
+        <div className="h-4 w-[1px] bg-white/10" />
+
+        <div className="flex items-center gap-2 text-[#555] hover:text-white transition-colors cursor-pointer group" onClick={() => router.push("/settings/privacy")}>
+          <Lock className="w-4 h-4 text-[#E50914]/60 group-hover:text-[#E50914]" />
+          <span className="text-[12px] font-medium tracking-wide">Privacy</span>
+        </div>
+
+        <div className="h-4 w-[1px] bg-white/10" />
+
+        <div className="flex items-center gap-2 text-[#555] hover:text-white transition-colors cursor-pointer group">
+          <HelpCircle className="w-4 h-4 text-[#E50914]/60 group-hover:text-[#E50914]" />
+          <span className="text-[12px] font-medium tracking-wide">Help Center</span>
+        </div>
+      </motion.div>
     </div>
   );
 }

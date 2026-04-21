@@ -3,6 +3,7 @@ import { authOptions } from './auth';
 import { getActiveProfile } from './active-profile-manager';
 import Profile from './models/Profile';
 import connectDB from './db';
+import { cookies } from 'next/headers';
 
 export interface ServerSideProfileState {
   isAuthenticated: boolean;
@@ -42,8 +43,12 @@ export async function getServerSideProfileState(): Promise<ServerSideProfileStat
 
     await connectDB();
     
-    // Get active profile from backend
-    const activeProfile = await getActiveProfile(session.user.id);
+    // Get active profile ID from cookie (session-based)
+    const cookieStore = await cookies();
+    const activeProfileId = cookieStore.get('mf_active_profile')?.value;
+    
+    // Get active profile details using the ID from session
+    const activeProfile = await getActiveProfile(session.user.id, activeProfileId);
     
     // Get all profiles for this user
     const allProfiles = await Profile.find({ 

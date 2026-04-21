@@ -1,5 +1,7 @@
 import MoodProfile from "@/models/MoodProfile";
 import WatchHistory from "@/models/WatchHistory";
+import Movie from "@/models/Movie";
+import Series from "@/models/Series";
 import { getGeminiService } from "./geminiService";
 
 export interface MoodVector {
@@ -63,15 +65,7 @@ export async function matchMoodToMovies(
 
   // 4. Calculate scores and rank
   const allMatches = profiles
-    .map((profile: {
-      intensityScore: number;
-      cryProbability: number;
-      hopeIndex: number;
-      laughDensity: number;
-      tone: string;
-      contentId: string;
-      language: string;
-    }) => {
+    .map((profile: any) => {
       const profileVector: number[] = [
         profile.intensityScore,
         profile.cryProbability,
@@ -130,8 +124,22 @@ export async function matchMoodToMovies(
 
   // 6. Generate explanations for top matches
   const resultsWithExplanations = await Promise.all(
-    finalMatches.map(async (match) => {
-      const explanation = await gemini.generateMoodExplanation(match.contentId, userPrompt);
+    finalMatches.map(async (match: any) => {
+      // Fetch title to avoid ID leak in explanation
+      let title = "This content";
+      try {
+        if (match.contentType === "Series") {
+          const series = await Series.findById(match.contentId).select('title').lean();
+          if (series) title = (series as any).title;
+        } else {
+          const movie = await Movie.findById(match.contentId).select('title').lean();
+          if (movie) title = (movie as any).title;
+        }
+      } catch (e) {
+        console.error("Failed to fetch title for mood explanation:", e);
+      }
+
+      const explanation = await gemini.generateMoodExplanation(title, userPrompt);
       return {
         ...match,
         explanation

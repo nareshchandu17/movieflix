@@ -155,6 +155,7 @@ export async function POST(request: NextRequest) {
 
   try {
     // Check if Gemini API key is configured
+    /*
     if (!process.env.GEMINI_API_KEY) {
       securityLogger.error("GEMINI_API_KEY not configured");
       return NextResponse.json(
@@ -162,6 +163,7 @@ export async function POST(request: NextRequest) {
         { status: 503, headers: corsHeaders }
       );
     }
+    */
 
     // Rate limiting
     const clientId = getClientIdentifier(request);

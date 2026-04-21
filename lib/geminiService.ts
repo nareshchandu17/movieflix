@@ -282,6 +282,25 @@ Return ONLY the JSON object, no other text.`;
 
       this.logger.info("Generating AI facts", { title });
 
+      if (this.isSimulated()) {
+        await new Promise(r => setTimeout(r, 800));
+        return {
+          facts: [
+            `${title} was a groundbreaking production that redefined its genre with innovative storytelling.`,
+            "The production faced numerous challenges during filming, including extreme weather conditions.",
+            "The lead actors underwent intensive training for several months to prepare for their roles.",
+            "The musical score was composed to perfectly mirror the emotional beats of the narrative.",
+            "Critics praised the cinematography for its unique visual language and lighting techniques.",
+            "The script went through over a dozen revisions before the final version was approved.",
+            "Several scenes were filmed on location to ground the fantastical elements in reality.",
+            "The series/movie has gained a significant cult following since its initial release.",
+            "Production designers created hundreds of custom props to build the world's immersive atmosphere.",
+            "The director utilized experimental camera rigs to capture the most intense action sequences."
+          ],
+          success: true
+        };
+      }
+
       const prompt = this.createMoviePrompt(data);
 
       const response = await this.ai.models.generateContent({
@@ -411,6 +430,10 @@ Return ONLY the JSON object, no other text.`;
    */
   async generateMoodExplanation(movieTitle: string, userMood: string): Promise<string> {
     try {
+      if (this.isSimulated()) {
+        return `"${movieTitle}" perfectly captures the emotional resonance of "${userMood}" through its masterful storytelling.`;
+      }
+
       const prompt = `User said: "${userMood}"
       Recommended Movie: "${movieTitle}"
       
@@ -436,6 +459,10 @@ Return ONLY the JSON object, no other text.`;
   ): Promise<string> {
     try {
       this.logger.info("Generating catch-up summary", { factsCount: skippedFacts.length });
+
+      if (this.isSimulated()) {
+        return `Based on the ${skippedFacts.length} key moments you missed, the narrative has shifted significantly. Characters have reached critical turning points, setting the stage for the intense episodes ahead.`;
+      }
 
       const lengthGuidance = {
         short: "max 40 words, very concise",
@@ -483,6 +510,14 @@ Return ONLY the JSON object, no other text.`;
   ): Promise<{ dna: string; summary: string; evolutionTags: string[] }> {
     try {
       this.logger.info("Analyzing character arc", { name });
+
+      if (this.isSimulated()) {
+        return {
+          dna: "A resilient spirit forged in conflict.",
+          summary: `The journey of ${name} is a testament to the human capacity for change. From their opening moments to their current state, they've navigated complex moral landscapes and faced internal demons that have fundamentally reshaped their identity.`,
+          evolutionTags: ["Resilience", "Transformation", "Hidden Depths"]
+        };
+      }
 
       const prompt = `You are a professional literary analyst and screenwriter.
       
@@ -546,6 +581,50 @@ Return ONLY the JSON object, no other text.`;
       if (!title) throw new Error("Title is required");
 
       this.logger.info("Generating AI series insights", { title });
+
+      if (this.isSimulated()) {
+        await new Promise(r => setTimeout(r, 1200));
+        return {
+          insights: [
+            {
+              id: 0,
+              title: "Narrative Style",
+              header: "1️⃣ Narrative Style Analysis",
+              content: `"${title}" utilizes a non-linear storytelling approach that masterfully weaves together multiple character perspectives, creating a rich tapestry of interwoven plotlines.`,
+              benefit: "Watch for subtle callbacks that reward attentive viewers."
+            },
+            {
+              id: 1,
+              title: "Viewer Experience",
+              header: "2️⃣ Viewer Experience Prediction",
+              content: "Audiences can expect a highly emotional journey that balances intense dramatic shifts with moments of profound character introspection and growth.",
+              benefit: "Best watched in a focused environment to catch emotional nuances."
+            },
+            {
+              id: 2,
+              title: "Engagement Patterns",
+              header: "3️⃣ Engagement & Retention",
+              content: "The show employs an effective 'slow-burn' mystery format, utilizing strategic cliffhangers at internal season midpoints to maintain high engagement.",
+              benefit: "Perfect for binge-watching due to its addictive narrative momentum."
+            },
+            {
+              id: 3,
+              title: "Social Impact",
+              header: "4️⃣ Cultural & Social Impact",
+              content: "By exploring themes of morality and societal structure, the series has sparked significant online discussion and critical analysis of its core themes.",
+              benefit: "Join the conversation to discover deeper layers of social commentary."
+            },
+            {
+              id: 4,
+              title: "Series Trivia",
+              header: "5️⃣ Series Trivia & Lore",
+              content: "The production team spent over two years in pre-production to ensure every visual element correctly reflected the show's unique world-building requirements.",
+              benefit: "Pay attention to the background details for hidden lore clues."
+            }
+          ],
+          success: true
+        };
+      }
 
       const prompt = `You are a professional TV critic and narrative analyst.
       

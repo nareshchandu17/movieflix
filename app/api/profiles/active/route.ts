@@ -15,7 +15,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const activeProfile = await getActiveProfile(session.user.id);
+    // Get active profile ID from cookie (session-based)
+    const cookieStore = await cookies();
+    const activeProfileId = cookieStore.get('mf_active_profile')?.value;
+
+    const activeProfile = await getActiveProfile(session.user.id, activeProfileId);
 
     if (!activeProfile) {
       return NextResponse.json({ 

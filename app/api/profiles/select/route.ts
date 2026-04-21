@@ -95,7 +95,15 @@ export async function PATCH(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    // 2. PIN Requirement Flag (for middleware to know if it should check for verification)
+    // 2. Kids Mode Flag
+    cookieStore.set('mf_profile_kids', profile.isKids ? 'true' : 'false', {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    // 3. Security & Verification Logic
     if (profile.pinEnabled && profile.pin) {
       cookieStore.set('mf_profile_secure', 'true', {
         httpOnly: true,
@@ -103,8 +111,14 @@ export async function PATCH(req: NextRequest) {
         path: '/',
         maxAge: 60 * 60 * 24 * 7,
       });
-      // Clear verification if switching TO a PIN-protected profile (must re-verify)
-      cookieStore.delete(`mf_verified_${profileId}`);
+      
+      // Since we just validated the PIN, set verified status
+      cookieStore.set(`mf_verified_${profileId}`, 'true', {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7,
+      });
     } else {
       cookieStore.set('mf_profile_secure', 'false', {
         httpOnly: true,
@@ -112,6 +126,7 @@ export async function PATCH(req: NextRequest) {
         path: '/',
         maxAge: 60 * 60 * 24 * 7,
       });
+      
       // Auto-verify if no PIN is required
       cookieStore.set(`mf_verified_${profileId}`, 'true', {
         httpOnly: true,

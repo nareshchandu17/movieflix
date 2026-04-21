@@ -155,17 +155,13 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
   useEffect(() => {
     const autoSelectProfile = async () => {
       if (profiles.length > 0 && !activeProfile && !loading) {
-        // If only one profile, auto-select it
+        // If only one profile, auto-select it (Netflix standard)
         if (profiles.length === 1) {
           await selectProfile(profiles[0]);
         } 
-        // If multiple profiles, look for default
-        else {
-          const defaultProfile = profiles.find((p: Profile) => p.isDefault);
-          if (defaultProfile) {
-            await selectProfile(defaultProfile);
-          }
-        }
+        // If multiple profiles, WE DO NOT AUTO-SELECT DEFAULT.
+        // The user must choose "Who's watching?" unless already selected in this session.
+        // This is the core requirement of production-grade OTT platforms.
       }
     };
 

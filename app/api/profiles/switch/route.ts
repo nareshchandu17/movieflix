@@ -18,9 +18,15 @@ export async function POST(req: NextRequest) {
     // Clear active profile from backend
     await clearActiveProfile(session.user.id);
 
-    // Clear the cookie
+    // Clear the cookies
     const cookieStore = await cookies();
     cookieStore.delete('mf_active_profile');
+    cookieStore.delete('mf_profile_secure');
+    cookieStore.delete('mf_profile_kids');
+    
+    // We don't delete individual mf_verified_{id} here because we don't 
+    // necessarily know which ones exist, but the select route will handle 
+    // re-verification if needed. Clear the main ones.
 
     return NextResponse.json({ 
       success: true, 

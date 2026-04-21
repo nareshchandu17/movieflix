@@ -16,11 +16,11 @@ export async function setActiveProfile(userId: string, profileId: string) {
       throw new Error('Profile not found or does not belong to user');
     }
     
-    // Update user's active profile and last used profile in database
+    // Update only the last used profile in database for cross-device memory
+    // activeProfile is now strictly session-based (cookies)
     await User.findByIdAndUpdate(
       userId,
       { 
-        activeProfile: profileId,
         lastUsedProfile: profileId
       },
       { returnDocument: 'after' }
@@ -33,26 +33,21 @@ export async function setActiveProfile(userId: string, profileId: string) {
   }
 }
 
-export async function getActiveProfile(userId: string) {
+export async function getActiveProfile(userId: string, requestedProfileId?: string) {
   try {
     await connectDB();
     
-    const user = await User.findById(userId).select('activeProfile');
-    if (!user || !user.activeProfile) {
+    // If we have a requested profile ID (from session/cookie), use it
+    // Otherwise, session is considered inactive for profile-based content
+    if (!requestedProfileId) {
       return null;
     }
     
     // Validate the profile still exists and belongs to user
     const profile = await Profile.findOne({ 
-      profileId: user.activeProfile,
+      profileId: requestedProfileId,
       userId: userId 
     });
-    
-    // If profile doesn't exist anymore, clear the active profile
-    if (!profile) {
-      await User.findByIdAndUpdate(userId, { activeProfile: null });
-      return null;
-    }
     
     return profile;
   } catch (error) {
@@ -91,10 +86,13 @@ export async function getLastUsedProfile(userId: string) {
 
 export async function clearActiveProfile(userId: string) {
   try {
+    // With session-based profiles, clearing active profile is handled by 
+    // removing the session cookie in the API route.
+    // We can also clear the lastUsedProfile if we want a completely clean slate.
     await connectDB();
-    await User.findByIdAndUpdate(userId, { activeProfile: null });
+    await User.findByIdAndUpdate(userId, { lastUsedProfile: null });
   } catch (error) {
-    console.error('Error clearing active profile:', error);
+    console.error('Error clearing profile context:', error);
     throw error;
   }
 }
