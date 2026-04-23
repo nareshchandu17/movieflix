@@ -48,18 +48,25 @@ export async function POST(req: NextRequest) {
     } = parsed.data;
 
     // ─── Verify Signature ───────────────────────────────────
-    const isValid = verifyRazorpaySignature({
-      orderId: razorpay_order_id,
-      paymentId: razorpay_payment_id,
-      signature: razorpay_signature,
-    });
+    const isMock = razorpay_order_id.startsWith("mock_");
+    const isDev = process.env.NODE_ENV === "development";
 
-    if (!isValid) {
-      console.warn("❌ Payment verification failed: Invalid signature for Order:", razorpay_order_id);
-      return NextResponse.json(
-        { error: "Payment verification failed. Invalid signature." },
-        { status: 400 }
-      );
+    if (isMock && isDev) {
+      console.log("🛠️ Processing MOCK payment verification for Order:", razorpay_order_id);
+    } else {
+      const isValid = verifyRazorpaySignature({
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id,
+        signature: razorpay_signature,
+      });
+
+      if (!isValid) {
+        console.warn("❌ Payment verification failed: Invalid signature for Order:", razorpay_order_id);
+        return NextResponse.json(
+          { error: "Payment verification failed. Invalid signature." },
+          { status: 400 }
+        );
+      }
     }
 
     await connectDB();
@@ -78,11 +85,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ─── Fetch actual payment from Razorpay ─────────────────
-    const razorpayPayment = await fetchRazorpayPayment(razorpay_payment_id);
+    // ─── Fetch actual payment status ───────────────────────
+    let isCaptured = false;
+    
+    if (isMock && isDev) {
+      isCaptured = true;
+    } else {
+      const razorpayPayment = await fetchRazorpayPayment(razorpay_payment_id);
+      isCaptured = razorpayPayment.status === "captured";
+    }
 
-    if (razorpayPayment.status !== "captured") {
-      console.warn("❌ Payment verification failed: Payment not captured status:", razorpayPayment.status);
+    if (!isCaptured) {
+      console.warn("❌ Payment verification failed: Payment not captured status for Order:", razorpay_order_id);
       return NextResponse.json(
         { error: "Payment not captured yet" },
         { status: 400 }

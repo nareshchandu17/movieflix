@@ -1,5 +1,6 @@
+// @ts-ignore
 import Razorpay from "razorpay";
-import crypto from "crypto";
+import * as crypto from "crypto";
 import { PlanTier, BillingCycle, PLANS } from "@/types/payment";
 
 // ============================================================
@@ -9,19 +10,17 @@ import { PlanTier, BillingCycle, PLANS } from "@/types/payment";
 // ─── Singleton Instance ───────────────────────────────────────
 let razorpayInstance: Razorpay | null = null;
 
-export function getRazorpay(): Razorpay {
+export function getRazorpay(): Razorpay | null {
   if (!razorpayInstance) {
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET || process.env.NEXT_PUBLIC_RAZORPAY_KEY_SECRET;
 
     if (!keyId || !keySecret) {
-      console.error("Razorpay Error: Missing credentials.", {
-        hasKeyId: !!keyId,
-        hasKeySecret: !!keySecret,
-      });
-      throw new Error(
-        "Razorpay credentials not configured. Please ensure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are set in your .env.local file."
-      );
+      if (process.env.NODE_ENV === "development") {
+        console.warn("⚠️ Razorpay credentials missing. Billing will run in MOCK mode.");
+        return null; // Return null so callers can handle mock flow
+      }
+      throw new Error("Razorpay credentials not configured.");
     }
 
     razorpayInstance = new Razorpay({
@@ -51,9 +50,18 @@ export async function createRazorpayOrder({
 
   const amount =
     billingCycle === "annually" ? plan.annualPrice : plan.monthlyPrice;
-
-  // Razorpay expects amount in paise (1 INR = 100 paise)
   const amountInPaise = amount * 100;
+
+  // ─── Mock Mode Handling ─────────────────────────────────────
+  if (!razorpay) {
+    return {
+      id: `mock_order_${Math.random().toString(36).substring(2, 10)}`,
+      amount: amountInPaise,
+      currency: "INR",
+      receipt,
+      status: "created",
+    };
+  }
 
   const order = await razorpay.orders.create({
     amount: amountInPaise,
@@ -106,6 +114,17 @@ export function verifyRazorpaySignature({
 // ─── Fetch Payment Details ────────────────────────────────────
 export async function fetchRazorpayPayment(paymentId: string) {
   const razorpay = getRazorpay();
+  if (!razorpay) {
+    // Return a mock successful payment
+    return {
+      id: paymentId,
+      status: "captured",
+      amount: 99900,
+      currency: "INR",
+      method: "card",
+      created_at: Math.floor(Date.now() / 1000),
+    };
+  }
   return await razorpay.payments.fetch(paymentId);
 }
 
@@ -115,6 +134,16 @@ export async function refundRazorpayPayment(
   amount?: number
 ) {
   const razorpay = getRazorpay();
+  if (!razorpay) {
+    // Return a mock successful refund
+    return {
+      id: `mock_refund_${Math.random().toString(36).substring(2, 10)}`,
+      payment_id: paymentId,
+      amount: amount || 99900,
+      status: "processed",
+      created_at: Math.floor(Date.now() / 1000),
+    };
+  }
   return await razorpay.payments.refund(paymentId, {
     amount, // if undefined, full refund
     speed: "optimum",

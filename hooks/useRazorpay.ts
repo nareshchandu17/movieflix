@@ -88,6 +88,41 @@ export function useRazorpay({
         setState("processing");
 
         // ─── Open Razorpay Checkout ─────────────────────────
+        // ─── Open Razorpay Checkout ─────────────────────────
+        if (!orderData.key && process.env.NODE_ENV === "development") {
+          console.warn("🛠️ Razorpay Key missing. Simulation mode active.");
+          
+          // Simulate a short delay
+          await new Promise(r => setTimeout(r, 1500));
+          
+          setState("verifying");
+          const verifyRes = await fetch("/api/payment/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              razorpay_order_id: orderData.orderId,
+              razorpay_payment_id: `pay_mock_${Math.random().toString(36).substring(2, 10)}`,
+              razorpay_signature: "mock_signature",
+              subscriptionId: orderData.subscriptionId,
+            }),
+          });
+
+          if (!verifyRes.ok) {
+            const errData = await verifyRes.json();
+            throw new Error(errData.error || "Mock verification failed");
+          }
+
+          const verifyData = await verifyRes.json();
+          setState("success");
+          onSuccess?.({
+            subscriptionId: verifyData.subscription.id,
+            paymentId: verifyData.paymentId,
+            planId,
+            billingCycle,
+          });
+          return;
+        }
+
         await new Promise<void>((resolve, reject) => {
           const options = {
             key: orderData.key,
