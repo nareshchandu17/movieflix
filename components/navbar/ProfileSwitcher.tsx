@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { AVATAR_MAP } from "@/lib/avatars";
 import { useProfile } from "@/contexts/ProfileContext";
 import { ChevronDown, Plus, UserCircle, Settings, SwitchCamera, Sparkles, Download, LogOut, User, Dna } from "lucide-react";
+import { DownloadIcon } from "./DownloadIcon";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import PinModal from "@/components/profiles/PinModal";
@@ -194,7 +195,7 @@ export default function ProfileSwitcher() {
                   className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group"
                   onClick={() => setIsOpen(false)}
                 >
-                  <Download className="w-4 h-4 text-white/40 group-hover:text-white/70 transition-colors" />
+                  <DownloadIcon className="text-white/40 group-hover:text-white/70 transition-colors" />
                   <span className="text-sm text-white/70 group-hover:text-white transition-colors">Downloads</span>
                 </Link>
               </div>

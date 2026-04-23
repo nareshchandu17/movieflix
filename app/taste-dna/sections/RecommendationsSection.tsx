@@ -1,27 +1,19 @@
+'use client';
+
 import { useRef, useLayoutEffect } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Play } from 'lucide-react';
+import { ArrowRight, Play, Sparkles } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface RecommendationsSectionProps {
+  recommendations: string[];
   className?: string;
 }
 
-const recommendations = [
-  { id: 1, title: 'Void Echoes', match: 96, image: '/poster1.jpg' },
-  { id: 2, title: 'The Echoes Within', match: 94, image: '/poster2.jpg' },
-  { id: 3, title: 'Ember Fall', match: 92, image: '/poster3.jpg' },
-  { id: 4, title: 'Shadows of Doubt', match: 89, image: '/poster4.jpg' },
-  { id: 5, title: 'Nightfall Home', match: 87, image: '/poster5.jpg' },
-  { id: 6, title: 'Echoes of Tomorrow', match: 85, image: '/poster6.jpg' },
-  { id: 7, title: 'Cybernetic Chasm', match: 83, image: '/poster7.jpg' },
-  { id: 8, title: 'The Fall of Numantia', match: 81, image: '/poster8.jpg' },
-];
-
-export default function RecommendationsSection({ className = '' }: RecommendationsSectionProps) {
+export default function RecommendationsSection({ recommendations, className = '' }: RecommendationsSectionProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -31,7 +23,6 @@ export default function RecommendationsSection({ className = '' }: Recommendatio
     if (!section) return;
 
     const ctx = gsap.context(() => {
-      // Headline animation
       gsap.fromTo(
         headlineRef.current,
         { y: 24, opacity: 0 },
@@ -48,7 +39,6 @@ export default function RecommendationsSection({ className = '' }: Recommendatio
         }
       );
 
-      // Cards staggered animation
       const cards = gridRef.current?.children;
       if (cards) {
         gsap.fromTo(
@@ -59,7 +49,7 @@ export default function RecommendationsSection({ className = '' }: Recommendatio
             opacity: 1,
             scale: 1,
             duration: 0.6,
-            stagger: 0.08,
+            stagger: 0.1,
             ease: 'power2.out',
             scrollTrigger: {
               trigger: gridRef.current,
@@ -72,107 +62,97 @@ export default function RecommendationsSection({ className = '' }: Recommendatio
     }, section);
 
     return () => ctx.revert();
-  }, []);
+  }, [recommendations]);
 
   return (
     <section
       ref={sectionRef}
-      className={`relative w-full min-h-screen py-20 lg:py-32 ${className}`}
-      style={{
-        background: '#07070A',
-      }}
+      className={`relative w-full min-h-screen py-20 lg:py-32 bg-[#07070A] ${className}`}
     >
       {/* Grid background */}
       <div
-        className="absolute inset-0 opacity-30"
+        className="absolute inset-0 opacity-20 pointer-events-none"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(244,246,250,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(244,246,250,0.03) 1px, transparent 1px)
+            radial-gradient(circle at 2px 2px, rgba(244,246,250,0.05) 1px, transparent 0)
           `,
-          backgroundSize: '60px 60px',
+          backgroundSize: '40px 40px',
         }}
       />
 
       <div className="relative z-10 px-6 lg:px-[18vw]">
         {/* Headline */}
-        <div ref={headlineRef} className="mb-4">
+        <div ref={headlineRef} className="mb-12">
+          <div className="flex items-center gap-2 text-cyan font-mono text-sm uppercase tracking-widest mb-4">
+            <Sparkles className="w-4 h-4" />
+            AI Synthesis Complete
+          </div>
           <h2 className="text-[clamp(34px,4.2vw,64px)] font-heading font-black uppercase leading-[1.0] text-[#F4F6FA]">
-            Made For You
+            Your Narrative <span className="text-cyan">Matches</span>
           </h2>
+          <p className="text-lg text-[#A7B0B7] mt-6 leading-relaxed max-w-xl">
+            Based on your identified traits, these titles represent the perfect intersection of your past interests and future exploration.
+          </p>
         </div>
-
-        <p className="text-lg text-[#A7B0B7] mb-10 leading-relaxed max-w-xl">
-          Titles that match your DNA—right now.
-        </p>
 
         {/* Grid */}
         <div
           ref={gridRef}
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
-          {recommendations.map((movie) => (
+          {recommendations.map((title, i) => (
             <div
-              key={movie.id}
+              key={i}
               className="recommendation-card group cursor-pointer"
             >
-              {/* Poster */}
-              <div className="relative aspect-[2/3] rounded-2xl overflow-hidden">
-                <img
-                  src={movie.image}
-                  alt={movie.title}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+              <div className="relative aspect-video rounded-3xl overflow-hidden bg-white/5 border border-white/10 group-hover:border-cyan/30 transition-colors duration-500">
+                {/* Visual Placeholder for dynamic posters */}
+                <div className="absolute inset-0 bg-gradient-to-br from-dark-200 to-dark-100 flex items-center justify-center">
+                   <div className="text-white/20 font-heading font-black text-4xl uppercase opacity-10 group-hover:opacity-20 transition-opacity">
+                     {title}
+                   </div>
+                </div>
 
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-dark-200/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-t from-dark-200 via-transparent to-transparent opacity-60" />
+
+                {/* Match percentage simulation */}
+                <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-cyan text-dark-200 text-xs font-bold shadow-lg">
+                  {98 - (i * 2)}% Match
+                </div>
 
                 {/* Play button */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="w-14 h-14 rounded-full bg-cyan/90 flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform duration-300">
-                    <Play className="w-6 h-6 text-dark-200 ml-1" fill="currentColor" />
+                  <div className="w-16 h-16 rounded-full bg-white text-dark-200 flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform duration-300 shadow-2xl">
+                    <Play className="w-6 h-6 ml-1" fill="currentColor" />
                   </div>
-                </div>
-
-                {/* Match percentage */}
-                <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-cyan/90 text-dark-200 text-xs font-bold">
-                  {movie.match}%
-                </div>
-
-                {/* DNA bars at bottom */}
-                <div className="absolute bottom-3 left-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-1 rounded-full flex-1"
-                      style={{
-                        backgroundColor: ['#29D7FF', '#FF2BD6', '#C7FF3D', '#7B4DFF', '#29D7FF'][i],
-                        opacity: 0.6 + (i * 0.1),
-                      }}
-                    />
-                  ))}
                 </div>
               </div>
 
-              {/* Title */}
-              <div className="mt-3">
-                <h3 className="text-sm font-medium text-[#F4F6FA] group-hover:text-cyan transition-colors truncate">
-                  {movie.title}
-                </h3>
-                <p className="text-xs text-[#A7B0B7]">Match {movie.match}%</p>
+              <div className="mt-6 flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-bold text-white group-hover:text-cyan transition-colors truncate mb-1">
+                    {title}
+                  </h3>
+                  <div className="flex gap-2">
+                    <span className="text-xs font-mono text-cyan uppercase">Premium Match</span>
+                    <span className="text-xs text-gray-500">•</span>
+                    <span className="text-xs text-gray-400">Available in 4K</span>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
         </div>
 
         {/* CTA */}
-        <div className="mt-12 text-center">
+        <div className="mt-16 flex justify-center">
           <Button
             variant="outline"
             size="lg"
-            className="border-cyan/30 text-cyan hover:bg-cyan/10 hover:border-cyan/50 rounded-full px-8 group"
+            className="border-white/10 text-white hover:bg-white/5 hover:border-white/20 rounded-full px-12 group h-14"
+            onClick={() => window.location.href = '/home'}
           >
-            View All Recommendations
+            Explore Full Library
             <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>

@@ -8,10 +8,12 @@ import DNAHelix from '@/components/DNAHelix';
 gsap.registerPlugin(ScrollTrigger);
 
 interface HeroSectionProps {
+  persona: string;
+  personality: string;
   className?: string;
 }
 
-export default function HeroSection({ className = '' }: HeroSectionProps) {
+export default function HeroSection({ persona, personality, className = '' }: HeroSectionProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const helixRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLDivElement>(null);
@@ -169,15 +171,15 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
             ref={microLabelRef}
             className="font-mono text-xs uppercase tracking-[0.14em] text-cyan mb-4"
           >
-            Your Taste DNA
+            {personality}
           </div>
 
           {/* Headline */}
           <div ref={headlineRef} className="mb-6">
             <h1 className="text-[clamp(44px,6vw,84px)] font-heading font-black uppercase leading-[0.95] text-[#F4F6FA]">
-              Your Taste
+              {persona.split(' ').slice(0, -1).join(' ')}
               <br />
-              Your DNA
+              <span className="text-cyan">{persona.split(' ').slice(-1)}</span>
             </h1>
           </div>
 

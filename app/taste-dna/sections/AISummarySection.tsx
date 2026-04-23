@@ -8,10 +8,13 @@ import DNAHelix from '@/components/DNAHelix';
 gsap.registerPlugin(ScrollTrigger);
 
 interface AISummarySectionProps {
+  summary: string;
+  persona: string;
+  traits: string[];
   className?: string;
 }
 
-export default function AISummarySection({ className = '' }: AISummarySectionProps) {
+export default function AISummarySection({ summary, persona, traits, className = '' }: AISummarySectionProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const helixRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLDivElement>(null);
@@ -21,11 +24,10 @@ export default function AISummarySection({ className = '' }: AISummarySectionPro
   const bgRef = useRef<HTMLDivElement>(null);
 
   const [copied, setCopied] = useState(false);
-
-  const summaryText = `You chase cerebral tension—stories that build atmosphere into explosive payoff. You favor morally complex leads, slow-burn structure, and soundtracks that feel like characters.`;
+  const summaryText = summary;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(summaryText);
+    navigator.clipboard.writeText(`${persona}: ${summaryText}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -178,9 +180,18 @@ export default function AISummarySection({ className = '' }: AISummarySectionPro
               style={{ boxShadow: '0 0 40px rgba(41, 215, 255, 0.2)' }}
             />
 
+            {/* Traits chips */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {traits.map((trait, i) => (
+                <span key={i} className="px-3 py-1 rounded-full bg-violet/10 border border-violet/20 text-violet text-xs font-mono uppercase tracking-wider">
+                  {trait}
+                </span>
+              ))}
+            </div>
+
             <div ref={textRef} className="relative">
-              <p className="text-lg lg:text-xl text-[#F4F6FA] leading-relaxed">
-                {summaryText}
+              <p className="text-xl lg:text-2xl font-medium text-[#F4F6FA] leading-relaxed italic">
+                "{summaryText}"
               </p>
             </div>
 
