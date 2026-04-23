@@ -1,11 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
+interface Participant {
+  userId: string;
+  userName: string;
+  status: string;
+  socketId: string;
+  isHost: boolean;
+}
+
 interface WatchPartySocket {
   socket: Socket | null;
   isConnected: boolean;
   roomCode: string | null;
-  participants: string[];
+  participants: Participant[];
+  hostId: string | null;
+  isHost: boolean;
   error: string | null;
 }
 
@@ -35,12 +45,14 @@ interface Reaction {
   timestamp: number;
 }
 
-export const useWatchPartySocket = (roomCode: string | null, userId: string | null) => {
+export const useWatchPartySocket = (roomCode: string | null, userId: string | null, userName?: string | null) => {
   const [socketState, setSocketState] = useState<WatchPartySocket>({
     socket: null,
     isConnected: false,
     roomCode: null,
     participants: [],
+    hostId: null,
+    isHost: false,
     error: null
   });
 
@@ -58,141 +70,214 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
 
   const socketRef = useRef<Socket | null>(null);
 
-  useEffect(() => {
-    if (!roomCode || !userId) return;
+    const isInitializing = useRef(false);
 
-    // Initialize socket connection
-    const socket = io('/api/socket/io', {
-      transports: ['websocket'],
-      upgrade: false
-    });
+    useEffect(() => {
+    if (!roomCode || !userId || isInitializing.current) return;
 
-    socketRef.current = socket;
-
-    socket.on('connect', () => {
-      console.log('Connected to watch party server');
-      setSocketState(prev => ({
-        ...prev,
-        socket,
-        isConnected: true,
-        roomCode,
-        error: null
-      }));
-
-      // Join watch party room
-      socket.emit('join-watch-party', { roomCode, userId });
-    });
-
-    socket.on('disconnect', () => {
-      console.log('Disconnected from watch party server');
-      setSocketState(prev => ({
-        ...prev,
-        isConnected: false,
-        error: 'Connection lost'
-      }));
-    });
-
-    socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
-      setSocketState(prev => ({
-        ...prev,
-        error: 'Failed to connect'
-      }));
-    });
-
-    // Room events
-    socket.on('room-state', (data: { roomCode: string; participants: string[] }) => {
-      setSocketState(prev => ({
-        ...prev,
-        participants: data.participants
-      }));
-    });
-
-    socket.on('user-joined', (data: { userId: string; timestamp: number }) => {
-      console.log('User joined:', data.userId);
-      // Could show a notification or update UI
-    });
-
-    socket.on('user-left', (data: { socketId: string; timestamp: number }) => {
-      console.log('User left:', data.socketId);
-      setSocketState(prev => ({
-        ...prev,
-        participants: prev.participants.filter(p => p !== data.socketId)
-      }));
-    });
-
-    // Playback events
-    socket.on('play', (data: { timestamp: number; userId: string; initiatedBy: string }) => {
-      setPlaybackState(prev => ({
-        ...prev,
-        isPlaying: true,
-        currentTime: data.timestamp
-      }));
-    });
-
-    socket.on('pause', (data: { timestamp: number; userId: string; initiatedBy: string }) => {
-      setPlaybackState(prev => ({
-        ...prev,
-        isPlaying: false,
-        currentTime: data.timestamp
-      }));
-    });
-
-    socket.on('seek', (data: { timestamp: number; userId: string; initiatedBy: string }) => {
-      setPlaybackState(prev => ({
-        ...prev,
-        currentTime: data.timestamp
-      }));
-    });
-
-    socket.on('volume-change', (data: { volume: number; userId: string }) => {
-      setPlaybackState(prev => ({
-        ...prev,
-        volume: data.volume
-      }));
-    });
-
-    socket.on('progress-update', (data: { currentTime: number; userId: string }) => {
-      setPlaybackState(prev => ({
-        ...prev,
-        currentTime: data.currentTime
-      }));
-    });
-
-    socket.on('buffer-status', (data: { isBuffering: boolean; userId: string }) => {
-      setPlaybackState(prev => ({
-        ...prev,
-        isBuffering: data.isBuffering
-      }));
-    });
-
-    socket.on('quality-change', (data: { quality: string; userId: string }) => {
-      setPlaybackState(prev => ({
-        ...prev,
-        quality: data.quality
-      }));
-    });
-
-    // Chat events
-    socket.on('chat-message', (data: ChatMessage) => {
-      setChatMessages(prev => [...prev, { ...data, id: Date.now().toString() }]);
-    });
-
-    // Reaction events
-    socket.on('reaction', (data: Reaction) => {
-      setReactions(prev => [...prev, { ...data, id: Date.now().toString() }]);
+    const initSocket = async () => {
+      if (isInitializing.current) return;
+      isInitializing.current = true;
       
-      // Remove reaction after 3 seconds
-      setTimeout(() => {
-        setReactions(prev => prev.filter(r => r.id !== data.id));
-      }, 3000);
+      try {
+        await fetch('/api/socket/io');
+        
+        const socket = io('/', {
+          path: '/api/socket/io',
+          addTrailingSlash: false,
+          transports: ['polling', 'websocket'],
+          upgrade: true
+        });
+
+        socketRef.current = socket;
+
+        socket.on('connect', () => {
+          console.log('Connected to watch party server');
+          setSocketState(prev => ({
+            ...prev,
+            socket,
+            isConnected: true,
+            roomCode,
+            error: null
+          }));
+
+          // Join watch party room with name
+          socket.emit('join-watch-party', { roomCode, userId, userName });
+        });
+
+        socket.on('disconnect', () => {
+          console.log('Disconnected from watch party server');
+          setSocketState(prev => ({
+            ...prev,
+            isConnected: false,
+            error: 'Connection lost'
+          }));
+        });
+
+        socket.on('connect_error', (error) => {
+          console.error('Socket connection error:', error);
+          setSocketState(prev => ({
+            ...prev,
+            error: 'Failed to connect'
+          }));
+        });
+
+        // Room events
+        socket.on('room-state', (data: { 
+          roomCode: string; 
+          hostId: string; 
+          participants: any[]; 
+          isHost: boolean;
+          currentPlayState?: string;
+          currentTime?: number;
+          chatHistory?: any[];
+        }) => {
+          setSocketState(prev => ({
+            ...prev,
+            participants: data.participants,
+            hostId: data.hostId,
+            isHost: data.isHost
+          }));
+
+          if (data.currentPlayState || data.currentTime !== undefined) {
+            setPlaybackState(prev => ({
+              ...prev,
+              isPlaying: data.currentPlayState === 'playing',
+              currentTime: data.currentTime || 0
+            }));
+          }
+
+          if (data.chatHistory) {
+            const formattedHistory = data.chatHistory.map((msg: any) => ({
+              id: msg._id || Math.random().toString(),
+              userId: msg.userId,
+              userName: msg.userName,
+              message: msg.message,
+              timestamp: new Date(msg.timestamp).getTime()
+            }));
+            setChatMessages(formattedHistory);
+          }
+        });
+
+        socket.on('user-joined', (data: { userId: string; userName: string; socketId: string; isHost: boolean }) => {
+          setSocketState(prev => ({
+            ...prev,
+            participants: [...prev.participants, { ...data, status: 'watching' }]
+          }));
+        });
+
+        socket.on('user-left', (data: { socketId: string }) => {
+          setSocketState(prev => ({
+            ...prev,
+            participants: prev.participants.filter(p => p.socketId !== data.socketId)
+          }));
+        });
+
+        socket.on('host-changed', (data: { hostId: string; userId: string }) => {
+          setSocketState(prev => ({
+            ...prev,
+            hostId: data.hostId,
+            isHost: socket.id === data.hostId
+          }));
+        });
+
+        socket.on('status-update', (data: { userId: string; socketId: string; status: string }) => {
+          setSocketState(prev => ({
+            ...prev,
+            participants: prev.participants.map(p => 
+              p.socketId === data.socketId ? { ...p, status: data.status } : p
+            )
+          }));
+        });
+
+        socket.on('progress-sync', (data: { currentTime: number }) => {
+          setSocketState(current => {
+            if (!current.isHost) {
+            }
+            return current;
+          });
+        });
+
+        // Playback events
+        socket.on('play', (data: { timestamp: number; userId: string; initiatedBy: string }) => {
+          setPlaybackState(prev => ({
+            ...prev,
+            isPlaying: true,
+            currentTime: data.timestamp
+          }));
+        });
+
+        socket.on('pause', (data: { timestamp: number; userId: string; initiatedBy: string }) => {
+          setPlaybackState(prev => ({
+            ...prev,
+            isPlaying: false,
+            currentTime: data.timestamp
+          }));
+        });
+
+        socket.on('seek', (data: { timestamp: number; userId: string; initiatedBy: string }) => {
+          setPlaybackState(prev => ({
+            ...prev,
+            currentTime: data.timestamp
+          }));
+        });
+
+        socket.on('volume-change', (data: { volume: number; userId: string }) => {
+          setPlaybackState(prev => ({
+            ...prev,
+            volume: data.volume
+          }));
+        });
+
+        socket.on('progress-update', (data: { currentTime: number; userId: string }) => {
+          setPlaybackState(prev => ({
+            ...prev,
+            currentTime: data.currentTime
+          }));
+        });
+
+        socket.on('buffer-status', (data: { isBuffering: boolean; userId: string }) => {
+          setPlaybackState(prev => ({
+            ...prev,
+            isBuffering: data.isBuffering
+          }));
+        });
+
+        socket.on('quality-change', (data: { quality: string; userId: string }) => {
+          setPlaybackState(prev => ({
+            ...prev,
+            quality: data.quality
+          }));
+        });
+
+        socket.on('chat-message', (data: ChatMessage) => {
+          setChatMessages(prev => [...prev, { ...data, id: Date.now().toString() }]);
+        });
+
+        socket.on('reaction', (data: Reaction) => {
+          setReactions(prev => [...prev, { ...data, id: Date.now().toString() }]);
+          setTimeout(() => {
+            setReactions(prev => prev.filter(r => r.id !== data.id));
+          }, 3000);
+        });
+
+      } catch (error) {
+        console.error('Failed to initialize socket:', error);
+      }
+    };
+
+    initSocket().finally(() => {
+      isInitializing.current = false;
     });
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      console.log('🔌 Disconnecting socket...');
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
     };
-  }, [roomCode, userId]);
+  }, [roomCode, userId, userName]); // Added userName to dependencies for dynamic updates if needed
 
   // Playback control functions
   const play = (timestamp: number) => {
@@ -237,19 +322,22 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
 
   const updateProgress = (currentTime: number) => {
     if (socketRef.current && roomCode) {
-      socketRef.current.emit('progress-update', {
-        roomCode,
-        currentTime,
-        userId
-      });
+      // If host, emit progress sync to everyone
+      if (socketState.isHost) {
+        socketRef.current.emit('host-progress-sync', {
+          roomCode,
+          currentTime,
+          userId
+        });
+      }
     }
   };
 
-  const setBuffering = (isBuffering: boolean) => {
+  const setStatus = (status: 'watching' | 'buffering' | 'lagging') => {
     if (socketRef.current && roomCode) {
-      socketRef.current.emit('buffer-status', {
+      socketRef.current.emit('participant-status', {
         roomCode,
-        isBuffering,
+        status,
         userId
       });
     }
@@ -303,7 +391,7 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
     seek,
     setVolume,
     updateProgress,
-    setBuffering,
+    setStatus,
     setQuality,
     
     // Chat and reactions
@@ -311,3 +399,4 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
     sendReaction
   };
 };
+ 

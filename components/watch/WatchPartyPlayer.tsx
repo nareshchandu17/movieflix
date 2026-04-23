@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Volume2, Maximize2, MessageCircle, Heart, Laugh, ThumbsUp, Send, Users, Settings } from 'lucide-react';
+import { Play, Pause, Volume2, Maximize2, MessageCircle, Heart, Laugh, ThumbsUp, Send, Users, X, Info, AlertCircle, Clock, Link2, CheckCircle, Plus, Crown } from 'lucide-react';
 import Image from 'next/image';
-import { useWatchPartySocket } from '@/hooks/useWatchPartySocket';
 
 interface WatchPartyPlayerProps {
   watchParty: {
@@ -20,426 +19,230 @@ interface WatchPartyPlayerProps {
       userName: string;
       userImage: string;
     }>;
-  };
+  } | null;
   userId: string;
   userName: string;
   userImage: string;
   onLeave: () => void;
+  socketState: any;
+  playbackState: any;
+  play: (t: number) => void;
+  pause: (t: number) => void;
+  seek: (t: number) => void;
+  sendMessage: (m: string) => void;
+  sendReaction: (r: string) => void;
+  setStatus: (s: string) => void;
 }
 
-export function WatchPartyPlayer({ watchParty, userId, userName, userImage, onLeave }: WatchPartyPlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showChat, setShowChat] = useState(true);
-  const [chatInput, setChatInput] = useState('');
+// Physics-based floating reaction component
+const ReactionPhysics = ({ reaction, onComplete }: { reaction: any, onComplete: (id: string) => void }) => {
+  const [randomX] = useState(Math.random() * 80 - 40);
+  const [randomDuration] = useState(2.5 + Math.random() * 1.5);
+  
+  return (
+    <motion.div
+      initial={{ y: 0, x: '50%', opacity: 0, scale: 0.5 }}
+      animate={{ 
+        y: -400 - Math.random() * 200, 
+        x: `calc(50% + ${randomX}px)`, 
+        opacity: [0, 1, 1, 0],
+        scale: [0.5, 1.2, 1, 0.8],
+        rotate: randomX / 2
+      }}
+      transition={{ duration: randomDuration, ease: "easeOut" }}
+      onAnimationComplete={() => onComplete(reaction.id)}
+      className="absolute bottom-10 left-0 right-0 pointer-events-none flex justify-center z-50"
+    >
+      <div className="flex flex-col items-center">
+        <span className="text-3xl drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+          {reaction.type === 'love' && '❤️'}
+          {reaction.type === 'laugh' && '😂'}
+          {reaction.type === 'like' && '👍'}
+          {reaction.type === 'surprised' && '😲'}
+          {reaction.type === 'sad' && '😢'}
+          {reaction.type === 'angry' && '😠'}
+        </span>
+      </div>
+    </motion.div>
+  );
+};
+
+export const WatchPartyPlayer = ({ 
+  watchParty, 
+  userId, 
+  userName, 
+  userImage, 
+  onLeave,
+  socketState,
+  playbackState,
+  play,
+  pause,
+  seek,
+  sendMessage,
+  sendReaction,
+  setStatus
+}: WatchPartyPlayerProps) => {
+  const [showChat, setShowChat] = useState(false);
+  const [showUI, setShowUI] = useState(true);
+  const [reactionPool, setReactionPool] = useState<any[]>([]);
   const [currentVolume, setCurrentVolume] = useState(1);
-  const [isBuffering, setIsBuffering] = useState(false);
-  const [watchDuration, setWatchDuration] = useState(0);
-  const [showReactions, setShowReactions] = useState(true);
+  const uiTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const {
-    socketState,
-    playbackState,
-    chatMessages,
-    reactions,
-    play,
-    pause,
-    seek,
-    setVolume,
-    updateProgress,
-    setBuffering,
-    sendMessage,
-    sendReaction
-  } = useWatchPartySocket(watchParty.roomCode, userId);
+  // Auto-hide UI logic
+  const resetUITimer = useCallback(() => {
+    setShowUI(true);
+    if (uiTimeout.current) clearTimeout(uiTimeout.current);
+    uiTimeout.current = setTimeout(() => {
+      if (!showChat) setShowUI(false);
+    }, 4000);
+  }, [showChat]);
 
-  // Sync video with socket events
   useEffect(() => {
-    if (!videoRef.current) return;
+    const handleMouseMove = () => resetUITimer();
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [resetUITimer]);
 
-    const video = videoRef.current;
-
-    // Handle play/pause from other users
-    if (playbackState.isPlaying && video.paused) {
-      video.play().catch(console.error);
-    } else if (!playbackState.isPlaying && !video.paused) {
-      video.pause();
-    }
-
-    // Handle seek from other users
-    if (Math.abs(video.currentTime - playbackState.currentTime) > 1) {
-      video.currentTime = playbackState.currentTime;
-    }
-
-    // Handle volume from other users
-    if (Math.abs(video.volume - playbackState.volume) > 0.1) {
-      video.volume = playbackState.volume;
-      setCurrentVolume(playbackState.volume);
-    }
-  }, [playbackState, videoRef.current]);
-
-  // Track watch duration
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (videoRef.current && !videoRef.current.paused) {
-        setWatchDuration(prev => prev + 1);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Video event handlers
-  const handlePlay = () => {
-    if (videoRef.current) {
-      play(videoRef.current.currentTime);
-    }
-  };
-
-  const handlePause = () => {
-    if (videoRef.current) {
-      pause(videoRef.current.currentTime);
-    }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      seek(time);
-    }
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
-    if (videoRef.current) {
-      videoRef.current.volume = newVolume;
-      setVolume(newVolume);
-    }
-  };
-
-  const handleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      videoRef.current?.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
-  };
-
-  const handleChatSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (chatInput.trim()) {
-      sendMessage(chatInput.trim(), userName);
-      setChatInput('');
-    }
-  };
-
-  const handleReaction = (type: string) => {
-    if (videoRef.current) {
-      sendReaction(type, userName, videoRef.current.currentTime);
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const formatWatchDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    
-    if (hours > 0) {
-      return `${hours}h ${remainingMinutes}m`;
-    }
-    return `${minutes}m`;
-  };
+  if (!watchParty) {
+    return (
+      <div className="w-full h-full bg-black flex flex-col items-center justify-center gap-4 text-white/40">
+        <div className="w-12 h-12 border-2 border-white/10 border-t-red-500 rounded-full animate-spin" />
+        <span className="text-xs font-black uppercase tracking-widest">Initializing Cinematic Stream...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative w-full h-screen bg-black flex">
-      {/* Main Video Area */}
-      <div className="flex-1 relative">
-        {/* Video Player */}
-        <div className="relative w-full h-full">
-          <video
-            ref={videoRef}
-            className="w-full h-full object-contain"
-            poster={watchParty.moviePoster}
-            onPlay={handlePlay}
-            onPause={handlePause}
-            onWaiting={() => setBuffering(true)}
-            onPlaying={() => setBuffering(false)}
-            onTimeUpdate={() => {
-              if (videoRef.current) {
-                updateProgress(videoRef.current.currentTime);
-              }
-            }}
-            onLoadedMetadata={(e) => {
-              if (videoRef.current) {
-                updateProgress(videoRef.current.currentTime);
-              }
-            }}
-          >
-            <source src={`/api/movie/stream/${watchParty.movieId}`} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+    <div className="relative w-full h-full bg-black group/player cursor-none overflow-hidden">
+      <style jsx global>{`
+        .cursor-none { cursor: none !important; }
+        .group/player:hover { cursor: default !important; }
+      `}</style>
 
-          {/* Buffering Indicator */}
-          <AnimatePresence>
-            {isBuffering && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-2 rounded-lg"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span className="text-white text-sm">Buffering...</span>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Reactions Overlay */}
-          <AnimatePresence>
-            {showReactions && (
-              <div className="absolute top-4 right-4 space-y-2">
-                {reactions.map(reaction => (
-                  <motion.div
-                    key={reaction.id}
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    className="bg-black/60 backdrop-blur-sm px-3 py-2 rounded-full"
-                  >
-                    <span className="text-2xl">
-                      {reaction.type === 'like' && '👍'}
-                      {reaction.type === 'love' && '❤️'}
-                      {reaction.type === 'laugh' && '😂'}
-                      {reaction.type === 'surprised' && '😮'}
-                      {reaction.type === 'sad' && '😢'}
-                      {reaction.type === 'angry' && '😠'}
-                    </span>
-                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-xs text-white whitespace-nowrap">
-                      {reaction.userName}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </AnimatePresence>
-
-          {/* Room Info */}
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg">
-            <div className="text-center">
-              <p className="text-white font-semibold">{watchParty.movieTitle}</p>
-              <p className="text-gray-300 text-sm">Room: {watchParty.roomCode}</p>
-              <p className="text-gray-400 text-xs">{watchParty.participants.length} watching</p>
-            </div>
+      {/* Video Content Placeholder */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Image 
+          src={watchParty.moviePoster} 
+          alt={watchParty.movieTitle}
+          fill
+          className="object-cover opacity-20 blur-sm"
+        />
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="w-24 h-24 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center animate-pulse mb-6">
+            <Play size={40} className="text-red-500 ml-1" />
           </div>
-
-          {/* Video Controls */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-            {/* Progress Bar */}
-            <div className="mb-4">
-              <input
-                type="range"
-                min="0"
-                max={videoRef.current?.duration || 100}
-                value={playbackState.currentTime}
-                onChange={handleSeek}
-                className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
-              />
-              <div className="flex justify-between text-xs text-gray-400 mt-1">
-                <span>{formatTime(playbackState.currentTime)}</span>
-                <span>{formatTime(videoRef.current?.duration || 0)}</span>
-              </div>
-            </div>
-
-            {/* Control Buttons */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={playbackState.isPlaying ? handlePause : handlePlay}
-                  className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
-                >
-                  {playbackState.isPlaying ? (
-                    <Pause className="w-5 h-5 text-white" />
-                  ) : (
-                    <Play className="w-5 h-5 text-white" />
-                  )}
-                </button>
-
-                <div className="flex items-center gap-2">
-                  <Volume2 className="w-5 h-5 text-white" />
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={currentVolume}
-                    onChange={handleVolumeChange}
-                    className="w-20 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer"
-                  />
-                </div>
-
-                <button
-                  onClick={handleFullscreen}
-                  className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
-                >
-                  <Maximize2 className="w-5 h-5 text-white" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-3 text-white text-sm">
-                <span>🔥 {formatWatchDuration(watchDuration)}</span>
-                <button
-                  onClick={() => setShowReactions(!showReactions)}
-                  className="px-3 py-1 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
-                >
-                  React
-                </button>
-                <button
-                  onClick={() => setShowChat(!showChat)}
-                  className="px-3 py-1 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={onLeave}
-                  className="px-3 py-1 bg-red-600 rounded-lg hover:bg-red-500 transition-colors"
-                >
-                  Leave Party
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Reaction Buttons */}
-        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex gap-2">
-          {['like', 'love', 'laugh', 'surprised'].map(reaction => (
-            <button
-              key={reaction}
-              onClick={() => handleReaction(reaction)}
-              className="w-12 h-12 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/80 transition-colors"
-            >
-              <span className="text-xl">
-                {reaction === 'like' && '👍'}
-                {reaction === 'love' && '❤️'}
-                {reaction === 'laugh' && '😂'}
-                {reaction === 'surprised' && '😮'}
-              </span>
-            </button>
-          ))}
+          <h2 className="text-4xl font-black text-white uppercase tracking-tighter">{watchParty.movieTitle}</h2>
+          <p className="text-white/40 mt-2 font-bold uppercase tracking-widest text-xs">Ready for Synchronized Playback</p>
         </div>
       </div>
 
-      {/* Chat Panel */}
+      {/* Reactions Overlay */}
       <AnimatePresence>
-        {showChat && (
-          <motion.div
-            initial={{ x: 300, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 300, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="w-80 bg-[#111] border-l border-white/10 flex flex-col"
+        {playbackState.reactions?.map((r: any) => (
+          <ReactionPhysics key={r.id} reaction={r} onComplete={() => {}} />
+        ))}
+      </AnimatePresence>
+
+      {/* Top Bar Controls */}
+      <AnimatePresence>
+        {showUI && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-0 left-0 right-0 p-8 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent z-40"
           >
-            {/* Chat Header */}
-            <div className="p-4 border-b border-white/10">
-              <div className="flex items-center justify-between">
-                <h3 className="text-white font-semibold flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4" />
-                  Watch Party Chat
-                </h3>
-                <div className="flex items-center gap-2 text-sm text-gray-400">
-                  <Users className="w-4 h-4" />
-                  {watchParty.participants.length}
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={onLeave}
+                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-red-600 hover:border-red-500 transition-all text-white"
+              >
+                <X size={20} />
+              </button>
+              <div className="flex flex-col">
+                <h3 className="text-lg font-black text-white uppercase tracking-tight leading-none">{watchParty.movieTitle}</h3>
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex -space-x-2">
+                    {socketState.participants.slice(0, 3).map((p: any) => (
+                      <div key={p.socketId} className="w-6 h-6 rounded-full border-2 border-black bg-gray-800 flex items-center justify-center text-[8px] font-bold uppercase">
+                        {(p.userName || 'G').substring(0, 1)}
+                      </div>
+                    ))}
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest ml-1">
+                    {socketState.participants.length} Watching
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {chatMessages.length === 0 ? (
-                <p className="text-gray-500 text-center text-sm">No messages yet. Start the conversation!</p>
-              ) : (
-                chatMessages.map(message => (
-                  <div key={message.id} className="flex gap-3">
-                    <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
-                      <Image
-                        src={`/api/placeholder/32/32`}
-                        alt={message.userName}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium">{message.userName}</p>
-                      <p className="text-gray-300 text-sm">{message.message}</p>
-                      <p className="text-gray-500 text-xs">
-                        {new Date(message.timestamp).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Chat Input */}
-            <div className="p-4 border-t border-white/10">
-              <form onSubmit={handleChatSubmit} className="flex gap-2">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 transition-all"
-                />
-                <button
-                  type="submit"
-                  disabled={!chatInput.trim()}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
+            <div className="flex items-center gap-4">
+              <button className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition-all">
+                <Info size={14} className="text-white/40" />
+                <span className="text-[10px] font-black text-white uppercase tracking-widest">Details</span>
+              </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Connection Status */}
-      {!socketState.isConnected && (
-        <div className="absolute top-4 right-4 bg-red-600 text-white px-3 py-2 rounded-lg">
-          Reconnecting...
-        </div>
-      )}
+      {/* Custom Bottom Controls */}
+      <AnimatePresence>
+        {showUI && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-0 left-0 right-0 p-8 pt-20 bg-gradient-to-t from-black via-black/80 to-transparent z-40"
+          >
+            {/* Progress Bar */}
+            <div className="group/progress relative h-1.5 w-full bg-white/10 rounded-full mb-8 cursor-pointer overflow-hidden">
+              <div 
+                className="absolute left-0 top-0 h-full bg-red-600 transition-all" 
+                style={{ width: `${(playbackState.currentTime / 3600) * 100}%` }} 
+              />
+              <div className="absolute inset-0 opacity-0 group-hover/progress:opacity-100 transition-opacity flex items-center">
+                <div className="h-4 w-4 bg-white rounded-full shadow-xl border-4 border-red-600" style={{ marginLeft: `calc(${(playbackState.currentTime / 3600) * 100}% - 8px)` }} />
+              </div>
+            </div>
 
-      <style jsx>{`
-        .slider::-webkit-slider-thumb {
-          appearance: none;
-          width: 16px;
-          height: 16px;
-          background: #ef4444;
-          cursor: pointer;
-          border-radius: 50%;
-        }
-        .slider::-moz-range-thumb {
-          width: 16px;
-          height: 16px;
-          background: #ef4444;
-          cursor: pointer;
-          border-radius: 50%;
-          border: none;
-        }
-      `}</style>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-8">
+                <button 
+                  onClick={() => playbackState.currentPlayState === 'playing' ? pause(playbackState.currentTime) : play(playbackState.currentTime)}
+                  className="w-16 h-16 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform shadow-2xl"
+                >
+                  {playbackState.currentPlayState === 'playing' ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-1" />}
+                </button>
+
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2 group/volume relative">
+                    <Volume2 size={20} className="text-white/60 hover:text-white cursor-pointer" />
+                    <div className="w-24 h-1 bg-white/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-white w-2/3" />
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-white/40 font-mono">
+                    {Math.floor(playbackState.currentTime / 60)}:{(playbackState.currentTime % 60).toString().padStart(2, '0')} / 124:00
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2 pr-6 border-r border-white/10">
+                  <button onClick={() => sendReaction('love')} className="p-2 hover:bg-white/10 rounded-xl transition-all text-2xl hover:scale-125">❤️</button>
+                  <button onClick={() => sendReaction('laugh')} className="p-2 hover:bg-white/10 rounded-xl transition-all text-2xl hover:scale-125">😂</button>
+                  <button onClick={() => sendReaction('thumbsup')} className="p-2 hover:bg-white/10 rounded-xl transition-all text-2xl hover:scale-125">👍</button>
+                </div>
+                
+                <button className="p-2 text-white/60 hover:text-white transition-colors">
+                  <Maximize2 size={20} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-}
+};

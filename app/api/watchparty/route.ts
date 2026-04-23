@@ -22,11 +22,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Generate unique room code
-    const roomCode = generateRoomCode();
+    // Generate unique room code with collision check
+    let roomCode = '';
+    let isUnique = false;
+    let attempts = 0;
+    
+    while (!isUnique && attempts < 5) {
+      roomCode = generateRoomCode();
+      const existing = await WatchParty.findOne({ roomCode, status: 'active' });
+      if (!existing) isUnique = true;
+      attempts++;
+    }
+
+    if (!isUnique) {
+      return NextResponse.json({ error: 'Failed to generate a unique room code' }, { status: 500 });
+    }
     
     // Create watch party
-    const watchParty = new WatchParty({
+    const watchParty = await WatchParty.create({
       circleId: new mongoose.Types.ObjectId(circleId),
       movieId,
       movieTitle,
@@ -42,14 +55,9 @@ export async function POST(request: NextRequest) {
       status: 'active'
     });
 
-    await watchParty.save();
-
     return NextResponse.json({
       success: true,
-      watchParty: {
-        ...watchParty.toObject(),
-        roomCode
-      }
+      watchParty
     });
 
   } catch (error: any) {
@@ -74,43 +82,28 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Room code is required' }, { status: 400 });
     }
 
-    // Find active watch party
-    const watchParty = await WatchParty.findOne({
-      roomCode,
-      status: 'active'
-    }).populate('circleId');
+    // Add user as participant atomically using $addToSet to avoid duplicates
+    const watchParty = await WatchParty.findOneAndUpdate(
+      { roomCode, status: 'active' },
+      { 
+        $addToSet: { 
+          participants: {
+            userId: session.user.id,
+            joinedAt: new Date(),
+            watchDuration: 0,
+            completed: false
+          } 
+        } 
+      },
+      { new: true }
+    ).populate([
+      { path: 'circleId' },
+      { path: 'participants.userId', select: 'name image' }
+    ]);
 
     if (!watchParty) {
       return NextResponse.json({ error: 'Watch party not found or not active' }, { status: 404 });
     }
-
-    // Check if user is already a participant
-    const isAlreadyParticipant = watchParty.participants.some(
-      (p: any) => p.userId.toString() === session.user.id
-    );
-
-    if (isAlreadyParticipant) {
-      return NextResponse.json({ error: 'Already joined this watch party' }, { status: 400 });
-    }
-
-    // Check if user is member of the circle
-    const isCircleMember = watchParty.circleId.members.some(
-      (m: any) => m.userId.toString() === session.user.id
-    );
-
-    if (!isCircleMember) {
-      return NextResponse.json({ error: 'Not a member of this watch circle' }, { status: 403 });
-    }
-
-    // Add user as participant
-    watchParty.participants.push({
-      userId: session.user.id,
-      joinedAt: new Date(),
-      watchDuration: 0,
-      completed: false
-    });
-
-    await watchParty.save();
 
     return NextResponse.json({
       success: true,
