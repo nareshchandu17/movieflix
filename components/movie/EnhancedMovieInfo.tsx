@@ -1479,7 +1479,7 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
                             </div>
                             <div className="flex flex-col">
                               <span className="text-sm font-bold">{movieInsights.audienceLove}%</span>
-                              <span className="text-[10px] font-bold text-green-400 uppercase">Loved It</span>
+                              <span className="text-[10px] font-bold text-red-400 uppercase">Loved It</span>
                             </div>
                           </div>
                         </div>
@@ -1490,7 +1490,7 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
                             <motion.div
                               animate={{ rotate: -360 }}
                               transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                              className="text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.5)]"
+                              className="text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]"
                             >
                               <RotateCcw className="w-5 h-5" />
                             </motion.div>

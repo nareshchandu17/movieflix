@@ -110,7 +110,7 @@ const HeroSpotlight = ({ media }: HeroSpotlightProps) => {
 
   return (
     <div 
-      className="relative w-full h-[85vh] overflow-hidden"
+      className="relative w-full h-[100vh] overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -139,15 +139,9 @@ const HeroSpotlight = ({ media }: HeroSpotlightProps) => {
           </motion.div>
         </AnimatePresence>
         
-        {/* Enhanced Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/30 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-blue-900/20" />
-        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black via-black/60 to-transparent" />
-        
-        {/* Bottom Fade Overlay for Smooth Transition */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black to-transparent" />
+        {/* Subtle Edge Protection Only */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
       </div>
 
       {/* Content */}
@@ -157,7 +151,7 @@ const HeroSpotlight = ({ media }: HeroSpotlightProps) => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="max-w-2xl"
+            className="max-w-4xl"
           >
             {/* Badges and Match Info */}
             <div className="flex items-center gap-3 mb-4">
@@ -185,7 +179,7 @@ const HeroSpotlight = ({ media }: HeroSpotlightProps) => {
             </div>
 
             {/* Title */}
-            <h2 className="text-5xl md:text-6xl font-bold text-[#F9FAFB] mb-4 leading-tight">
+            <h2 className="text-6xl md:text-8xl font-bold text-[#F9FAFB] mb-6 leading-tight drop-shadow-2xl">
               {title}
             </h2>
 
@@ -254,7 +248,7 @@ const HeroSpotlight = ({ media }: HeroSpotlightProps) => {
 
       {/* Enhanced Slide Indicators */}
       {media.length > 1 && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10 bg-black/40 px-4 py-2 rounded-full border border-white/10">
           {media.map((_, index) => (
             <button
               key={index}

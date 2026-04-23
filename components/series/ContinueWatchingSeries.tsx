@@ -59,7 +59,7 @@ export default function ContinueWatchingSeries({
           ref={scrollRef}
           className="
             flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory
-            py-6
+            py-6 -mr-4 md:-mr-8 lg:-mr-10
           "
           style={{
             scrollbarWidth: "none",
@@ -143,7 +143,7 @@ export default function ContinueWatchingSeries({
           })}
 
           {/* ✅ KEEP RIGHT FULL BLEED */}
-          <div className="flex-shrink-0 w-20 md:w-32 lg:w-40" />
+          <div className="flex-shrink-0 w-4 md:w-8 lg:w-10" />
         </div>
 
         {/* NAV BUTTONS (UNCHANGED) */}

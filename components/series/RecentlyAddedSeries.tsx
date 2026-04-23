@@ -64,7 +64,7 @@ export default function RecentlyAddedSeries({
 
   if (loading) {
     return (
-      <div className="px-4 md:px-12 lg:px-20">
+      <div className="">
         <h2 className="text-2xl font-bold text-white mb-6">{title}</h2>
         <div className="flex gap-4">
           {[...Array(6)].map((_, i) => (
@@ -80,7 +80,7 @@ export default function RecentlyAddedSeries({
   return (
     <div className="relative">
       {/* HEADER (LEFT SAFE) */}
-      <div className="px-6 md:px-12 lg:px-20 mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">{title}</h2>
         <button 
           onClick={() => router.push('/series?category=popular')}
@@ -96,8 +96,7 @@ export default function RecentlyAddedSeries({
           ref={scrollRef}
           className="
             flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory
-            py-4
-            px-6 md:px-12 lg:px-20
+            py-4 -mr-4 md:-mr-8 lg:-mr-10
           "
         >
 

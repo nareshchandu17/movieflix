@@ -19,7 +19,8 @@ const CATEGORY_GROUPS: Record<number, string> = {
 };
 
 export default function ScenesPage() {
-  const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
+  const [activeClips, setActiveClips] = useState<Clip[]>([]);
+  const [activeIndex, setActiveIndex] = useState<number>(-1);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Standard smooth scrolling without Lenis
@@ -27,12 +28,15 @@ export default function ScenesPage() {
     document.documentElement.style.scrollBehavior = 'smooth';
   }, []);
 
-  const handlePlayClip = useCallback((clip: Clip) => {
-    setSelectedClip(clip);
+  const handlePlayClip = useCallback((clip: Clip, list: Clip[]) => {
+    const index = list.findIndex(c => c.id === clip.id);
+    setActiveClips(list);
+    setActiveIndex(index >= 0 ? index : 0);
   }, []);
 
   const handleClosePlayer = useCallback(() => {
-    setSelectedClip(null);
+    setActiveClips([]);
+    setActiveIndex(-1);
   }, []);
 
   const handleSearch = useCallback((query: string) => {
@@ -85,7 +89,11 @@ export default function ScenesPage() {
       </div>
 
       {/* Fullscreen Player Modal */}
-      <PlayerModal clip={selectedClip} onClose={handleClosePlayer} />
+      <PlayerModal 
+        clips={activeClips} 
+        startIndex={activeIndex} 
+        onClose={handleClosePlayer} 
+      />
     </div>
   );
 }

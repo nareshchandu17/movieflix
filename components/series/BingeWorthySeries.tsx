@@ -142,7 +142,7 @@ const BingeWorthySeriesCarousel = () => {
 
   if (error) {
     return (
-      <div className="w-full px-[5vw]">
+      <div className="w-full">
         <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 text-center">
           <p className="text-red-400">{error}</p>
         </div>
@@ -154,7 +154,7 @@ const BingeWorthySeriesCarousel = () => {
     <div className="w-full">
       {/* HEADER */}
   
-        <div className="px-6 md:px-12 lg:px-20 mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-white mb-2">
               Binge Worthy Series
             </h2>
@@ -192,12 +192,12 @@ const BingeWorthySeriesCarousel = () => {
         <div
           ref={carouselRef}
           className="
-            flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-6 px-6 md:px-12 lg:px-20
+            flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-6
+            -mr-4 md:-mr-8 lg:-mr-10
           "
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
-            scrollPaddingLeft: "5rem",
           }}
         >
           {loading

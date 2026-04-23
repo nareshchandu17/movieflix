@@ -28,11 +28,11 @@ const SeriesPageClient = () => {
     year: "",
     sortBy: "popularity.desc",
   });
-  
+
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isInfiniteMode, setIsInfiniteMode] = useState(false);
-  
+
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const currentPageRef = useRef(currentPage);
@@ -53,7 +53,7 @@ const SeriesPageClient = () => {
     setCurrentPage(page);
     currentPageRef.current = page;
     setFilters({ category, genre, year, sortBy });
-    
+
     // Reset infinite mode on new filter selection
     setIsInfiniteMode(false);
   }, [searchParams]);
@@ -65,7 +65,7 @@ const SeriesPageClient = () => {
   // Fetch series when filters or page changes
   const fetchSeries = useCallback(async (isLoadMore = false, pageOverride?: number) => {
     const actualPage = pageOverride || (isLoadMore ? currentPageRef.current + 1 : 1);
-    
+
     if (isLoadMore) {
       setIsLoadingMore(true);
     } else {
@@ -75,16 +75,51 @@ const SeriesPageClient = () => {
     }
 
     try {
-      const seriesData = await api.getMedia("tv", {
-        category: (filters.category || "popular") as any,
-        page: actualPage,
-        genre: filters.genre || undefined,
-        year: filters.year ? parseInt(filters.year) : undefined,
-        sortBy: filters.sortBy !== "popularity.desc" ? filters.sortBy : undefined,
-      });
+      let newResults: TMDBTVShow[] = [];
+      let totalPagesCount = 1;
+      let hasMoreResults = true;
 
-      const newResults = seriesData.results as TMDBTVShow[];
-      
+      // Special Hybrid Logic for Popular Category
+      if ((!filters.category || filters.category === "popular") && actualPage === 1 && !filters.genre && !filters.year && filters.sortBy === "popularity.desc") {
+        console.log("[SeriesPage] Fetching hybrid Popular Series (Manual + TMDB)");
+        const POPULAR_SERIES_IDS = [
+          1396, 66732, 1399, 76479, 94997,
+          80923, 82856, 114695, 106379, 63056,
+          1429, 95479, 85937, 209867, 37854
+        ];
+
+        // Fetch manual curation
+        const manualResults = await Promise.allSettled(
+          POPULAR_SERIES_IDS.map(id => api.getDetails("tv", id))
+        );
+        const manualSeries = manualResults
+          .filter((res): res is PromiseFulfilledResult<any> => res.status === "fulfilled")
+          .map(res => res.value as TMDBTVShow)
+          .filter(show => !!show.poster_path);
+
+        // Fetch first page of TMDB popular
+        const tmdbData = await api.getMedia("tv", { category: "popular", page: 1 });
+        const tmdbSeries = tmdbData.results as TMDBTVShow[];
+
+        // Merge (curated first, no duplicates)
+        newResults = [...manualSeries, ...tmdbSeries.filter(ts => !manualSeries.some(ms => ms.id === ts.id))];
+        totalPagesCount = Math.min(tmdbData.total_pages, 500);
+        hasMoreResults = actualPage < totalPagesCount;
+      } else {
+        // Standard Discovery Logic
+        const seriesData = await api.getMedia("tv", {
+          category: (filters.category || "popular") as any,
+          page: actualPage,
+          genre: filters.genre || undefined,
+          year: filters.year ? parseInt(filters.year) : undefined,
+          sortBy: filters.sortBy !== "popularity.desc" ? filters.sortBy : undefined,
+        });
+
+        newResults = seriesData.results as TMDBTVShow[];
+        totalPagesCount = Math.min(seriesData.total_pages, 500);
+        hasMoreResults = actualPage < totalPagesCount;
+      }
+
       if (isLoadMore) {
         setSeries(prev => {
           const combined = [...prev, ...newResults.filter(nr => !prev.some(p => p.id === nr.id))];
@@ -98,8 +133,8 @@ const SeriesPageClient = () => {
         setCurrentPage(1);
       }
 
-      setHasMore(actualPage < Math.min(seriesData.total_pages, 500));
-      setTotalPages(Math.min(seriesData.total_pages, 500));
+      setHasMore(hasMoreResults);
+      setTotalPages(totalPagesCount);
       setIsLoading(false);
       setIsLoadingMore(false);
     } catch (error) {
@@ -175,11 +210,13 @@ const SeriesPageClient = () => {
     updateURL(newFilters, 1);
   };
 
+
   const getPageTitle = () => {
     if (filters.genre) {
+      // Mapping would be better, but for now we look for category name if available
       return "Category Results";
     }
-    
+
     const categoryMap: { [key: string]: string } = {
       'trending': 'Trending TV Shows',
       'popular': 'Popular Series',
@@ -191,99 +228,101 @@ const SeriesPageClient = () => {
       'drama': 'Drama Series',
       'sci-fi': 'Sci-Fi & Fantasy',
     };
-    
+
     return categoryMap[filters.category] || "TV Series";
   };
 
   return (
-    <div className="min-h-screen app-bg-enhanced pt-20">
-      {!isGridView ? (
-        <>
-          {/* Home View */}
-          <SeriesHero />
-          <div className="relative z-10 -mt-32 pb-20">
-            <div className="container mx-auto px-4 md:px-12 lg:px-20">
-              <SeriesCarousels />
-            </div>
-          </div>
-        </>
-      ) : (
-        /* Grid View (See All Mode) */
-        <div className="container mx-auto px-4 md:px-12 lg:px-20 py-10">
-          <div className="mb-10">
-            <motion.h2 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="text-3xl md:text-4xl font-bold text-white mb-2"
-            >
-              {getPageTitle()}
-            </motion.h2>
-            <div className="h-1 w-20 bg-red-600 rounded-full" />
-          </div>
+    <div className={`min-h-screen app-bg-enhanced ${!isGridView ? 'pt-0' : 'pt-20'}`}>
+    {!isGridView ? (
+      <>
+        {/* Home View - Full Bleed Hero */}
+        <SeriesHero />
 
-          {isLoading && series.length === 0 ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
-            </div>
-          ) : series.length === 0 ? (
-            <div className="text-center py-20 bg-zinc-900/50 rounded-2xl border border-zinc-800">
-              <p className="text-zinc-400 text-lg">No series found in this category.</p>
-              <button 
-                onClick={() => router.push('/series')}
-                className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-              >
-                Back to Home
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                {series.map((show) => (
-                  <MediaCard 
-                    key={show.id} 
-                    media={show} 
-                    variant="grid" 
-                  />
-                ))}
-              </div>
-
-              {/* Load More Area */}
-              <div ref={loadMoreRef} className="w-full py-20 flex flex-col justify-center items-center">
-                {isLoadingMore ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="flex gap-1.5">
-                      {[0, 1, 2].map((i) => (
-                        <motion.div
-                          key={i}
-                          className="w-2 h-2 bg-red-600 rounded-full"
-                          animate={{ opacity: [0.3, 1, 0.3], y: [0, -4, 0] }}
-                          transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.2 }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ) : !hasMore ? (
-                  <p className="text-zinc-500 text-sm font-medium italic">
-                    You've reached the end of the collection.
-                  </p>
-                ) : !isInfiniteMode ? (
-                  <motion.button
-                    onClick={() => {
-                      loadMore();
-                      setIsInfiniteMode(true);
-                    }}
-                    className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-full font-bold transition-all shadow-xl shadow-red-600/20"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Load More Series
-                  </motion.button>
-                ) : null}
-              </div>
-            </>
-          )}
+        {/* Section Layout: Align left with site margins, bleed right to screen edge */}
+        <div className="relative z-20 mt-4 pb-20">
+          <div className="w-full pl-4 md:pl-12 lg:pl-10 pr-0 overflow-x-hidden">
+            <SeriesCarousels />
+          </div>
         </div>
-      )}
+      </>
+    ) : (
+      /* Grid View (See All Mode) - Full Bleed Right */
+      <div className="w-full pl-4 md:pl-12 lg:pl-10 pr-0 py-10 overflow-x-hidden">
+        <div className="mb-10">
+          <motion.h2
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-3xl md:text-4xl font-bold text-white mb-2"
+          >
+            {getPageTitle()}
+          </motion.h2>
+          <div className="h-1 w-20 bg-red-600 rounded-full" />
+        </div>
+
+        {isLoading && series.length === 0 ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+          </div>
+        ) : series.length === 0 ? (
+          <div className="text-center py-20 bg-zinc-900/50 rounded-2xl border border-zinc-800">
+            <p className="text-zinc-400 text-lg">No series found in this category.</p>
+            <button
+              onClick={() => router.push('/series')}
+              className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+            >
+              Back to Home
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+              {series.map((show) => (
+                <MediaCard
+                  key={show.id}
+                  media={show}
+                  variant="grid"
+                />
+              ))}
+            </div>
+
+            {/* Load More Area */}
+            <div ref={loadMoreRef} className="w-full py-20 flex flex-col justify-center items-center">
+              {isLoadingMore ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex gap-1.5">
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        className="w-2 h-2 bg-red-600 rounded-full"
+                        animate={{ opacity: [0.3, 1, 0.3], y: [0, -4, 0] }}
+                        transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.2 }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : !hasMore ? (
+                <p className="text-zinc-500 text-sm font-medium italic">
+                  You've reached the end of the collection.
+                </p>
+              ) : !isInfiniteMode ? (
+                <motion.button
+                  onClick={() => {
+                    loadMore();
+                    setIsInfiniteMode(true);
+                  }}
+                  className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-full font-bold transition-all shadow-xl shadow-red-600/20"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Load More Series
+                </motion.button>
+              ) : null}
+            </div>
+          </>
+        )}
+      </div>
+    )}
     </div>
   );
 };

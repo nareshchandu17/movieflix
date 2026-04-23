@@ -371,6 +371,22 @@
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
   }
 
+  .glass-premium {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-premium-accent {
+    background: rgba(229, 9, 20, 0.05);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(229, 9, 20, 0.2);
+  }
+
+  .text-premium {
+    @apply font-black uppercase tracking-tighter;
+  }
+
   .card-glow-hover {
     box-shadow: 0 0 30px rgba(229, 9, 20, 0.3);
   }

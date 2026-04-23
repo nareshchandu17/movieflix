@@ -29,52 +29,40 @@ const SeriesHero = () => {
   // Auto-play interval ref
   const autoplayInterval = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch series hero slides data with intelligent selection
+  // Fetch series hero slides data with specific prestige selection
   useEffect(() => {
     const fetchSeriesHeroSlides = async () => {
       try {
         setLoading(true);
-        console.log("[SeriesHero] Fetching series for hero carousel with intelligent selection");
+        console.log("[SeriesHero] Fetching specific prestige series for hero carousel");
         
-        // Fetch multiple categories for diverse selection
-        const [
-          popularResult,
-          topRatedResult,
-          trendingResult
-        ] = await Promise.allSettled([
-          api.getPopular("tv", 1),
-          api.getTopRated("tv", 1),
-          api.getTrending("tv", "week")
-        ]);
+        const PRESTIGE_IDS = [
+          1396,   // Breaking Bad
+          76479,  // The Boys
+          66732,  // Stranger Things
+          1399,   // Game of Thrones
+          85552,  // Euphoria
+          64239,  // Reply 1988
+          209867, // Frieren: Beyond Journey's End
+          48891   // Brooklyn Nine-Nine
+        ];
 
-        // Collect available series from different categories
-        const allSeries: TMDBTVShow[] = [];
-        
-        // Add from popular (3 slots - High-Intensity)
-        if (popularResult.status === "fulfilled") {
-          allSeries.push(...popularResult.value.results.slice(0, 4) as TMDBTVShow[]);
-        }
-        
-        // Add from top-rated (2 slots - Prestige)
-        if (topRatedResult.status === "fulfilled") {
-          allSeries.push(...topRatedResult.value.results.slice(0, 3) as TMDBTVShow[]);
-        }
-        
-        // Add from trending (2 slots - Trend/Hook)
-        if (trendingResult.status === "fulfilled") {
-          allSeries.push(...trendingResult.value.results.slice(0, 3) as TMDBTVShow[]);
-        }
+        const results = await Promise.allSettled(
+          PRESTIGE_IDS.map(id => api.getDetails("tv", id))
+        );
 
-        if (allSeries.length === 0) {
-          console.warn("[SeriesHero] No series data available from any source");
+        const seriesData = results
+          .filter((res): res is PromiseFulfilledResult<any> => res.status === "fulfilled")
+          .map(res => res.value as TMDBTVShow);
+
+        if (seriesData.length === 0) {
+          console.warn("[SeriesHero] No prestige series data available");
           setSlides([]);
           return;
         }
 
-        // Intelligent selection based on coverage buckets
-        const selectedSlides = selectDiverseSeries(allSeries);
-        setSlides(selectedSlides);
-        console.log(`[SeriesHero] Successfully selected ${selectedSlides.length} diverse series for hero`);
+        setSlides(seriesData);
+        console.log(`[SeriesHero] Successfully loaded ${seriesData.length} prestige series for hero`);
         
       } catch (error) {
         console.error("[SeriesHero] Failed to fetch series for hero:", error);
@@ -87,119 +75,6 @@ const SeriesHero = () => {
     fetchSeriesHeroSlides();
   }, []);
 
-  // Intelligent series selection based on coverage buckets
-  const selectDiverseSeries = (allSeries: TMDBTVShow[]): TMDBTVShow[] => {
-    const selected: TMDBTVShow[] = [];
-    const used = new Set<number>();
-    
-    // Helper to categorize series based on genre IDs and characteristics
-    const categorizeSeries = (series: TMDBTVShow): string => {
-      const genreIds = series.genre_ids || [];
-      
-      // High-Intensity / Visual Anchor (Sci-Fi / Thriller / Action)
-      if (genreIds.includes(10765) || genreIds.includes(10759) || genreIds.includes(28)) {
-        return "high_intensity";
-      }
-      
-      // Prestige / Award Feel (Historical drama / epic storytelling)
-      if (genreIds.includes(18) || genreIds.includes(36)) {
-        return "prestige";
-      }
-      
-      // Stylized / Aesthetic (Neo-noir / cyberpunk / crime)
-      if (genreIds.includes(80) || genreIds.includes(9648)) {
-        return "stylized";
-      }
-      
-      // Emotional Anchor (Romance / relationship drama)
-      if (genreIds.includes(10749) || genreIds.includes(18)) {
-        return "emotional";
-      }
-      
-      // Bright / Relief Content (Comedy / light drama)
-      if (genreIds.includes(35)) {
-        return "bright";
-      }
-      
-      // Trend / Hook Content (Tech / conspiracy / new season)
-      if (genreIds.includes(10765) || genreIds.includes(10768)) {
-        return "trending";
-      }
-      
-      // Default categorization based on popularity and rating
-      if (series.popularity > 1000) return "trending";
-      if (series.vote_average > 8) return "prestige";
-      return "emotional";
-    };
-
-    // Get series by category
-    const getSeriesByCategory = (category: string, exclude: Set<number> = new Set()): TMDBTVShow | null => {
-      return allSeries.find(s => !exclude.has(s.id) && categorizeSeries(s) === category) || null;
-    };
-
-    // Selection strategy: 6-7 High-Intensity, Prestige, Emotional, Bright, Trending series
-    
-    // 1. High-Intensity / Visual Anchor (2 slots)
-    const highIntensity1 = getSeriesByCategory("high_intensity", used);
-    if (highIntensity1) {
-      selected.push(highIntensity1);
-      used.add(highIntensity1.id);
-    }
-    
-    const highIntensity2 = getSeriesByCategory("high_intensity", used);
-    if (highIntensity2) {
-      selected.push(highIntensity2);
-      used.add(highIntensity2.id);
-    }
-    
-    // 2. Prestige / Award Feel (1 slot)
-    const prestige = getSeriesByCategory("prestige", used);
-    if (prestige) {
-      selected.push(prestige);
-      used.add(prestige.id);
-    }
-    
-    // 3. Emotional Anchor (1 slot)
-    const emotional = getSeriesByCategory("emotional", used);
-    if (emotional) {
-      selected.push(emotional);
-      used.add(emotional.id);
-    }
-    
-    // 4. Bright / Relief Content (1 slot)
-    const bright = getSeriesByCategory("bright", used);
-    if (bright) {
-      selected.push(bright);
-      used.add(bright.id);
-    }
-    
-    // 5. Trend / Hook Content (1 slot)
-    const trending = getSeriesByCategory("trending", used);
-    if (trending) {
-      selected.push(trending);
-      used.add(trending.id);
-    }
-    
-    // 6. Additional High-Intensity (1 more slot for variety)
-    const highIntensity3 = getSeriesByCategory("high_intensity", used);
-    if (highIntensity3) {
-      selected.push(highIntensity3);
-      used.add(highIntensity3.id);
-    }
-    
-    // If we don't have 6-7 diverse series, fill with remaining popular ones
-    if (selected.length < 7) {
-      const remaining = allSeries
-        .filter(s => !used.has(s.id))
-        .sort((a, b) => b.popularity - a.popularity)
-        .slice(0, 7 - selected.length);
-      
-      selected.push(...remaining);
-    }
-    
-    // Sort by visual variety (alternating dark/light themes)
-    return selected.slice(0, 7);
-  };
 
   // Auto-play functionality
   const startAutoplay = () => {
@@ -369,7 +244,14 @@ const SeriesHero = () => {
               onDragEnd={handleTouchEnd}
               style={{ x: dragOffset }}
             >
-              {/* Background image */}
+                {/* Bottom-to-Top Cinematic Gradient - Crucial for overlap legibility */}
+                <div 
+                  className="absolute inset-0 z-10"
+                  style={{
+                    background: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.4) 30%, rgba(0,0,0,0) 60%)'
+                  }}
+                />
+                {/* Background image */}
               <div className="relative w-full h-full">
                 {currentSlide.backdrop_path ? (
                   <Image
@@ -402,9 +284,11 @@ const SeriesHero = () => {
                       className="space-y-4 text-left"
                       style={{
                         paddingLeft: '60px',
-                        maxWidth: '600px',
+                        maxWidth: '800px',
                         position: 'absolute',
-                        bottom: '48px'
+                        bottom: '25%', // Increased to stay above overlap
+                        left: '0',
+                        zIndex: 50
                       }}
                     >
                     {/* Series info */}

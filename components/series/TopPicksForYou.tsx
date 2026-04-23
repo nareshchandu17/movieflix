@@ -86,16 +86,9 @@ export default function TopPicksForYou({ title = "Top Picks for You", userName }
           <div
             className="
               flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4
-              
-              /* FULL BLEED */
-              -mx-[5vw] w-[calc(100%+10vw)]
-              
-              /* INTERNAL PADDING */
-              px-[5vw]
+              -mr-4 md:-mr-8 lg:-mr-10
             "
           >
-            {/* LEFT SPACER */}
-            <div className="flex-shrink-0 w-12 md:w-20" />
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
@@ -112,7 +105,7 @@ export default function TopPicksForYou({ title = "Top Picks for You", userName }
               </div>
             ))}
             {/* RIGHT SPACER */}
-            <div className="flex-shrink-0 w-12 md:w-20" />
+            <div className="flex-shrink-0 w-4 md:w-8 lg:w-10" />
           </div>
         </div>
       </div>
@@ -135,12 +128,7 @@ export default function TopPicksForYou({ title = "Top Picks for You", userName }
           ref={scrollRef}
           className="
             flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4
-            
-            /* FULL BLEED */
-            -mx-[5vw] w-[calc(100%+10vw)]
-            
-            /* INTERNAL PADDING */
-            px-[5vw]
+            -mr-4 md:-mr-8 lg:-mr-10
           "
           style={{
             scrollbarWidth: "none",
@@ -148,8 +136,6 @@ export default function TopPicksForYou({ title = "Top Picks for You", userName }
             scrollPaddingLeft: "5rem",
           }}
         >
-          {/* LEFT SPACER */}
-          <div className="flex-shrink-0 w-12 md:w-20" />
 
   {series.map((show, index) => (
     <motion.div
@@ -242,7 +228,7 @@ export default function TopPicksForYou({ title = "Top Picks for You", userName }
   ))}
 
           {/* RIGHT SPACER */}
-          <div className="flex-shrink-0 w-12 md:w-20" />
+          <div className="flex-shrink-0 w-4 md:w-8 lg:w-10" />
         </div>
 
         {/* Navigation Arrows */}

@@ -96,7 +96,13 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
       </div>
 
       {/* Fullscreen Player Modal (Reels Style) */}
-      <PlayerModal clip={selectedClip} onClose={() => setSelectedClip(null)} />
+      {selectedClip && (
+        <PlayerModal 
+          clips={clips} 
+          startIndex={Math.max(0, clips.findIndex(c => c.id === selectedClip.id))} 
+          onClose={() => setSelectedClip(null)} 
+        />
+      )}
     </div>
   );
 }

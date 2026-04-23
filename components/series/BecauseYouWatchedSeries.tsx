@@ -80,7 +80,7 @@ export default function BecauseYouWatchedSeries({ title = "Because You Watched",
         </div>
 
         <div className="relative group">
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth py-4 px-6">
+          <div className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth py-4 -mr-4 md:-mr-8 lg:-mr-10">
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
@@ -117,11 +117,8 @@ export default function BecauseYouWatchedSeries({ title = "Because You Watched",
         <div
           ref={scrollRef}
           className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4
-                     pl-6 md:pl-12 lg:pl-20 pr-0
-                     -mr-[50vw] w-[calc(100vw+50vw)]"
+                     -mr-4 md:-mr-8 lg:-mr-10"
         >
-          {/* LEFT SPACER */}
-          <div className="flex-shrink-0 w-12 md:w-20" />
           {series.map((show, index) => (
             <motion.div
               key={`${show.id}-${index}`}
@@ -213,7 +210,7 @@ export default function BecauseYouWatchedSeries({ title = "Because You Watched",
           ))}
 
           {/* RIGHT SPACER */}
-          <div className="flex-shrink-0 w-12 md:w-20" />
+          <div className="flex-shrink-0 w-4 md:w-8 lg:w-10" />
         </div>
 
         {/* Navigation Arrows */}
@@ -226,7 +223,7 @@ export default function BecauseYouWatchedSeries({ title = "Because You Watched",
 
         <button
           onClick={nextSlide}
-          className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-600 hover:border-red-600 z-10"
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-600 hover:border-red-600 z-10"
         >
           <ChevronRight className="w-5 h-5" />
         </button>

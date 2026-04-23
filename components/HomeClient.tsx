@@ -79,48 +79,48 @@ function HomeClient({ serverProfileState }: HomeClientProps = {}) {
       <div className="relative z-10 pt-8 pb-24 overflow-x-hidden">
         {/* All content aligned to a consistent left margin, but allows carousels to bleed right */}
         <div className="space-y-8">
-            <TimeBasedDiscovery />
-            <NewReleasesCarousel />
-            <ContinueWatchingSeries />
-            <RecommendedForYou userName={session?.user?.name || "User"} />
-            <Top10India />
-            <ComingSoon />
-            <BecauseYouWatchedCarousel movieName={lastWatchedMovie?.name || "Action Movie"} movieId={lastWatchedMovie?.id} />
-            <TrendingNow />
+          <TimeBasedDiscovery />
+          <NewReleasesCarousel />
+          <ContinueWatchingSeries />
+          <RecommendedForYou userName={session?.user?.name || "User"} />
+          <Top10India />
+          <ComingSoon />
+          <BecauseYouWatchedCarousel movieName={lastWatchedMovie?.name || "Action Movie"} movieId={lastWatchedMovie?.id} />
+          <TrendingNow />
 
-            <CategorySection
-              title="Top Rated Movies"
-              mediaType="movie"
-              category="top_rated"
-              seeAllHref="/movie?category=top_rated"
-            />
+          <CategorySection
+            title="Top Rated Movies"
+            mediaType="movie"
+            category="top_rated"
+            seeAllHref="/movie?category=top_rated"
+          />
 
-            <CategorySection
-              title="Popular Movies"
-              mediaType="movie"
-              category="popular"
-              seeAllHref="/movie?category=popular"
-            />
+          <CategorySection
+            title="Popular Movies"
+            mediaType="movie"
+            category="popular"
+            seeAllHref="/movie?category=popular"
+          />
 
-            <HiddenGemsCarousel />
-            <PopularIndiaCarousel />
-            <CrimeMysteryCarousel />
-            <ActionSection />
-            <CreepyCarouselSimple />
-            <DramaCarousel />
-            <PopularHollywoodCarousel />
-            <QuickWatchCarousel />
-            <PopularCelebritiesCarousel />
-            <BingeWorthySeriesCarousel />
-            <AnimeCarousel />
-            <HorrorCarousel />
+          <HiddenGemsCarousel />
+          <PopularIndiaCarousel />
+          <CrimeMysteryCarousel />
+          <ActionSection />
+          <CreepyCarouselSimple />
+          <DramaCarousel />
+          <PopularHollywoodCarousel />
+          <QuickWatchCarousel />
+          <PopularCelebritiesCarousel />
+          <BingeWorthySeriesCarousel />
+          <AnimeCarousel />
+          <HorrorCarousel />
 
-            {/* Subscription Gate - Displayed above footer for non-subscribers */}
-            <div className="max-w-7xl mx-auto px-4 mt-20">
-              <SubscriptionGate showLoading={false}>
-                {null}
-              </SubscriptionGate>
-            </div>
+          {/* Subscription Gate - Displayed above footer for non-subscribers */}
+          <div className="max-w-7xl mx-auto px-4 mt-20">
+            <SubscriptionGate showLoading={false}>
+              {null}
+            </SubscriptionGate>
+          </div>
         </div>
       </div>
     </div>

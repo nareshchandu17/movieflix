@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { TMDBMovie, TMDBTVShow } from "@/lib/types";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, PlayIcon, Info } from "lucide-react";
+import { Play, Pause, PlayIcon, Info, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageLoading } from "../loading/PageLoading";
 
 const Hero = () => {
@@ -14,18 +14,9 @@ const Hero = () => {
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [announceText, setAnnounceText] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
   const router = useRouter();
-
-  // Swipe tracking refs
-  const dragStartX = useRef(0);
-  const dragCurrentX = useRef(0);
-  const dragVelocity = useRef(0);
-  const lastTimestamp = useRef(0);
 
   // Fetch hero slides data
   useEffect(() => {
@@ -159,7 +150,7 @@ const Hero = () => {
       setCurrentIndex((prevIndex) =>
         prevIndex === slides.length - 1 ? 0 : prevIndex + 1
       );
-    }, 10000); // 10 seconds
+    }, 5000); // 5 seconds
 
     return () => clearInterval(interval);
   }, [slides, isPaused]);
@@ -240,80 +231,12 @@ const Hero = () => {
     }
   };
 
-  // Swipe/Drag handlers
-  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
-    if (slides.length <= 1) return;
-    
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    dragStartX.current = clientX;
-    dragCurrentX.current = clientX;
-    lastTimestamp.current = Date.now();
-    setIsDragging(true);
-    setIsPaused(true);
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
   };
 
-  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging || slides.length <= 1) return;
-
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const currentTime = Date.now();
-    const timeDelta = currentTime - lastTimestamp.current;
-    
-    dragCurrentX.current = clientX;
-    const distance = clientX - dragStartX.current;
-    
-    // Calculate velocity (pixels per millisecond)
-    if (timeDelta > 0) {
-      dragVelocity.current = (clientX - dragCurrentX.current) / timeDelta;
-    }
-    
-    setDragOffset(distance);
-    lastTimestamp.current = currentTime;
-  };
-
-  const handleDragEnd = () => {
-    if (!isDragging || slides.length <= 1) {
-      setIsDragging(false);
-      return;
-    }
-
-    setIsDragging(false);
-    
-    const distance = dragCurrentX.current - dragStartX.current;
-    const threshold = 50; // Minimum drag distance to trigger slide change
-    const velocityThreshold = 0.5; // Minimum velocity to trigger momentum slide
-    
-    let nextIndex = currentIndex;
-
-    // Check velocity-based sliding (momentum)
-    if (Math.abs(dragVelocity.current) > velocityThreshold) {
-      // Swiped right (positive distance/velocity)
-      if (dragVelocity.current > 0 || distance > threshold) {
-        nextIndex = currentIndex === 0 ? slides.length - 1 : currentIndex - 1;
-      }
-      // Swiped left (negative distance/velocity)
-      else if (dragVelocity.current < 0 || distance < -threshold) {
-        nextIndex = currentIndex === slides.length - 1 ? 0 : currentIndex + 1;
-      }
-    } else {
-      // No momentum, use distance-based sliding
-      if (distance > threshold) {
-        // Swiped right
-        nextIndex = currentIndex === 0 ? slides.length - 1 : currentIndex - 1;
-      } else if (distance < -threshold) {
-        // Swiped left
-        nextIndex = currentIndex === slides.length - 1 ? 0 : currentIndex + 1;
-      }
-    }
-
-    setCurrentIndex(nextIndex);
-    setDragOffset(0);
-    dragVelocity.current = 0;
-    
-    // Resume autoplay after a delay
-    setTimeout(() => {
-      setIsPaused(false);
-    }, 500);
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
   };
 
   // Handle keyboard navigation
@@ -346,19 +269,13 @@ const Hero = () => {
 
   return (
     <div
-      className="hero-carousel-focus relative w-full overflow-hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2 cursor-grab active:cursor-grabbing"
+      className="hero-carousel-focus relative w-full overflow-hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2"
       style={{ height: "100vh" }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onFocus={handleFocus}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
-      onMouseDown={handleDragStart}
-      onMouseMove={handleDragMove}
-      onMouseUp={handleDragEnd}
-      onTouchStart={handleDragStart}
-      onTouchMove={handleDragMove}
-      onTouchEnd={handleDragEnd}
       tabIndex={0}
       role="region"
       aria-label="Hero carousel"
@@ -366,27 +283,12 @@ const Hero = () => {
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
-          initial={{ 
-            opacity: 0, 
-            x: isDragging ? 0 : 300,
-            scale: isDragging ? 1 : 1.1
-          }}
-          animate={{ 
-            opacity: 1, 
-            x: isDragging ? dragOffset : 0,
-            scale: isDragging ? 1 : 1
-          }}
-          exit={{ 
-            opacity: 0, 
-            x: -300,
-            scale: 0.9
-          }}
+          initial={{ opacity: 0, scale: 1.1 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
           transition={{ 
-            duration: isDragging ? 0 : 0.8,
-            type: "spring",
-            stiffness: isDragging ? 300 : 80,
-            damping: isDragging ? 30 : 15,
-            mass: 1.2
+            duration: 1.2,
+            ease: "easeInOut"
           }}
           className="absolute inset-0"
         >
@@ -560,6 +462,27 @@ const Hero = () => {
         </motion.div>
       </div>
 
+      {/* Navigation Arrows */}
+      <div className="absolute inset-y-0 left-0 flex items-center px-4 z-30">
+        <button
+          onClick={handlePrev}
+          className="p-3 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm border border-white/10 text-white transition-all duration-300 hover:scale-110 group"
+          aria-label="Previous slide"
+        >
+          <ChevronLeft className="w-6 h-6 group-hover:-translate-x-0.5 transition-transform" />
+        </button>
+      </div>
+
+      <div className="absolute inset-y-0 right-0 flex items-center px-4 z-30">
+        <button
+          onClick={handleNext}
+          className="p-3 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm border border-white/10 text-white transition-all duration-300 hover:scale-110 group"
+          aria-label="Next slide"
+        >
+          <ChevronRight className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
+        </button>
+      </div>
+
       {/* Slide indicators and pause/play control */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-4 z-20">
         {/* Slide dots */}
@@ -568,9 +491,9 @@ const Hero = () => {
             <button
               key={index}
               onClick={() => setCurrentIndex(index)}
-              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black cursor-pointer ${
+              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-black cursor-pointer ${
                 index === currentIndex
-                  ? "bg-theme-primary"
+                  ? "bg-red-600 w-4"
                   : "bg-white/50 hover:bg-white/70"
               }`}
               aria-label={`Go to slide ${index + 1}`}

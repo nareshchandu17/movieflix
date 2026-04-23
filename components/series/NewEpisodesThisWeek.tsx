@@ -101,7 +101,7 @@ export default function NewEpisodesThisWeek({
   return (
     <div className="relative">
       {/* HEADER (LEFT SAFE) */}
-      <div className="px-6 md:px-12 lg:px-20 mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">{title}</h2>
         <button 
           onClick={() => router.push('/series?category=on_the_air')}
@@ -117,9 +117,7 @@ export default function NewEpisodesThisWeek({
           ref={scrollRef}
           className="
             flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4
-            pl-6 md:pl-12 lg:pl-20
-            pr-0
-            -mr-[50vw] w-[calc(100vw+50vw)]
+            -mr-4 md:-mr-8 lg:-mr-10
           "
         >
 
@@ -218,7 +216,7 @@ export default function NewEpisodesThisWeek({
 
         <button
           onClick={() => scroll("right")}
-          className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition hover:bg-green-600 z-10"
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition hover:bg-green-600 z-10"
         >
           <ChevronRight />
         </button>

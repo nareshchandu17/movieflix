@@ -12,7 +12,7 @@ interface SceneCarouselProps {
   title: string;
   icon: string;
   query: string;
-  onPlayClip: (clip: Clip) => void;
+  onPlayClip: (clip: Clip, list: Clip[]) => void;
   index: number;
 }
 
@@ -155,13 +155,13 @@ export default function SceneCarousel({ id, title, icon, query, onPlayClip, inde
         ) : clips.length > 0 ? (
           <div
             ref={scrollRef}
-            className="flex gap-3 overflow-x-auto scrollbar-hide px-4 md:px-12 snap-x snap-mandatory"
+            className="flex gap-4 overflow-x-auto scrollbar-hide px-4 md:px-12 snap-x snap-mandatory py-10 -my-10"
             onScroll={updateScrollButtons}
             style={{ scrollPaddingLeft: "3rem" }}
           >
             {clips.map((clip) => (
               <div key={clip.id} className="snap-start">
-                <ClipCard clip={clip} onPlay={onPlayClip} />
+                <ClipCard clip={clip} onPlay={(c) => onPlayClip(c, clips)} />
               </div>
             ))}
           </div>

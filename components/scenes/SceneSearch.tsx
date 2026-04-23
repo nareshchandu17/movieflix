@@ -60,6 +60,7 @@ export default function SceneSearch({ onSearch }: SceneSearchProps) {
             onBlur={() => setIsFocused(false)}
             placeholder='Example: "KGF entry", "Salaar fight"'
             className="flex-1 bg-transparent text-white text-base md:text-lg outline-none placeholder-gray-600 font-medium"
+            suppressHydrationWarning
           />
           {value && (
             <motion.button

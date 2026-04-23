@@ -98,7 +98,7 @@ const SeriesCarousel = ({
   }
 
   return (
-    <div className="space-y-4 px-6 md:px-12 lg:px-20">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-white">{title}</h2>
         <button 
@@ -111,11 +111,10 @@ const SeriesCarousel = ({
       <div className="relative group">
         <div 
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
+          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth -mr-4 md:-mr-8 lg:-mr-10"
           style={{ 
             scrollbarWidth: 'none', 
-            msOverflowStyle: 'none',
-            width: 'calc(100vw + 2rem)' // Full bleed to right edge
+            msOverflowStyle: 'none'
           }}
         >
           {series.map((item) => (
@@ -370,10 +369,36 @@ const SeriesCarousels = () => {
         setCarousels(prev => ({ ...prev, trending: trending.results.slice(0, 10) as TMDBTVShow[] }));
         setLoading(prev => ({ ...prev, trending: false }));
 
-        // Popular Series
+        // Popular Series - Manual Curated List (Premium Selection)
         setLoading(prev => ({ ...prev, popular: true }));
-        const popular = await api.getPopular("tv", 1);
-        setCarousels(prev => ({ ...prev, popular: popular.results.slice(0, 10) as TMDBTVShow[] }));
+        const POPULAR_SERIES_IDS = [
+          1396,    // Breaking Bad
+          66732,   // Stranger Things
+          1399,    // Game of Thrones
+          76479,   // The Boys
+          94997,   // House of the Dragon
+          80923,   // Mirzapur
+          82856,   // The Family Man
+          114695,  // Farzi
+          106379,  // Panchayat
+          63056,   // Sacred Games
+          1429,    // Attack on Titan
+          95479,   // Jujutsu Kaisen
+          85937,   // Demon Slayer
+          209867,  // Frieren: Beyond Journey's End
+          37854    // One Piece
+        ];
+
+        const popularResults = await Promise.allSettled(
+          POPULAR_SERIES_IDS.map(id => api.getDetails("tv", id))
+        );
+
+        const curatedPopular = popularResults
+          .filter((res): res is PromiseFulfilledResult<any> => res.status === "fulfilled")
+          .map(res => res.value as TMDBTVShow)
+          .filter(show => show.poster_path);
+
+        setCarousels(prev => ({ ...prev, popular: curatedPopular }));
         setLoading(prev => ({ ...prev, popular: false }));
 
         // Top Rated Series

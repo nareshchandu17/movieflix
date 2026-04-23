@@ -80,7 +80,7 @@ export default function PopularOnMovieFlix({ title = "Popular on MovieFlix" }: P
         </div>
 
         <div className="relative group">
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth py-4 px-6">
+          <div className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth py-4 -mr-4 md:-mr-8 lg:-mr-10">
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
@@ -119,21 +119,13 @@ export default function PopularOnMovieFlix({ title = "Popular on MovieFlix" }: P
           ref={scrollRef}
           className="
             flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4
-            
-            /* FULL BLEED */
-            -mx-[5vw] w-[calc(100%+10vw)]
-            
-            /* INTERNAL PADDING */
-            px-[5vw]
+            -mr-4 md:-mr-8 lg:-mr-10
           "
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
-            scrollPaddingLeft: "5rem",
           }}
         >
-          {/* LEFT SPACER */}
-          <div className="flex-shrink-0 w-12 md:w-20" />
           {series.map((show, index) => (
             <motion.div
               key={`${show.id}-${index}`}
@@ -210,7 +202,7 @@ export default function PopularOnMovieFlix({ title = "Popular on MovieFlix" }: P
           ))}
 
           {/* RIGHT SPACER */}
-          <div className="flex-shrink-0 w-12 md:w-20" />
+          <div className="flex-shrink-0 w-4 md:w-8 lg:w-10" />
         </div>
 
         {/* Navigation Arrows */}
@@ -223,7 +215,7 @@ export default function PopularOnMovieFlix({ title = "Popular on MovieFlix" }: P
 
         <button
           onClick={nextSlide}
-          className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-indigo-600 hover:border-indigo-600 z-10"
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-indigo-600 hover:border-indigo-600 z-10"
         >
           <ChevronRight className="w-5 h-5" />
         </button>

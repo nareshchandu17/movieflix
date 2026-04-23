@@ -31,12 +31,22 @@ interface Filters {
   smartMode: boolean;
 }
 
+const HERO_MOVIE_IDS = [
+  693134, // Dune: Part Two
+  533535, // Deadpool & Wolverine
+  801688, // Kalki 2898 AD
+  857598, // Pushpa 2: The Rule
+  786892, // Furiosa: A Mad Max Saga
+  823464, // Godzilla x Kong: The New Empire
+];
+
 const NewAndPopularClient = () => {
   const [allMedia, setAllMedia] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
   const [trendingMedia, setTrendingMedia] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
   const [newReleases, setNewReleases] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
   const [top10Media, setTop10Media] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
   const [personalizedMedia, setPersonalizedMedia] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
+  const [heroMedia, setHeroMedia] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     format: "all",
@@ -126,6 +136,21 @@ const NewAndPopularClient = () => {
     try {
       setIsLoading(true);
       console.log("[NewAndPopular] Fetching unique media data for all carousels...");
+
+      // Fetch curated hero movies
+      const heroMoviesData = await Promise.all(
+        HERO_MOVIE_IDS.map(id => api.getDetails("movie", id))
+      );
+
+      // Map Details to simple results format for compatibility with the media carousels
+      const mappedHeroMedia = heroMoviesData
+        .filter((m): m is any => m !== null)
+        .map(item => ({
+          ...item,
+          genre_ids: item.genres?.map((g: any) => g.id).filter((id: any) => id !== undefined) || []
+        }));
+
+      setHeroMedia(mappedHeroMedia);
 
       // Fetch diverse data sets for different carousels
       const [
@@ -336,18 +361,18 @@ const NewAndPopularClient = () => {
 
         {/* Hero Spotlight */}
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.6 }}
           className="relative"
         >
-          <HeroSpotlight media={getFilteredMedia(allMedia).slice(0, 5)} />
+          <HeroSpotlight media={heroMedia.length >= 6 ? heroMedia : getFilteredMedia(allMedia).slice(0, 6)} />
           
           
         </motion.div>
 
         {/* Content Sections - Enhanced Carousels */}
-        <div className="space-y-12">
+        <div className="relative z-10 space-y-12 pb-20">
           {/* 🎬 Continue Watching */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
