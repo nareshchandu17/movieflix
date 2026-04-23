@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import AccountSettings from '@/models/AccountSettings';
 import User from '@/models/User';
+import Subscription from '@/models/Subscription';
 
 export async function GET() {
   try {
@@ -37,7 +38,13 @@ export async function GET() {
         .lean();
     }
 
-    return NextResponse.json({ success: true, settings });
+    // Get active subscription
+    const subscription = await Subscription.findOne({ 
+      userId: session.user.id,
+      status: 'active' 
+    }).lean();
+
+    return NextResponse.json({ success: true, settings, subscription });
   } catch (error) {
     console.error('Error fetching account settings:', error);
     return NextResponse.json(

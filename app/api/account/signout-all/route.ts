@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import LoginActivity from '@/models/LoginActivity';
+import Device from '@/models/Device';
+import { NotificationService } from '@/lib/services/NotificationService';
 
 export async function DELETE() {
   try {
@@ -13,7 +15,7 @@ export async function DELETE() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Sign out from all devices except current
+    // Sign out from all devices in login activity
     await LoginActivity.updateMany(
       { 
         userId: session.user.id,
@@ -23,6 +25,19 @@ export async function DELETE() {
         isActive: false,
         logoutTime: new Date()
       }
+    );
+    
+    // Also deactivate all devices
+    await Device.updateMany(
+      { userId: session.user.id },
+      { isActive: false }
+    );
+    
+    // Send security notification
+    await NotificationService.sendSecurityAlert(
+      session.user.id,
+      "Global Sign Out",
+      "You have been signed out of all active devices for security reasons."
     );
 
     return NextResponse.json({ 
