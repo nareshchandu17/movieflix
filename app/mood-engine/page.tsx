@@ -9,6 +9,7 @@ import ClientLayout from "@/app/ClientLayout";
 export default function MoodEnginePage() {
   const [results, setResults] = useState<any[] | null>(null);
   const [userMood, setUserMood] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-purple-500/30">
@@ -20,7 +21,25 @@ export default function MoodEnginePage() {
 
       <main className="relative z-10 pt-32 pb-20">
         <AnimatePresence mode="wait">
-          {!results ? (
+          {isLoading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="w-full max-w-7xl mx-auto px-8 space-y-12"
+            >
+               <div className="flex flex-col gap-4 mb-12">
+                 <div className="h-12 w-64 bg-white/5 animate-pulse rounded-lg" />
+                 <div className="h-4 w-48 bg-white/5 animate-pulse rounded-lg" />
+               </div>
+               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                 {[...Array(10)].map((_, i) => (
+                   <div key={i} className="aspect-[2/3] rounded-xl bg-white/5 animate-pulse border border-white/5" />
+                 ))}
+               </div>
+            </motion.div>
+          ) : !results ? (
             <motion.div
               key="input"
               initial={{ opacity: 0, scale: 0.95 }}
@@ -29,8 +48,11 @@ export default function MoodEnginePage() {
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
               <MoodInput 
-                onMatch={(matches) => {
+                onStartLoading={() => setIsLoading(true)}
+                onMatch={(matches, mood) => {
                   setResults(matches);
+                  if (mood) setUserMood(mood);
+                  setIsLoading(false);
                 }} 
               />
             </motion.div>

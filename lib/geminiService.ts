@@ -336,119 +336,7 @@ Return ONLY the JSON object, no other text.`;
     }
   }
 
-  /**
-   * Extracts emotional intent from natural language user input
-   */
-  async extractMoodIntent(userInput: string): Promise<{
-    openingEmotion: string;
-    midpointEmotion: string;
-    resolutionEmotion: string;
-    intensityScore: number;
-    cryProbability: number;
-    hopeIndex: number;
-    laughDensity: number;
-    toneRequirement: string;
-  }> {
-    try {
-      this.logger.info("Extracting mood intent", { userInput });
-
-      if (this.isSimulated()) {
-        const lowerInput = userInput.toLowerCase();
-        // Intelligent mock based on keywords
-        const isSad = lowerInput.includes("cry") || lowerInput.includes("sad");
-        const isHopeful = lowerInput.includes("hope") || lowerInput.includes("happy");
-        
-        return {
-          openingEmotion: isSad ? "sorrow" : "curiosity",
-          midpointEmotion: "introspection",
-          resolutionEmotion: isHopeful ? "hope" : "satisfaction",
-          intensityScore: isSad ? 8 : 5,
-          cryProbability: isSad ? 9 : 2,
-          hopeIndex: isHopeful ? 9 : 5,
-          laughDensity: lowerInput.includes("laugh") ? 8 : 1,
-          toneRequirement: isSad && isHopeful ? "dark-but-hopeful" : isSad ? "purely dark" : "warm"
-        };
-      }
-
-      const prompt = `You are an expert cinematic psychologist. Analyze this user mood/request: "${userInput}"
-      
-      Convert this natural language into a structured emotional arc profile.
-      
-      Requirements:
-      1. openingEmotion, midpointEmotion, resolutionEmotion: Single words describing the desired journey.
-      2. intensityScore: 1-10 (how emotionally intense/heavy)
-      3. cryProbability: 1-10 (likelihood of wanting to cry)
-      4. hopeIndex: 1-10 (level of optimism/hope)
-      5. laughDensity: 1-10 (frequency of comedic relief)
-      6. toneRequirement: One of: "dark-but-hopeful", "purely dark", "warm", "satirical", "absurdist"
-      
-      Return ONLY a JSON object:
-      {
-        "openingEmotion": "word",
-        "midpointEmotion": "word",
-        "resolutionEmotion": "word",
-        "intensityScore": 5,
-        "cryProbability": 2,
-        "hopeIndex": 8,
-        "laughDensity": 4,
-        "toneRequirement": "warm"
-      }`;
-
-      const response = await this.ai.models.generateContent({
-        model: this.MODEL_NAME,
-        contents: prompt,
-      });
-
-      if (!response?.text) {
-        throw new Error("Empty response from Gemini API");
-      }
-
-      const cleanedText = response.text
-        .replace(/^```json\s*/i, "")
-        .replace(/```\s*$/i, "")
-        .trim();
-
-      return JSON.parse(cleanedText);
-    } catch (error) {
-      this.logger.error("Error extracting mood intent", { error: (error as Error).message });
-      // Fallback defaults
-      return {
-        openingEmotion: "neutral",
-        midpointEmotion: "curious",
-        resolutionEmotion: "satisfied",
-        intensityScore: 5,
-        cryProbability: 3,
-        hopeIndex: 5,
-        laughDensity: 5,
-        toneRequirement: "warm"
-      };
-    }
-  }
-
-  /**
-   * Generates a "Why this matches" explanation
-   */
-  async generateMoodExplanation(movieTitle: string, userMood: string): Promise<string> {
-    try {
-      if (this.isSimulated()) {
-        return `"${movieTitle}" perfectly captures the emotional resonance of "${userMood}" through its masterful storytelling.`;
-      }
-
-      const prompt = `User said: "${userMood}"
-      Recommended Movie: "${movieTitle}"
-      
-      Write a one-line explanation (max 20 words) explaining why "${movieTitle}" perfectly matches the emotional journey the user requested. Be cinematic and empathetic.`;
-
-      const response = await this.ai.models.generateContent({
-        model: this.MODEL_NAME,
-        contents: prompt,
-      });
-
-      return response.text?.trim() || "Matches the emotional resonance of your request.";
-    } catch (error) {
-      return "A perfect emotional match for your current mood.";
-    }
-  }
+  // Mood extraction and explanation methods have been removed.
   /**
    * Generates a spoiler-aware catch-up summary
    */
@@ -659,7 +547,7 @@ Return ONLY the JSON object, no other text.`;
       // Robust JSON extraction
       let cleanedText = response.text.trim();
       const jsonMatch = cleanedText.match(/\[\s*\{[\s\S]*\}\s*\]/);
-      
+
       if (jsonMatch) {
         cleanedText = jsonMatch[0];
       } else {
@@ -679,11 +567,121 @@ Return ONLY the JSON object, no other text.`;
       return { insights: insights.slice(0, 5), success: true };
     } catch (error) {
       const errorMessage = this.handleError(error as Error);
-      this.logger.error("Error generating series insights", { 
+      this.logger.error("Error generating series insights", {
         error: errorMessage,
-        rawResponse: "truncated" 
+        rawResponse: "truncated"
       });
       return { insights: [], success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Generates a comprehensive Taste DNA profile based on watch history
+   */
+  async generateTasteDNA(profileName: string, watchHistory: any[]): Promise<{
+    persona: string;
+    summary: string;
+    traits: string[];
+    personality: string;
+    moodDistribution: Array<{ label: string; value: number }>;
+    evolution: {
+      period: string;
+      changes: Array<{ label: string; change: number }>;
+    };
+    genres: Record<string, number>;
+    recommendations: string[];
+  }> {
+    try {
+      this.logger.info("Generating Taste DNA", { profileName, historyCount: watchHistory.length });
+
+      if (this.isSimulated() || watchHistory.length === 0) {
+        // High-quality fallback for empty or simulation
+        return {
+          persona: "The Cinematic Voyager",
+          summary: "You are just beginning your journey through the world of film. Your tastes are diverse, showing an early interest in compelling narratives and high-stakes drama.",
+          traits: ["Curious Observer", "Genre Explorer", "Narrative Seeker"],
+          personality: "The Open-Minded Scout",
+          moodDistribution: [
+            { label: "Excitement", value: 40 },
+            { label: "Drama", value: 30 },
+            { label: "Wonder", value: 20 },
+            { label: "Mystery", value: 10 }
+          ],
+          evolution: {
+            period: "Last 30 days",
+            changes: [
+              { label: "Adventure", change: 15 },
+              { label: "Comedy", change: -5 }
+            ]
+          },
+          genres: { "Action": 5, "Drama": 3 },
+          recommendations: ["Inception", "The Shawshank Redemption", "Interstellar"]
+        };
+      }
+
+      const historySummary = watchHistory.slice(0, 15).map(h =>
+        `- ${h.metadata?.title || 'Unknown Title'} (${h.contentType})`
+      ).join("\n");
+
+      const prompt = `You are a cinematic growth analyst for "${profileName}". 
+      Analyze their recent watch history:
+      ${historySummary}
+      
+      GOAL: Create a deep "Taste DNA" profile that feels like a premium personality report (Spotify Wrapped style).
+      
+      Requirements:
+      1. persona: A catchy title (e.g. "The Cerebral Story Seeker").
+      2. summary: A 2-sentence poetic analysis of their style.
+      3. traits: 3 distinct emotional or technical traits.
+      4. personality: A unique viewing personality (e.g. "The Night Thriller Enthusiast").
+      5. moodDistribution: 4-5 core moods as labels and values (totaling 100).
+      6. evolution: Compare with "previous month" (simulate trends based on history diversity).
+      7. genres: A breakdown of genre counts.
+      8. recommendations: 3 specific movie/series titles they would LOVE based on this DNA.
+      
+      Return ONLY a JSON object:
+      {
+        "persona": "...",
+        "summary": "...",
+        "traits": ["...", "...", "..."],
+        "personality": "...",
+        "moodDistribution": [{"label": "...", "value": 25}, ...],
+        "evolution": {
+          "period": "Last 30 days",
+          "changes": [{"label": "Genre", "change": 12}, ...]
+        },
+        "genres": {"Action": 5, ...},
+        "recommendations": ["Title 1", "Title 2", "Title 3"]
+      }`;
+
+      const response = await this.ai.models.generateContent({
+        model: this.MODEL_NAME,
+        contents: prompt,
+      });
+
+      if (!response?.text) {
+        throw new Error("Empty response from Gemini API");
+      }
+
+      const cleanedText = response.text
+        .replace(/^```json\s*/i, "")
+        .replace(/```\s*$/i, "")
+        .trim();
+
+      return JSON.parse(cleanedText);
+    } catch (error) {
+      this.logger.error("Error generating Taste DNA", { error: (error as Error).message });
+      // Safety fallback
+      return {
+        persona: "The Global Cinephile",
+        summary: "You have a balanced appetite for stories that span across genres and cultures.",
+        traits: ["Balanced", "Observant", "Diverse"],
+        personality: "The Daily Streamer",
+        moodDistribution: [{ label: "Joy", value: 50 }, { label: "Tension", value: 50 }],
+        evolution: { period: "Last 30 days", changes: [] },
+        genres: { "Drama": 1 },
+        recommendations: ["Parasite", "Breaking Bad"]
+      };
     }
   }
 }

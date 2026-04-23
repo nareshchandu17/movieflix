@@ -33,11 +33,10 @@ const AsyncResultsSection = ({
       {statusMessage && (
         <div className="flex justify-center mb-6">
           <div
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${
-              currentError
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${currentError
                 ? "bg-red-900/50 text-red-300 border border-red-700"
                 : "bg-blue-900/50 text-blue-300 border border-blue-700"
-            }`}
+              }`}
           >
             {statusMessage}
           </div>
@@ -125,13 +124,13 @@ const SearchPageContent = () => {
     try {
       // Use our enhanced API endpoint for smart search
       const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&maxResults=50`);
-      
+
       if (!response.ok) {
         throw new Error('Search request failed');
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
         setSearchResults(data.results);
         setActiveSource("search");
@@ -170,7 +169,7 @@ const SearchPageContent = () => {
    */
   const updateSearchURL = (query: string) => {
     if (!searchParams) return;
-    
+
     const params = new URLSearchParams(searchParams.toString());
     if (query.trim() === "") {
       params.delete("q");

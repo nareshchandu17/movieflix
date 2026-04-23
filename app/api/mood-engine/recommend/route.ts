@@ -27,26 +27,26 @@ export async function POST(request: NextRequest) {
 
     // Populate full details (Movie or Series)
     const populatedRecommendations = await Promise.all(
-      recommendations.map(async (rec) => {
+      (recommendations as any[]).map(async (rec) => {
         let content = null;
         if (rec.contentType === "Series") {
           content = await Series.findById(rec.contentId).lean();
         } else {
           content = await Movie.findById(rec.contentId).lean();
         }
-        
+
         return {
           ...rec,
           movie: content,
           // Explicitly pass tmdbId to the result for easier routing
-          routingId: (content as any)?.tmdbId || rec.contentId 
+          routingId: (content as any)?.tmdbId || rec.contentId
         };
       })
     );
 
-    return NextResponse.json({ 
-      success: true, 
-      recommendations: populatedRecommendations 
+    return NextResponse.json({
+      success: true,
+      recommendations: populatedRecommendations
     });
 
   } catch (error) {

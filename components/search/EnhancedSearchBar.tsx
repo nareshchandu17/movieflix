@@ -69,17 +69,17 @@ const EnhancedSearchBar = ({
     const value = e.target.value;
     setSearchValue(value);
     setIsLoading(true);
-    
+
     // Get suggestions
     if (showSuggestions) {
       debouncedGetSuggestions(value);
     }
-    
+
     // Notify parent
     if (onTyping) {
       onTyping(value);
     }
-    
+
     setIsLoading(false);
   }, [onTyping, showSuggestions, debouncedGetSuggestions]);
 
@@ -92,17 +92,17 @@ const EnhancedSearchBar = ({
 
     setIsLoading(true);
     setShowSuggestionsDropdown(false);
-    
+
     try {
       const results = await smartSearch(query, {
         includeMovies: true,
         includeTV: true,
         maxResults: 20
       });
-      
+
       // Navigate to search results page
       router.push(`/search?q=${encodeURIComponent(query.trim())}`);
-      
+
       // Notify parent if callback provided
       if (onSearch) {
         onSearch(results, query);
@@ -185,18 +185,16 @@ const EnhancedSearchBar = ({
     <div className="relative max-w-2xl w-full">
       {/* Search Container */}
       <div
-        className={`relative flex items-center bg-gradient-to-r from-black/90 to-gray-900/90 backdrop-blur-xl rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
-          isFocused
+        className={`relative flex items-center bg-gradient-to-r from-black/90 to-gray-900/90 backdrop-blur-xl rounded-2xl border-2 transition-all duration-300 overflow-hidden ${isFocused
             ? "border-blue-500 shadow-lg shadow-blue-500/20 scale-[1.02]"
             : "border-gray-700 hover:border-gray-600"
-        }`}
+          }`}
       >
         {/* Search Icon */}
         <div className="pl-4 pr-3">
           <BiSearch
-            className={`text-xl transition-colors duration-300 ${
-              isFocused ? "text-blue-400" : "text-gray-400"
-            }`}
+            className={`text-xl transition-colors duration-300 ${isFocused ? "text-blue-400" : "text-gray-400"
+              }`}
           />
         </div>
 
@@ -270,7 +268,7 @@ const EnhancedSearchBar = ({
               </button>
             ))}
           </div>
-          
+
           {/* Footer */}
           <div className="border-t border-gray-700 px-4 py-2">
             <button

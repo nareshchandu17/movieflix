@@ -36,7 +36,7 @@ async function searchHandler(request: NextRequest) {
   } catch (error) {
     console.error('Smart search API error:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Search failed',
         message: error instanceof Error ? error.message : 'Unknown error occurred'
       },
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Advanced search API error:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Advanced search failed',
         message: error instanceof Error ? error.message : 'Unknown error occurred'
       },
