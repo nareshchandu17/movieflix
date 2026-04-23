@@ -42,6 +42,20 @@ export interface IUserPreferences extends Document {
     audioLanguage: string;
     videoQuality: 'auto' | 'low' | 'medium' | 'high';
   };
+  tasteDNA?: {
+    persona: string;
+    summary: string;
+    traits: string[];
+    personality: string;
+    moodDistribution: Array<{ label: string; value: number }>;
+    evolution: {
+      period: string;
+      changes: Array<{ label: string; change: number }>;
+    };
+    genres: Record<string, number>;
+    recommendations: string[];
+    lastGenerated: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -160,6 +174,32 @@ const UserPreferencesSchema: Schema = new Schema({
       type: String,
       enum: ['auto', 'low', 'medium', 'high'],
       default: 'auto'
+    }
+  },
+  tasteDNA: {
+    persona: String,
+    summary: String,
+    traits: [String],
+    personality: String,
+    moodDistribution: [{
+      label: String,
+      value: Number
+    }],
+    evolution: {
+      period: String,
+      changes: [{
+        label: String,
+        change: Number
+      }]
+    },
+    genres: {
+      type: Map,
+      of: Number
+    },
+    recommendations: [String],
+    lastGenerated: {
+      type: Date,
+      default: Date.now
     }
   },
 }, {

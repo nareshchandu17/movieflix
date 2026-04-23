@@ -5,6 +5,7 @@ export enum NotificationType {
   DOWNLOAD_READY = "DOWNLOAD_READY",
   RECOMMENDATION = "RECOMMENDATION",
   SYSTEM_ALERT = "SYSTEM_ALERT",
+  SECURITY_ALERT = "SECURITY_ALERT",
 }
 
 export interface Notification {

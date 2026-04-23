@@ -43,7 +43,6 @@ export async function uploadReactionVideo(
           height: 360, 
           crop: "pad", 
           format: "jpg", 
-          resource_type: "image",
           start_offset: "1"
         }
       ],

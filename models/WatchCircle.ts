@@ -94,7 +94,27 @@ const WatchPartySchema = new mongoose.Schema({
   roomCode: {
     type: String,
     unique: true,
-    required: true
+    required: true,
+    index: true
+  },
+  currentPlayState: {
+    type: String,
+    enum: ['playing', 'paused'],
+    default: 'paused'
+  },
+  currentTime: {
+    type: Number,
+    default: 0
+  },
+  chatHistory: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    userName: String,
+    message: String,
+    timestamp: { type: Date, default: Date.now }
+  }],
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true

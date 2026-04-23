@@ -1,54 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import OnboardingCard from "@/components/OnboardingCard";
 
 const PageNotFound = () => {
-  const { data: session, status } = useSession();
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useEffect(() => {
-    if (status === "loading") return;
-    
-    if (session && !session.user?.onboardingCompleted) {
-      setShowOnboarding(true);
-    }
-  }, [session, status]);
+  const { data: session } = useSession();
 
   const handleGoHome = () => {
     if (session && !session.user?.onboardingCompleted) {
-      setShowOnboarding(true);
+      window.location.href = "/onboarding";
     } else {
       window.location.href = "/";
     }
   };
 
-  const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
-    // Reload page to update session
-    window.location.reload();
-  };
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-center space-y-6 relative">
-      {/* Onboarding Modal Overlay */}
-      {showOnboarding && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-md"
-            onClick={() => setShowOnboarding(false)}
-          />
-          
-          {/* Onboarding Card */}
-          <div className="relative z-10 w-full max-w-md">
-            <OnboardingCard onComplete={handleOnboardingComplete} {...{}} />
-          </div>
-        </div>
-      )}
-      
       <div className="space-y-4">
         <h1 className="text-4xl md:text-6xl font-bold text-gray-400">404</h1>
         <h2 className="text-xl md:text-2xl font-semibold text-white">

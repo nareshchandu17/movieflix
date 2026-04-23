@@ -48,14 +48,15 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       />
 
       <div className="min-h-screen relative z-[90]">
-        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isForYouPage && !isAccountPage && !isDownloadsPage && !isProfilesPage && <Header />}
+        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isForYouPage && !isDownloadsPage && !isProfilesPage && <Header />}
         <main className={cn(
-          "transition-all duration-700",
-          mounted && showDeepOverlay ? "blur-xl scale-[0.97] opacity-20 pointer-events-none" : "blur-0 scale-100 opacity-100"
+          mounted && showDeepOverlay 
+            ? "transition-all duration-700 blur-xl scale-[0.97] opacity-20 pointer-events-none" 
+            : "opacity-100"
         )}>
           {children}
         </main>
-        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isForYouPage && !isAccountPage && !isDownloadsPage && !isProfilesPage && <Footer />}
+        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isForYouPage && !isDownloadsPage && !isProfilesPage && <Footer />}
         <Toaster position="top-right" richColors />
       </div>
     </>

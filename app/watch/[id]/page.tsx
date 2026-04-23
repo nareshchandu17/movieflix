@@ -60,10 +60,26 @@ export default async function WatchPage({
   const { id } = await params;
   const { type, season, episode } = await searchParams;
   
-  const { data: contentData, type: resolvedType } = await getContentFromDB(id, type);
+  let { data: contentData, type: resolvedType } = await getContentFromDB(id, type);
   
   if (!contentData) {
-    notFound();
+    // If not in our local DB, fetch basic info directly from TMDB
+    // to allow the watch player UI to render
+    const { api } = await import('@/lib/api');
+    try {
+      if (type === 'tv' || type === 'series') {
+        const tv = await api.getDetails('tv', parseInt(id));
+        contentData = { title: tv.name || tv.original_name, videoUrl: "" } as any;
+        resolvedType = 'series';
+      } else {
+        const movie = await api.getDetails('movie', parseInt(id));
+        contentData = { title: movie.title || movie.original_title, videoUrl: "" } as any;
+        resolvedType = 'movie';
+      }
+    } catch (e) {
+      console.error("Content not found in TMDB either:", e);
+      notFound();
+    }
   }
 
   // Enforcement check

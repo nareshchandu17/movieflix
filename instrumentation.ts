@@ -11,16 +11,13 @@ export async function register() {
       console.error("❌ Failed to initialize background workers:", error);
     }
 
-    // 2. Start Standalone WebSocket Server (Port 3001)
-    // Only attempt to start in a non-production environment or if explicitly requested
     if (process.env.NODE_ENV === 'development') {
       try {
-        // Use a simple guard to avoid multiple spawns during HMR if possible
-        // Note: NEXT_RUNTIME='nodejs' instrumentation runs once on server start
-        const socketServer = spawn('node', ['websocket-server.js'], {
+        // Use the production-ready socket server which supports notifications
+        const socketServer = spawn('npx', ['ts-node', 'server/socket-server.ts'], {
           stdio: 'inherit',
           shell: true,
-          detached: false, // Tie to parent process
+          detached: false,
         });
 
         socketServer.on('error', (err: any) => {

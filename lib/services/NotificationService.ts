@@ -16,6 +16,19 @@ export class NotificationService {
   }
 
   /**
+   * Helper for sending security-related alerts (email change, password change, etc)
+   */
+  static async sendSecurityAlert(userId: string, title: string, message: string) {
+    return this.send({
+      userId,
+      type: NotificationType.SECURITY_ALERT,
+      title,
+      message,
+      link: "/account"
+    });
+  }
+
+  /**
    * Helper for sending movie-related notifications
    */
   static async notifyNewMovie(userId: string, movieTitle: string, movieId: string) {

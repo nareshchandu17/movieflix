@@ -49,15 +49,7 @@ const nextConfig = {
     root: __dirname,
   }, 
 
-  // Handle Socket.IO requests to prevent 404 errors
-  async rewrites() {
-    return [
-      {
-        source: '/socket.io/:path*',
-        destination: '/socket.io/:path*',
-      },
-    ];
-  },
+
 };
 
 module.exports = nextConfig;
