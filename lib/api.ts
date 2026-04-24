@@ -126,7 +126,8 @@ export async function fetchAPI<T = unknown>(
       
       // Handle network errors (fetch failed, timeout, etc.)
       if (!error_.status && !error_.code) {
-        const networkError = new Error('Network error or API unavailable') as Error & { 
+        console.error(`[API] Network error details: ${error_.message}`, error_);
+        const networkError = new Error(`Network error or API unavailable: ${error_.message}`) as Error & { 
           status: number;
           code: string;
         };

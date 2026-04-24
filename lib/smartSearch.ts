@@ -1,392 +1,334 @@
 import { TMDBMovie, TMDBTVShow } from "@/lib/types";
-import { api } from "@/lib/api";
+import { getGeminiService } from "@/lib/geminiService";
 
-// Types for our enhanced search system
-export interface SearchResult {
-  // Common properties
-  id: number;
-  overview: string;
-  poster_path: string | null;
-  backdrop_path: string | null;
-  vote_average: number;
-  vote_count: number;
-  genre_ids: number[];
-  adult: boolean;
-  original_language: string;
-  popularity: number;
-  
-  // Movie properties
-  title?: string;
-  release_date?: string;
-  original_title?: string;
-  video?: boolean;
-  
-  // TV Show properties
-  name?: string;
-  first_air_date?: string;
-  origin_country?: string[];
-  original_name?: string;
-  
-  // Additional properties for search enhancement
-  _searchScore?: number;
-  _isExactMatch?: boolean;
-  _matchType?: 'exact' | 'partial' | 'fuzzy';
-  _source?: 'movie' | 'tv';
+// ==========================================
+// 1. QUERY CLASSIFICATION
+// ==========================================
+export enum QueryType {
+  KEYWORD = "KEYWORD",
+  SEMANTIC = "SEMANTIC",
+  MOOD = "MOOD",
+  PERSON = "PERSON",
+  GENRE = "GENRE",
+  TRENDING = "TRENDING",
+  HYBRID = "HYBRID",
 }
 
-export interface PersonSearchResult {
-  id: number;
-  name: string;
-  profile_path: string | null;
-  known_for_department: string;
-  known_for: Array<{
-    id: number;
-    title?: string;
-    name?: string;
-    poster_path?: string;
-  }>;
-  biography?: string;
-  popularity: number;
-  birthday?: string;
-  place_of_birth?: string;
-  _searchScore?: number;
-  _isExactMatch?: boolean;
-  _matchType?: 'exact' | 'partial' | 'fuzzy';
-  _source?: 'person';
+const MOOD_MAP: Record<string, { genres: number[]; keywords: string[] }> = {
+  "sad": { genres: [18], keywords: ["loss", "death", "love", "tragedy"] },
+  "emotional": { genres: [18], keywords: ["heartbreaking", "moving"] },
+  "happy": { genres: [35, 10751], keywords: [] },
+  "feel good": { genres: [35, 10751], keywords: [] },
+  "thrilling": { genres: [28, 53], keywords: [] },
+  "rainy day": { genres: [18, 14, 10749], keywords: ["cozy", "thoughtful"] }
+};
+
+const GENRE_MAP: Record<string, number> = {
+  action: 28, adventure: 12, animation: 16, comedy: 35, crime: 80,
+  documentary: 99, drama: 18, family: 10751, fantasy: 14, history: 36,
+  horror: 27, music: 10402, mystery: 9648, romance: 10749, science: 878,
+  "sci-fi": 878, thriller: 53, war: 10752, western: 37,
+};
+
+function classifyQuery(query: string): QueryType {
+  const q = query.toLowerCase().trim();
+
+  // Advanced Comparisons / Semantic
+  if (q.includes("movies like ") || q.includes("shows like ") || q.includes("better than ") || q.includes("mind bending")) {
+    return QueryType.SEMANTIC;
+  }
+  
+  if (q.includes("latest") || q.includes("trending") || q.includes("new movies") || q.includes("top rated")) {
+    return QueryType.TRENDING;
+  }
+
+  const moodWords = Object.keys(MOOD_MAP).filter((m) => q.includes(m));
+  const genreWords = Object.keys(GENRE_MAP).filter((g) => q.includes(g));
+
+  if (moodWords.length > 0 && genreWords.length > 0) return QueryType.HYBRID;
+  if (moodWords.length > 0) return QueryType.MOOD;
+  if (genreWords.length > 0) return QueryType.GENRE;
+
+  if (q.endsWith(" movies") || q.endsWith(" shows") || q.includes(" with ")) {
+    const potentialName = q.replace(/ movies| shows/g, "").replace(/movies with /g, "").trim();
+    if (potentialName.split(" ").length >= 2) return QueryType.PERSON; 
+  }
+
+  return QueryType.KEYWORD;
 }
 
-export interface SearchIntent {
-  type: 'exact' | 'genre' | 'actor' | 'year' | 'general';
-  confidence: number;
-  detectedQuery?: string;
+// ==========================================
+// 2. TMDB FETCH FUNCTIONS (STRATEGY ROUTER)
+// ==========================================
+const TMDB_BASE = "https://api.themoviedb.org/3";
+
+async function tmdbFetch(endpoint: string, params: Record<string, string> = {}) {
+  try {
+    const searchParams = new URLSearchParams(params);
+    searchParams.set("api_key", process.env.NEXT_PUBLIC_TMDB_API_KEY || "");
+    const res = await fetch(`${TMDB_BASE}${endpoint}?${searchParams.toString()}`);
+    if (!res.ok) return { results: [] };
+    return res.json();
+  } catch (error) {
+    console.error("TMDB Fetch Error", error);
+    return { results: [] };
+  }
 }
 
-// Cache for search results
-const searchCache = new Map<string, SearchResult[]>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-// Debounce utility
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
+async function fetchKeywordSearch(query: string) {
+  const [movies, tv] = await Promise.all([
+    tmdbFetch("/search/movie", { query, include_adult: "false" }),
+    tmdbFetch("/search/tv", { query, include_adult: "false" }),
+  ]);
+  return [...(movies.results || []), ...(tv.results || [])];
 }
 
-// String normalization for comparison
-export function normalizeString(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-// Check for exact match
-export function isExactMatch(query: string, title: string): boolean {
-  const normalizedQuery = normalizeString(query);
-  const normalizedTitle = normalizeString(title);
-  
-  return normalizedQuery === normalizedTitle ||
-         normalizedTitle.includes(normalizedQuery) ||
-         normalizedQuery.includes(normalizedTitle);
-}
-
-// Fuzzy matching for typo tolerance
-export function fuzzyMatch(query: string, title: string): number {
-  const normalizedQuery = normalizeString(query);
-  const normalizedTitle = normalizeString(title);
-  
-  if (normalizedQuery === normalizedTitle) return 100;
-  if (normalizedTitle.includes(normalizedQuery)) return 80;
-  if (normalizedQuery.includes(normalizedTitle)) return 60;
-  
-  // Levenshtein distance for fuzzy matching
-  const distance = levenshteinDistance(normalizedQuery, normalizedTitle);
-  const maxLength = Math.max(normalizedQuery.length, normalizedTitle.length);
-  const similarity = ((maxLength - distance) / maxLength) * 100;
-  
-  return similarity > 50 ? similarity : 0;
-}
-
-// Simple Levenshtein distance implementation
-function levenshteinDistance(str1: string, str2: string): number {
-  const matrix = Array(str2.length + 1).fill(null).map(() =>
-    Array(str1.length + 1).fill(null)
-  );
-  
-  for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
-  for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
-  
-  for (let j = 1; j <= str2.length; j++) {
-    for (let i = 1; i <= str1.length; i++) {
-      const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[j][i] = Math.min(
-        matrix[j][i - 1] + 1, // deletion
-        matrix[j - 1][i] + 1, // insertion
-        matrix[j - 1][i - 1] + indicator // substitution
-      );
+async function fetchSemanticSearch(query: string) {
+  // Use Gemini to extract exact movie titles to search for
+  try {
+    const gemini = getGeminiService();
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
+      // Direct fetch if geminiService doesn't expose a suitable method
+      const prompt = `You are a movie recommendation engine. The user searched for: "${query}". Return a JSON array of 5 exact movie titles that match this intent perfectly. Only return the JSON array ["Title 1", "Title 2"].`;
+      
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) {
+          const match = text.match(/\[[\s\S]*\]/);
+          if (match) {
+            const titles: string[] = JSON.parse(match[0]);
+            const promises = titles.map(t => tmdbFetch("/search/movie", { query: t }));
+            const results = await Promise.all(promises);
+            let combined: any[] = [];
+            results.forEach(r => { if (r.results && r.results.length > 0) combined.push(r.results[0]); });
+            if (combined.length > 0) return combined;
+          }
+        }
+      }
     }
+  } catch (e) {
+    console.error("Gemini semantic search failed", e);
   }
+
+  // Fallback Semantic strategy
+  const baseTitle = query.toLowerCase().replace(/movies like |shows like |better than /g, "").trim();
+  const baseSearch = await tmdbFetch("/search/movie", { query: baseTitle });
+  if (!baseSearch.results || baseSearch.results.length === 0) return fetchKeywordSearch(query);
   
-  return matrix[str2.length][str1.length];
+  const baseId = baseSearch.results[0].id;
+  const recommendations = await tmdbFetch(`/movie/${baseId}/recommendations`);
+  const similar = await tmdbFetch(`/movie/${baseId}/similar`);
+  return [...(recommendations.results || []), ...(similar.results || [])];
 }
 
-// Detect search intent
-export function detectSearchIntent(query: string): SearchIntent {
-  const normalizedQuery = normalizeString(query);
+async function fetchMoodSearch(query: string) {
+  const q = query.toLowerCase();
+  const mood = Object.keys(MOOD_MAP).find((m) => q.includes(m));
+  if (!mood) return fetchKeywordSearch(query);
   
-  // Check for year patterns
-  const yearMatch = normalizedQuery.match(/\b(19|20)\d{2}\b/);
-  if (yearMatch) {
-    return {
-      type: 'year',
-      confidence: 0.9,
-      detectedQuery: yearMatch[0]
-    };
-  }
+  const genres = MOOD_MAP[mood].genres.join(",");
+  const res = await tmdbFetch("/discover/movie", { with_genres: genres });
+  return res.results || [];
+}
+
+async function fetchPersonSearch(query: string) {
+  const name = query.toLowerCase().replace(/ movies| shows/g, "").replace(/movies with /g, "").trim();
+  const personSearch = await tmdbFetch("/search/person", { query: name });
+  if (!personSearch.results || personSearch.results.length === 0) return fetchKeywordSearch(query);
   
-  // Check for genre keywords
-  const genres = ['action', 'comedy', 'drama', 'horror', 'thriller', 'romance', 'sci-fi', 'fantasy', 'animation'];
-  for (const genre of genres) {
-    if (normalizedQuery.includes(genre)) {
-      return {
-        type: 'genre',
-        confidence: 0.8,
-        detectedQuery: genre
-      };
+  const personId = personSearch.results[0].id;
+  const credits = await tmdbFetch(`/person/${personId}/movie_credits`);
+  return credits.cast || [];
+}
+
+async function fetchGenreSearch(query: string) {
+  const q = query.toLowerCase();
+  const genreIds = Object.keys(GENRE_MAP)
+    .filter((g) => q.includes(g))
+    .map((g) => GENRE_MAP[g]);
+    
+  if (genreIds.length === 0) return fetchKeywordSearch(query);
+  
+  const params: Record<string, string> = { with_genres: genreIds.join(",") };
+  
+  // Regional checks
+  if (q.includes("telugu")) params.with_original_language = "te";
+  if (q.includes("hindi")) params.with_original_language = "hi";
+  if (q.includes("indian")) params.with_origin_country = "IN";
+  
+  const res = await tmdbFetch("/discover/movie", params);
+  return res.results || [];
+}
+
+async function fetchTrendingSearch() {
+  const [trending, nowPlaying, topRated] = await Promise.all([
+    tmdbFetch("/trending/all/day"),
+    tmdbFetch("/movie/now_playing"),
+    tmdbFetch("/movie/top_rated")
+  ]);
+  return [...(trending.results || []), ...(nowPlaying.results || []), ...(topRated.results || [])];
+}
+
+async function fetchHybridSearch(query: string) {
+  const q = query.toLowerCase();
+  const mood = Object.keys(MOOD_MAP).find((m) => q.includes(m));
+  const genreIds = Object.keys(GENRE_MAP)
+    .filter((g) => q.includes(g))
+    .map((g) => GENRE_MAP[g]);
+    
+  let allGenres = [...genreIds];
+  if (mood) allGenres = [...allGenres, ...MOOD_MAP[mood].genres];
+  
+  const uniqueGenres = Array.from(new Set(allGenres));
+  const res = await tmdbFetch("/discover/movie", { with_genres: uniqueGenres.join(",") });
+  return res.results || [];
+}
+
+// ==========================================
+// 3. GLOBAL FILTERS
+// ==========================================
+function applyGlobalFilters(results: any[]) {
+  const seen = new Set();
+  const unique = results.filter(item => {
+    if (!item || !item.id) return false;
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+
+  return unique.filter((item) => {
+    // If it's a person/actor credit, it might be sparse, so handle safely
+    if (item.popularity && item.popularity < 1) return false; 
+    if (!item.poster_path) return false;
+    if (!item.release_date && !item.first_air_date) return false;
+    return true;
+  });
+}
+
+// ==========================================
+// 4. RANKING FUNCTIONS (PER TYPE)
+// ==========================================
+function extractYear(dateStr?: string) {
+  if (!dateStr) return 0;
+  return new Date(dateStr).getFullYear();
+}
+
+function rankResults(results: any[], type: QueryType, query: string) {
+  const q = query.toLowerCase();
+  const currentYear = new Date().getFullYear();
+
+  return results.map(item => {
+    const title = (item.title || item.name || "").toLowerCase();
+    let score = 0;
+    
+    const rating = item.vote_average || 0;
+    const popularity = Math.min((item.popularity || 0) / 10, 50);
+    const year = extractYear(item.release_date || item.first_air_date);
+    const recency = year > 0 ? Math.max(0, 10 - (currentYear - year)) : 0;
+    
+    let globalBoost = 0;
+    if (rating > 7) globalBoost += 10;
+    if (popularity > 30) globalBoost += 10;
+
+    // Fuzzy logic boost for title match
+    if (title === q) globalBoost += 200;
+    else if (title.includes(q)) globalBoost += 50;
+
+    switch (type) {
+      case QueryType.KEYWORD: {
+        const exactMatchBoost = title === q ? 1 : title.includes(q) ? 0.5 : 0;
+        score = (exactMatchBoost * 100) + (rating * 3) + (popularity * 2);
+        break;
+      }
+      case QueryType.SEMANTIC: {
+        const similarityScore = 10;
+        score = (similarityScore * 5) + (rating * 3) + (popularity * 2);
+        break;
+      }
+      case QueryType.MOOD: {
+        const emotionMatch = 10;
+        score = (emotionMatch * 5) + (rating * 3) + (popularity * 2);
+        break;
+      }
+      case QueryType.PERSON: {
+        const roleWeight = item.order && item.order < 5 ? 10 : 5;
+        score = (roleWeight * 5) + (rating * 3) + (popularity * 2);
+        break;
+      }
+      case QueryType.GENRE: {
+        score = (rating * 3) + (popularity * 3) + (recency * 2);
+        break;
+      }
+      case QueryType.TRENDING: {
+        score = (recency * 5) + (popularity * 3);
+        break;
+      }
+      case QueryType.HYBRID: {
+        const multiMatch = 10;
+        score = (multiMatch * 5) + (rating * 3) + (popularity * 2);
+        break;
+      }
     }
-  }
-  
-  // Check for actor patterns (simple heuristic)
-  if (normalizedQuery.split(' ').length >= 2 && normalizedQuery.length > 6) {
-    return {
-      type: 'actor',
-      confidence: 0.6
-    };
-  }
-  
-  // Check for exact movie/show pattern
-  if (normalizedQuery.length > 3) {
-    return {
-      type: 'exact',
-      confidence: 0.8
-    };
-  }
-  
-  return {
-    type: 'general',
-    confidence: 0.4
-  };
+
+    return { ...item, _searchScore: score + globalBoost };
+  }).sort((a, b) => b._searchScore - a._searchScore);
 }
 
-// Calculate smart ranking score
-export function calculateSearchScore(
-  item: SearchResult,
-  query: string,
-  intent: SearchIntent
-): number {
-  let score = 0;
-  const normalizedQuery = normalizeString(query);
-  const title = item.title || item.name || '';
-  const normalizedTitle = normalizeString(title);
-  
-  // Exact match bonus (highest priority)
-  if (isExactMatch(query, title)) {
-    score += 100;
-    item._isExactMatch = true;
-    item._matchType = 'exact';
-  }
-  
-  // Title match score
-  const titleMatchScore = fuzzyMatch(query, title);
-  score += titleMatchScore * 0.5;
-  if (titleMatchScore > 50 && !item._isExactMatch) {
-    item._matchType = 'partial';
-  }
-  
-  // Popularity boost
-  score += Math.min(item.popularity * 0.3, 30);
-  
-  // Rating boost
-  score += item.vote_average * 5;
-  
-  // Recent content boost (2023+)
-  const releaseDate = item.release_date || item.first_air_date || '';
-  if (releaseDate) {
-    const year = new Date(releaseDate).getFullYear();
-    if (year >= 2023) score += 20;
-    else if (year >= 2020) score += 10;
-  }
-  
-  // Known hits boost
-  if (item.popularity > 1000) score += 30;
-  else if (item.popularity > 500) score += 20;
-  else if (item.popularity > 100) score += 10;
-  
-  // Vote count boost (indicates quality)
-  if (item.vote_count > 10000) score += 15;
-  else if (item.vote_count > 5000) score += 10;
-  else if (item.vote_count > 1000) score += 5;
-  
-  // Intent-based boosts
-  if (intent.type === 'exact' && item._isExactMatch) {
-    score += 50; // Huge boost for exact matches
-  }
-  
-  return score;
-}
-
-// Multi-source search with smart ranking
+// ==========================================
+// 5. MAIN ROUTER / PIPELINE
+// ==========================================
 export async function smartSearch(
   query: string,
-  options: {
-    includeMovies?: boolean;
-    includeTV?: boolean;
-    includePeople?: boolean;
-    maxResults?: number;
-  } = {}
-): Promise<SearchResult[]> {
-  const {
-    includeMovies = true,
-    includeTV = true,
-    includePeople = false,
-    maxResults = 50
-  } = options;
-  
-  // Check cache first
-  const cacheKey = `${query}-${JSON.stringify(options)}`;
-  const cached = searchCache.get(cacheKey);
-  if (cached && Date.now() - (cached as any)._timestamp < CACHE_DURATION) {
-    return cached;
-  }
-  
-  const intent = detectSearchIntent(query);
-  const allResults: SearchResult[] = [];
-  
-  try {
-    // Multi-source API calls
-    const searchPromises: Promise<any>[] = [];
-    
-    if (includeMovies) {
-      searchPromises.push(
-        api.search(query, 'movie', 1).then(results => 
-          results.results.map((item: any) => {
-            // Ensure we have all required TMDBMovie properties
-            return {
-              id: item.id,
-              title: item.title || '',
-              overview: item.overview || '',
-              poster_path: item.poster_path || null,
-              backdrop_path: item.backdrop_path || null,
-              release_date: item.release_date || '',
-              vote_average: item.vote_average || 0,
-              vote_count: item.vote_count || 0,
-              genre_ids: item.genre_ids || [],
-              adult: item.adult || false,
-              original_language: item.original_language || '',
-              original_title: item.original_title || item.title || '',
-              popularity: item.popularity || 0,
-              video: item.video || false,
-              // Additional properties for search enhancement
-              _source: 'movie' as const,
-              _searchScore: 0,
-              _isExactMatch: false,
-              _matchType: undefined
-            };
-          })
-        )
-      );
-    }
-    
-    if (includeTV) {
-      searchPromises.push(
-        api.search(query, 'tv', 1).then(results => 
-          results.results.map((item: any) => {
-            // Ensure we have all required TMDBTVShow properties
-            return {
-              id: item.id,
-              name: item.name || '',
-              overview: item.overview || '',
-              poster_path: item.poster_path || null,
-              backdrop_path: item.backdrop_path || null,
-              first_air_date: item.first_air_date || '',
-              vote_average: item.vote_average || 0,
-              vote_count: item.vote_count || 0,
-              genre_ids: item.genre_ids || [],
-              adult: item.adult || false,
-              origin_country: item.origin_country || [],
-              original_language: item.original_language || '',
-              original_name: item.original_name || item.name || '',
-              popularity: item.popularity || 0,
-              // Additional properties for search enhancement
-              _source: 'tv' as const,
-              _searchScore: 0,
-              _isExactMatch: false,
-              _matchType: undefined
-            };
-          })
-        )
-      );
-    }
-    
-    const results = await Promise.allSettled(searchPromises);
-    
-    // Combine all results
-    results.forEach((result, index) => {
-      if (result.status === 'fulfilled') {
-        allResults.push(...result.value);
-      }
-    });
-    
-    // Apply smart ranking
-    const rankedResults = allResults
-      .map(item => {
-        const score = calculateSearchScore(item, query, intent);
-        return { ...item, _searchScore: score };
-      })
-      .sort((a, b) => (b._searchScore || 0) - (a._searchScore || 0))
-      .slice(0, maxResults);
-    
-    // Cache results
-    (rankedResults as any)._timestamp = Date.now();
-    searchCache.set(cacheKey, rankedResults);
-    
-    return rankedResults;
-    
-  } catch (error) {
-    console.error('Smart search failed:', error);
-    return [];
-  }
-}
+  options: { maxResults?: number; includeMovies?: boolean; includeTV?: boolean; includePeople?: boolean } = {}
+) {
+  const { maxResults = 20 } = options;
 
-// Clear cache utility
-export function clearSearchCache(): void {
-  searchCache.clear();
-}
-
-// Get search suggestions
-export async function getSearchSuggestions(query: string): Promise<string[]> {
-  if (query.length < 2) return [];
-  
-  try {
-    const results = await smartSearch(query, { maxResults: 10 });
-    const suggestions = new Set<string>();
-    
-    results.slice(0, 5).forEach(item => {
-      const title = item.title || item.name || '';
-      if (title && fuzzyMatch(query, title) > 60) {
-        suggestions.add(title);
-      }
-    });
-    
-    return Array.from(suggestions).slice(0, 5);
-  } catch (error) {
-    console.error('Failed to get suggestions:', error);
-    return [];
+  // Edge Case Handling: Garbage queries
+  if (query.trim().length < 2 || !/[a-zA-Z0-9]/.test(query)) {
+    return []; // Return empty instead of crashing
   }
+
+  // 1. Classify
+  const type = classifyQuery(query);
+
+  // 2. Strategy & Fetch
+  let rawResults: any[] = [];
+  try {
+    switch (type) {
+      case QueryType.SEMANTIC: rawResults = await fetchSemanticSearch(query); break;
+      case QueryType.MOOD: rawResults = await fetchMoodSearch(query); break;
+      case QueryType.PERSON: rawResults = await fetchPersonSearch(query); break;
+      case QueryType.GENRE: rawResults = await fetchGenreSearch(query); break;
+      case QueryType.TRENDING: rawResults = await fetchTrendingSearch(); break;
+      case QueryType.HYBRID: rawResults = await fetchHybridSearch(query); break;
+      case QueryType.KEYWORD: default: rawResults = await fetchKeywordSearch(query); break;
+    }
+  } catch (error) {
+    console.error("Search fetch error", error);
+  }
+
+  // Fallback System
+  if (!rawResults || rawResults.length === 0) {
+    rawResults = await fetchTrendingSearch(); // Fallback to popular
+  }
+
+  // 3. Global Filters
+  const filtered = applyGlobalFilters(rawResults);
+  let finalResults = filtered;
+  if (finalResults.length === 0 && rawResults.length > 0) {
+    finalResults = rawResults; // Relax filters if nothing passes
+  }
+
+  // 4. Rank
+  const ranked = rankResults(finalResults, type, query);
+
+  return ranked.slice(0, maxResults);
 }
