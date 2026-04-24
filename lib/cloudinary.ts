@@ -1,94 +1,74 @@
 import { v2 as cloudinary } from "cloudinary";
 
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+// Initialize Cloudinary config
+const configureCloudinary = () => {
+  cloudinary.config({
+    cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+};
 
 /**
- * Uploads a video buffer/file to Cloudinary and generates a thumbnail automatically.
- * @param fileBuffer The video file buffer or base64 string
+ * Uploads a video buffer or base64 data URI to Cloudinary with maximum reliability.
+ * @param fileInput The video file as a Buffer or a base64 data URI string
  * @param folder The folder to upload to (default: reaction_clips)
  */
 export async function uploadReactionVideo(
-  fileBuffer: Buffer | string,
+  fileInput: Buffer | string,
   folder: string = "reaction_clips"
 ) {
+  configureCloudinary();
+
+  // Validate environment variables
+  if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    throw new Error("Cloudinary credentials are not configured");
+  }
+
+  const uploadOptions: any = {
+    resource_type: "video",
+    folder,
+    // We removed eager transformations during upload to maximize reliability.
+    // Cloudinary can generate thumbnails on-the-fly via URL transformations.
+  };
+
   try {
-    // Validate environment variables
-    if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) {
-      throw new Error("Cloudinary cloud name is not configured");
-    }
-    if (!process.env.CLOUDINARY_API_KEY) {
-      throw new Error("Cloudinary API key is not configured");
-    }
-    if (!process.env.CLOUDINARY_API_SECRET) {
-      throw new Error("Cloudinary API secret is not configured");
-    }
+    let result: any;
 
-    console.log("Starting Cloudinary upload to folder:", folder);
-
-    const options = {
-      resource_type: "video" as const,
-      folder: folder,
-      transformation: [
-        { width: 1280, height: 720, crop: "limit" }, // Normalize size
-        { quality: "auto", fetch_format: "auto" }
-      ],
-      // Generate a thumbnail at the 1-second mark or first frame
-      eager: [
-        { 
-          width: 640, 
-          height: 360, 
-          crop: "pad", 
-          format: "jpg", 
-          start_offset: "1"
-        }
-      ],
-      eager_async: false
-    };
-
-    const uploadResponse = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        options,
-        (error, result) => {
-          if (error) {
-            console.error("Cloudinary upload stream error:", error);
-            reject(error);
-          } else {
-            console.log("Cloudinary upload successful:", result?.public_id);
-            resolve(result);
+    if (Buffer.isBuffer(fileInput)) {
+      result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          uploadOptions,
+          (error, uploadResult) => {
+            if (error) reject(error);
+            else resolve(uploadResult);
           }
-        }
-      );
-      
-      if (Buffer.isBuffer(fileBuffer)) {
-          uploadStream.end(fileBuffer);
-      } else {
-          // If it's a string (e.g. base64), we use to upload method instead
-          cloudinary.uploader.upload(fileBuffer, options).then(resolve).catch(reject);
-      }
-    });
-
-    const result = uploadResponse as any;
+        );
+        stream.end(fileInput);
+      });
+    } else {
+      // Direct upload for data URI string
+      result = await cloudinary.uploader.upload(fileInput, uploadOptions);
+    }
 
     if (!result || !result.secure_url) {
-      throw new Error("Invalid upload response from Cloudinary");
+      throw new Error("No secure_url returned from Cloudinary");
     }
+
+    // Cloudinary automatically provides a poster image if you change the extension to .jpg
+    // This is much more reliable than eager generation during upload.
+    const thumbnailUrl = result.secure_url.replace(/\.[^/.]+$/, ".jpg");
 
     return {
       videoUrl: result.secure_url,
-      thumbnailUrl: result.eager?.[0]?.secure_url || result.secure_url.replace(/\.[^/.]+$/, ".jpg"),
-      duration: result.duration,
+      thumbnailUrl,
+      duration: result.duration || 0,
       publicId: result.public_id,
     };
-  } catch (error) {
-    console.error("Cloudinary upload error:", error);
-    if (error instanceof Error) {
-      throw new Error(`Cloudinary upload failed: ${error.message}`);
-    }
-    throw new Error("Failed to upload video to Cloudinary");
+  } catch (error: any) {
+    console.error("[Cloudinary] Upload Error:", error);
+    const message = error?.message || (typeof error === 'string' ? error : JSON.stringify(error));
+    throw new Error(`Cloudinary upload failed: ${message}`);
   }
 }
 

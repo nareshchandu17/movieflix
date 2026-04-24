@@ -2,26 +2,26 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IReaction extends Document {
   userId: string;
-  movieId: string;
-  timestamp: number;
+  movieId: number;
   videoUrl: string;
-  visibility: 'public' | 'private';
+  thumbnailUrl: string;
   duration: number;
+  caption?: string;
   likes: number;
-  comments: string[];
+  views: number;
   createdAt: Date;
 }
 
 const ReactionSchema: Schema = new Schema({
-  userId: { type: String, required: true, index: true },
-  movieId: { type: String, required: true, index: true },
-  timestamp: { type: Number, required: true },
+  userId: { type: String, required: true },
+  movieId: { type: Number, required: true, index: true },
   videoUrl: { type: String, required: true },
-  visibility: { type: String, enum: ['public', 'private'], default: 'public' },
+  thumbnailUrl: { type: String, required: true },
   duration: { type: Number, required: true },
-  likes: { type: Number, default: 0 },
-  comments: { type: [String], default: [] },
-  createdAt: { type: Date, default: Date.now },
+  caption: { type: String },
+  likes: { type: Number, default: 0, index: true },
+  views: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now, index: true },
 });
 
 export const Reaction = mongoose.models.Reaction || mongoose.model<IReaction>('Reaction', ReactionSchema);

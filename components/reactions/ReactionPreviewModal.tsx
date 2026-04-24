@@ -56,6 +56,7 @@ export function ReactionPreviewModal({
       formData.set("moodEmoji", selectedMood);
       formData.set("visibility", visibility);
 
+      console.log(`[Preview] Uploading blob of size: ${blob.size} bytes`);
       const response = await fetch("/api/reactions/create", {
         method: "POST",
         body: formData,
@@ -68,11 +69,11 @@ export function ReactionPreviewModal({
         onClose();
         router.refresh();
       } else {
-        throw new Error(data.message || "Upload failed");
+        throw new Error(data.error || data.message || "Upload failed");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Post error:", err);
-      toast.error("Failed to post reaction. Please try again.");
+      toast.error(err.message || "Failed to post reaction. Please try again.");
     } finally {
       setIsUploading(false);
     }
