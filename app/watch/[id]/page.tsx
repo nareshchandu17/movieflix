@@ -60,25 +60,46 @@ export default async function WatchPage({
   const { id } = await params;
   const { type, season, episode } = await searchParams;
   
+  // Basic validation: if ID is not a valid ObjectId and not a numeric TMDB ID, it's likely a 404
+  const isObjectId = mongoose.isValidObjectId(id);
+  const tmdbId = parseInt(id);
+  const isValidTmdbId = !isNaN(tmdbId) && tmdbId > 0;
+
+  if (!isObjectId && !isValidTmdbId) {
+    notFound();
+  }
+  
   let { data: contentData, type: resolvedType } = await getContentFromDB(id, type);
   
   if (!contentData) {
-    // If not in our local DB, fetch basic info directly from TMDB
-    // to allow the watch player UI to render
-    const { api } = await import('@/lib/api');
     try {
+      const { api } = await import('@/lib/api');
       if (type === 'tv' || type === 'series') {
-        const tv = await api.getDetails('tv', parseInt(id));
+        const tv = await api.getDetails('tv', tmdbId);
         contentData = { title: tv.name || tv.original_name, videoUrl: "" } as any;
         resolvedType = 'series';
       } else {
-        const movie = await api.getDetails('movie', parseInt(id));
+        const movie = await api.getDetails('movie', tmdbId);
         contentData = { title: movie.title || movie.original_title, videoUrl: "" } as any;
         resolvedType = 'movie';
       }
-    } catch (e) {
-      console.error("Content not found in TMDB either:", e);
-      notFound();
+    } catch (e: any) {
+      console.error("[WatchPage] TMDB Fetch Error:", e.message);
+      
+      // If it's a 404 from TMDB, then definitely show 404
+      if (e.status === 404 || e.code === 'NOT_FOUND') {
+        notFound();
+      }
+
+      // If it's a network error or any other API issue, DON'T show 404.
+      // Instead, show the player with a placeholder title so the user can still use it.
+      // This fixes the issue where the user is blocked by a temporary network failure.
+      contentData = { 
+        title: `Video ${id}`, 
+        videoUrl: "", 
+        description: "Metadata currently unavailable due to network error."
+      } as any;
+      resolvedType = (type === 'tv' || type === 'series') ? 'series' : 'movie';
     }
   }
 

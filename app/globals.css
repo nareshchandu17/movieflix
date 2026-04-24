@@ -6,21 +6,35 @@
 
 /* Profile manage-mode wiggle animation */
 @keyframes wiggle {
-  0%, 100% { transform: rotate(0deg); }
-  25%      { transform: rotate(-2deg); }
-  75%      { transform: rotate(2deg); }
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(-2deg);
+  }
+
+  75% {
+    transform: rotate(2deg);
+  }
 }
 
 /* Custom scrollbar hide utility */
 @layer utilities {
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    /* Internet Explorer 10+ */
+    scrollbar-width: none;
+    /* Firefox */
   }
-  .scrollbar-hide::-webkit-scrollbar { 
-    display: none;  /* Safari and Chrome */
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+    /* Safari and Chrome */
   }
-  
+
   .line-clamp-1 {
     display: -webkit-box;
     -webkit-line-clamp: 1;
@@ -91,7 +105,8 @@
     @apply border-border;
   }
 
-  html, body {
+  html,
+  body {
     margin: 0;
     padding: 0;
     width: 100%;
@@ -107,76 +122,76 @@
   .text-shadow-lg {
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
   }
-  
+
   .text-shadow-red {
     text-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
   }
-  
+
   .glass-effect {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
-  
+
   .glow-red {
     box-shadow: 0 0 60px rgba(229, 9, 20, 0.4);
   }
-  
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  
+
   .line-clamp-1 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
   }
-  
+
   .line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
-  
+
   .line-clamp-3 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
-  
+
   /* Netflix-style smooth horizontal scrolling */
   .horizontal-scroll {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
   }
-  
+
   /* Better mobile touch scrolling */
   .touch-scroll {
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
   }
-  
+
   /* Navigation arrow styling */
   .nav-arrow {
     backdrop-filter: blur(8px);
     background: rgba(var(--theme-primary-rgb), 0.9);
     border: 2px solid rgba(255, 255, 255, 0.1);
   }
-  
+
   .nav-arrow:hover {
     background: rgba(var(--light-primary-rgb), 1);
     transform: scale(1.1);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
   }
-  
+
   /* Section hover for chevron buttons only */
   .section-hover:hover .chevron-btn-left,
   .section-hover:hover .chevron-btn-right {
@@ -190,12 +205,12 @@
     background-attachment: fixed;
     background-size: 100% 100%;
   }
-  
+
   /* Standard row padding for exact 60px desktop grid start */
   .row-padding {
     @apply pl-4 sm:pl-6 md:pl-[60px];
   }
-  
+
   /* Mobile optimized background */
   @media (max-width: 768px) {
     .app-bg-enhanced {
@@ -203,24 +218,24 @@
       background-size: cover;
     }
   }
-  
+
   /* Reusable component classes */
   .glass-container {
     @apply bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 p-4 sm:p-6;
   }
-  
+
   .filter-label-xs {
     @apply text-xs font-medium text-gray-300 mb-1;
   }
-  
+
   .filter-label-sm {
     @apply text-sm font-medium text-gray-300 whitespace-nowrap;
   }
-  
+
   .footer-link {
     @apply text-gray-300 hover:text-primary text-sm transition-all duration-200 hover:scale-105 relative;
   }
-  
+
   .smooth-transition {
     @apply transition-all duration-200;
   }
@@ -231,35 +246,36 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  
+
   /* Netflix-style smooth horizontal scrolling */
   .horizontal-scroll {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
   }
-  
+
   /* Better mobile touch scrolling */
   .touch-scroll {
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
   }
-  
+
   /* Navigation arrow styling */
   .nav-arrow {
     backdrop-filter: blur(8px);
     background: rgba(var(--theme-primary-rgb), 0.9);
     border: 2px solid rgba(255, 255, 255, 0.1);
   }
-  
+
   .nav-arrow:hover {
     background: rgba(var(--light-primary-rgb), 1);
     transform: scale(1.1);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
   }
-  
+
   /* Section hover for chevron buttons only */
   .section-hover:hover .chevron-btn-left,
   .section-hover:hover .chevron-btn-right {
@@ -273,7 +289,7 @@
     background-attachment: fixed;
     background-size: 100% 100%;
   }
-  
+
   /* Mobile optimized background */
   @media (max-width: 768px) {
     .app-bg-enhanced {
@@ -281,194 +297,206 @@
       background-size: cover;
     }
   }
-  
+
   /* Reusable component classes */
   .glass-container {
     @apply bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 p-4 sm:p-6;
   }
-  
+
   .filter-label-xs {
     @apply text-xs font-medium text-gray-300 mb-1;
   }
-  
+
   .filter-label-sm {
     @apply text-sm font-medium text-gray-300 whitespace-nowrap;
   }
-  
+
   .footer-link {
     @apply text-gray-300 hover:text-primary text-sm transition-all duration-200 hover:scale-105 relative;
   }
-  
+
   .smooth-transition {
     @apply transition-all duration-200;
   }
 }
 
 /* High-contrast system mode support for focus indicators */
-  @media (prefers-contrast: high) {
-    .hero-carousel-focus:focus-visible {
-      outline: 3px solid currentColor !important;
-      outline-offset: 3px !important;
-    }
+@media (prefers-contrast: high) {
+  .hero-carousel-focus:focus-visible {
+    outline: 3px solid currentColor !important;
+    outline-offset: 3px !important;
   }
-  
-  /* Forced colors mode (Windows High Contrast) support */
-  @media (forced-colors: active) {
-    .hero-carousel-focus:focus-visible {
-      outline: 2px solid ButtonText !important;
-      outline-offset: 2px !important;
-    }
+}
+
+/* Forced colors mode (Windows High Contrast) support */
+@media (forced-colors: active) {
+  .hero-carousel-focus:focus-visible {
+    outline: 2px solid ButtonText !important;
+    outline-offset: 2px !important;
+  }
+}
+
+/* Custom utility classes for Watch Party */
+.glass {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10;
+}
+
+.glass-subtle {
+  @apply bg-white/5 backdrop-blur-md border border-white/10;
+}
+
+.text-gradient {
+  @apply bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent;
+}
+
+.glow-primary-sm {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+
+  0%,
+  100% {
+    opacity: 1;
   }
 
-  /* Custom utility classes for Watch Party */
-  .glass {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.font-display {
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Standard background for dark mode */
+.bg-dark-200 {
+  background-color: #07070a;
+}
+
+/* My List page specific styles */
+.gradient-mesh {
+  background:
+    radial-gradient(ellipse at top left, rgba(120, 50, 150, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(229, 9, 20, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at center, rgba(50, 100, 200, 0.15) 0%, transparent 50%);
+}
+
+.glass-light {
+  @apply bg-white/5 backdrop-blur-md border border-white/10;
+}
+
+.card-glow {
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.glass-premium {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-premium-accent {
+  background: rgba(229, 9, 20, 0.05);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(229, 9, 20, 0.2);
+}
+
+.text-premium {
+  @apply font-black uppercase tracking-tighter;
+}
+
+.card-glow-hover {
+  box-shadow: 0 0 30px rgba(229, 9, 20, 0.3);
+}
+
+.ai-glow {
+  box-shadow: 0 0 40px rgba(229, 9, 20, 0.2);
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Full-bleed hero section styles */
+.hero-full-bleed {
+  width: 100vw !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
+  position: relative !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
   }
 
-  .glass-subtle {
-    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  100% {
+    background-position: 200% 0;
   }
+}
 
-  .text-gradient {
-    @apply bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent;
-  }
+/* Custom scrollbar styles - remove white background */
+::-webkit-scrollbar {
+  width: 8px;
+}
 
-  .glow-primary-sm {
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
-  }
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
 
-  .animate-pulse-soft {
-    animation: pulse-soft 3s ease-in-out infinite;
-  }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
 
-  @keyframes pulse-soft {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-  }
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+  background-clip: content-box;
+}
 
-  .font-display {
-    font-family: system-ui, -apple-system, sans-serif;
-  }
+::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.7);
+  background-clip: content-box;
+}
 
-  /* Standard background for dark mode */
-  .bg-dark-200 {
-    background-color: #07070a;
-  }
+/* Firefox scrollbar styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
 
-  /* My List page specific styles */
-  .gradient-mesh {
-    background: 
-      radial-gradient(ellipse at top left, rgba(120, 50, 150, 0.3) 0%, transparent 50%),
-      radial-gradient(ellipse at bottom right, rgba(229, 9, 20, 0.2) 0%, transparent 50%),
-      radial-gradient(ellipse at center, rgba(50, 100, 200, 0.15) 0%, transparent 50%);
-  }
+/* Dark theme scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
 
-  .glass-light {
-    @apply bg-white/5 backdrop-blur-md border border-white/10;
-  }
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
 
-  .card-glow {
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-  }
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+  background-clip: content-box;
+}
 
-  .glass-premium {
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
+.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.1);
+}
 
-  .glass-premium-accent {
-    background: rgba(229, 9, 20, 0.05);
-    backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(229, 9, 20, 0.2);
-  }
-
-  .text-premium {
-    @apply font-black uppercase tracking-tighter;
-  }
-
-  .card-glow-hover {
-    box-shadow: 0 0 30px rgba(229, 9, 20, 0.3);
-  }
-
-  .ai-glow {
-    box-shadow: 0 0 40px rgba(229, 9, 20, 0.2);
-  }
-
-  .shimmer {
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite;
-  }
-
-  /* Full-bleed hero section styles */
-  .hero-full-bleed {
-    width: 100vw !important;
-    margin-left: calc(50% - 50vw) !important;
-    margin-right: calc(50% - 50vw) !important;
-    position: relative !important;
-    left: 0 !important;
-    right: 0 !important;
-  }
-
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-
-  /* Custom scrollbar styles - remove white background */
-  ::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
-    background-clip: content-box;
-  }
-
-  ::-webkit-scrollbar-thumb:active {
-    background: rgba(255, 255, 255, 0.7);
-    background-clip: content-box;
-  }
-
-  /* Firefox scrollbar styles */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-  }
-
-  /* Dark theme scrollbar */
-  .dark ::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-  }
-
-  .dark ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid transparent;
-    background-clip: content-box;
-  }
-
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.4);
-    background-clip: content-box;
-  }
-
-  .dark * {
-    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.1);
-  }
-
-  .dark * {
-    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.1);
-  }
+.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.1);
+}

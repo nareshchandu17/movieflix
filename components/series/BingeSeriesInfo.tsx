@@ -47,11 +47,11 @@ const AIInsights = ({ seriesId, seriesTitle, onShowMap }: { seriesId: number, se
   useEffect(() => {
     const fetchInsights = async () => {
       if (!seriesId || !seriesTitle) return;
-      
+
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const response = await fetch('/api/ai-insights/series', {
           method: 'POST',
           headers: {
@@ -62,13 +62,13 @@ const AIInsights = ({ seriesId, seriesTitle, onShowMap }: { seriesId: number, se
             title: seriesTitle,
           }),
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch AI insights');
         }
-        
+
         const data = await response.json();
-        
+
         if (data.insights && Array.isArray(data.insights)) {
           // Map incoming data to include icons and maintain consistency
           const icons = [
@@ -78,13 +78,13 @@ const AIInsights = ({ seriesId, seriesTitle, onShowMap }: { seriesId: number, se
             <Globe className="w-4 h-4" />,
             <Stars className="w-4 h-4" />
           ];
-          
+
           const mappedInsights = data.insights.map((insight: any, index: number) => ({
             ...insight,
             id: index,
             icon: icons[index % icons.length]
           }));
-          
+
           setDynamicInsights(mappedInsights);
         } else {
           throw new Error('Invalid insights data format');
@@ -105,7 +105,7 @@ const AIInsights = ({ seriesId, seriesTitle, onShowMap }: { seriesId: number, se
       <div className="rounded-[2.5rem] bg-black/40 border border-white/10 p-8 text-center backdrop-blur-3xl">
         <Bot className="w-10 h-10 text-red-500/50 mx-auto mb-4 animate-pulse" />
         <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{error}</p>
-        <button 
+        <button
           onClick={() => window.location.reload()}
           className="mt-6 px-6 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
         >
@@ -116,7 +116,7 @@ const AIInsights = ({ seriesId, seriesTitle, onShowMap }: { seriesId: number, se
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       className="sticky top-24 space-y-6"
@@ -183,7 +183,7 @@ const AIInsights = ({ seriesId, seriesTitle, onShowMap }: { seriesId: number, se
                   </div>
                   <ChevronDown className={`w-4 h-4 transition-transform duration-500 ${openSection === item.id ? 'rotate-180 text-blue-500' : 'text-gray-600'}`} />
                 </button>
-                
+
                 <AnimatePresence>
                   {openSection === item.id && (
                     <motion.div
@@ -216,7 +216,7 @@ const AIInsights = ({ seriesId, seriesTitle, onShowMap }: { seriesId: number, se
             ))}
           </div>
 
-          <button 
+          <button
             onClick={onShowMap}
             className="w-full mt-8 flex items-center justify-center gap-2 p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all group/btn shadow-lg"
           >
@@ -232,7 +232,7 @@ const AIInsights = ({ seriesId, seriesTitle, onShowMap }: { seriesId: number, se
 const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
   const router = useRouter();
   const [seriesData, setSeriesData] = useState<TMDBTVDetail | null>(null);
-  
+
   const [cast, setCast] = useState<TMDBCast[]>([]);
   const [crew, setCrew] = useState<TMDBCrew[]>([]);
   const [similarShows, setSimilarShows] = useState<TMDBTVShow[]>([]);
@@ -274,7 +274,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
     dropOffEpisode: 3,
     cliffhangerDensity: 'High'
   });
-  const [scenes, setScenes] = useState<Array<{url: string, title: string, duration: string, description: string, videoId: string, thumbnail: string}>>([]);
+  const [scenes, setScenes] = useState<Array<{ url: string, title: string, duration: string, description: string, videoId: string, thumbnail: string }>>([]);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'popular'>('latest');
   const [episodeSortOrder, setEpisodeSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -299,7 +299,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
   const calculateSeriesInsights = (series: TMDBTVDetail) => {
     // Binge Completion based on vote average and popularity
     const completionRate = Math.min(95, Math.max(40, Math.round((series.vote_average || 5) * 8 + (series.popularity || 0) / 50)));
-    
+
     // Rewatchability based on rating and genre
     const genres = series.genres || [];
     const isComedy = genres.some(g => g.name.toLowerCase().includes('comedy'));
@@ -309,12 +309,12 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
     const rating = series.vote_average || 5;
 
     const rewatchability = Math.min(5, Math.max(1, (rating / 10) * 4 + (isComedy ? 1 : 0.5)));
-    
+
     // Story Progression
     let storyProgression = 'Steady Build';
     if (isThriller || isAction) storyProgression = 'Slow → Intense';
     else if (rating > 8) storyProgression = 'Complex → Epic';
-    
+
     // Series Tone
     const toneTags: string[] = [];
     if (isThriller) toneTags.push('Suspenseful');
@@ -331,7 +331,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
       { name: 'Dialogue', value: 20 + Math.random() * 10, color: '#22D3EE' },
       { name: 'Cliffhangers', value: isThriller ? 15 + Math.random() * 5 : 5 + Math.random() * 5, color: '#F59E0B' },
     ];
-    
+
     // Normalize percentages
     const totalDist = genreDistribution.reduce((sum, g) => sum + g.value, 0);
     genreDistribution.forEach(g => g.value = Math.round((g.value / totalDist) * 100));
@@ -447,7 +447,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
       if (comment.id === commentId) {
         const wasLiked = comment.isLiked;
         const wasDisliked = comment.isDisliked;
-        
+
         if (wasLiked) {
           return { ...comment, isLiked: false, likes: comment.likes - 1 };
         } else if (wasDisliked) {
@@ -465,7 +465,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
       if (comment.id === commentId) {
         const wasLiked = comment.isLiked;
         const wasDisliked = comment.isDisliked;
-        
+
         if (wasDisliked) {
           return { ...comment, isDisliked: false, dislikes: comment.dislikes - 1 };
         } else if (wasLiked) {
@@ -479,8 +479,8 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
   };
 
   const handleReplyToggle = (commentId: number) => {
-    setExpandedComments(prev => 
-      prev.includes(commentId) 
+    setExpandedComments(prev =>
+      prev.includes(commentId)
         ? prev.filter(id => id !== commentId)
         : [...prev, commentId]
     );
@@ -506,17 +506,17 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
         isLiked: false,
         isDisliked: false
       };
-      
-      setComments(comments.map(comment => 
-        comment.id === parentCommentId 
-          ? { 
-              ...comment, 
-              replies: [...(comment.replies || []), newReply],
-              replyCount: (comment.replyCount || 0) + 1
-            }
+
+      setComments(comments.map(comment =>
+        comment.id === parentCommentId
+          ? {
+            ...comment,
+            replies: [...(comment.replies || []), newReply],
+            replyCount: (comment.replyCount || 0) + 1
+          }
           : comment
       ));
-      
+
       setReplyText(prev => ({ ...prev, [parentCommentId]: '' }));
       setReplyingTo(null);
       toast.success('Reply posted!');
@@ -526,8 +526,8 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
   const handleSortComments = (sortType: string) => {
     setSortBy(sortType as 'latest' | 'oldest' | 'popular');
     let sortedComments = [...comments];
-    
-    switch(sortType) {
+
+    switch (sortType) {
       case 'popular':
         sortedComments.sort((a, b) => b.likes - a.likes);
         break;
@@ -538,7 +538,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
         sortedComments.sort((a, b) => a.id - b.id);
         break;
     }
-    
+
     setComments(sortedComments);
   };
 
@@ -555,7 +555,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
         if (!prev) return { [seasonNumber]: details } as unknown as TMDBSeasonDetail;
         return { ...prev, [seasonNumber]: details };
       });
-      
+
       // Create episodes with progress
       const episodesWithProgress: EpisodeWithProgress[] = details.episodes.map((episode, index) => ({
         episode,
@@ -565,7 +565,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
       }));
 
       setEpisodes(episodesWithProgress);
-      
+
       // Find current episode and scroll to it
       const currentEpisode = episodesWithProgress.find(ep => ep.isCurrent);
       if (currentEpisode && episodesContainerRef.current) {
@@ -596,7 +596,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
   const handleEpisodePlay = (episode: TMDBEpisodeDetail) => {
     // Navigate to player
     router.push(`/watch/${id}?type=tv&season=${selectedSeason}&episode=${episode.episode_number}`);
-    
+
     toast.success(`Starting ${episode.name}`);
   };
 
@@ -616,7 +616,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
     const fetchSeriesData = async () => {
       try {
         setIsLoading(true);
-        
+
         // Fetch series details
         const series = await api.getDetails("tv", id) as TMDBTVDetail;
         setSeriesData(series);
@@ -625,9 +625,9 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
         const credits = await api.getCredits("tv", id);
         console.log('Credits data:', credits); // Debug log
         setCast(credits.cast.slice(0, 15));
-        
+
         // Filter crew (Directors, Executive Producers, etc.)
-        const importantCrew = credits.crew.filter((person: TMDBCrew) => 
+        const importantCrew = credits.crew.filter((person: TMDBCrew) =>
           ['Director', 'Executive Producer', 'Producer', 'Writer', 'Creator'].includes(person.job)
         ).slice(0, 10);
         setCrew(importantCrew);
@@ -639,7 +639,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
 
         // Set seasons
         setSeasons(series.seasons || []);
-        
+
         // Default to first season or last watched season
         const defaultSeason = series.number_of_seasons ? Math.min(1, series.number_of_seasons) : 1;
         setSelectedSeason(defaultSeason);
@@ -699,8 +699,8 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
     fetchSeriesData();
   }, [id]);
 
-  const generateScenes = (genres: string[], seriesTitle: string): Array<{url: string, title: string, duration: string, description: string, videoId: string, thumbnail: string}> => {
-    const sceneDatabase: { [key: string]: Array<{url: string, title: string, duration: string, description: string, videoId: string, thumbnail: string}> } = {
+  const generateScenes = (genres: string[], seriesTitle: string): Array<{ url: string, title: string, duration: string, description: string, videoId: string, thumbnail: string }> => {
+    const sceneDatabase: { [key: string]: Array<{ url: string, title: string, duration: string, description: string, videoId: string, thumbnail: string }> } = {
       "drama": [
         {
           url: "https://www.youtube.com/watch?v=8WgU2y9bK7M",
@@ -764,10 +764,10 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
   }
 
   const title = seriesData?.name || seriesData?.original_name || "Unknown Title";
-  const backdropUrl = seriesData?.backdrop_path 
+  const backdropUrl = seriesData?.backdrop_path
     ? `https://image.tmdb.org/t/p/w1920_and_h800_multi_faces${seriesData.backdrop_path}`
     : '/api/placeholder/1920/800';
-  const posterUrl = seriesData?.poster_path 
+  const posterUrl = seriesData?.poster_path
     ? `https://image.tmdb.org/t/p/w500${seriesData.poster_path}`
     : '/api/placeholder/500/750';
 
@@ -816,7 +816,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </motion.div>
               </div>
-              
+
               {/* Series Details */}
               <div className="flex-1">
                 <motion.div
@@ -827,7 +827,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                 >
                   <div>
                     <h1 className="text-4xl lg:text-6xl font-bold mb-4">{title}</h1>
-                    
+
                     {/* Episode Awareness */}
                     {currentEpisode && (
                       <div className="flex items-center gap-4 mb-4 p-3 bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-500/30 rounded-lg">
@@ -842,7 +842,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                         </span>
                       </div>
                     )}
-                    
+
                     <div className="flex flex-wrap items-center gap-4 text-lg">
                       <div className="flex items-center gap-2">
                         <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
@@ -865,8 +865,8 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
 
                   <div className="max-w-3xl">
                     <p className="text-lg text-gray-300 leading-relaxed">
-                      {showFullDescription 
-                        ? seriesData?.overview 
+                      {showFullDescription
+                        ? seriesData?.overview
                         : `${seriesData?.overview?.slice(0, 200)}...`
                       }
                       {seriesData?.overview && seriesData.overview.length > 200 && (
@@ -882,7 +882,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
 
                   <div className="flex items-center gap-4">
                     {currentEpisode ? (
-                      <button 
+                      <button
                         onClick={() => handleEpisodePlay(currentEpisode.episode)}
                         className="px-8 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors flex items-center gap-2"
                       >
@@ -890,7 +890,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                         Continue Watching
                       </button>
                     ) : (
-                      <button 
+                      <button
                         onClick={() => {
                           const firstEp = episodes.find(e => e.episode.episode_number === 1);
                           if (firstEp) {
@@ -912,7 +912,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                       <Download className="w-5 h-5" />
                       Download
                     </button>
-                    <button 
+                    <button
                       ref={plusButtonRef}
                       onClick={(e) => handleAddClick(e)}
                       className="p-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition-colors"
@@ -971,7 +971,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
       <div className="py-12 bg-gradient-to-b from-black to-gray-950">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-            
+
             {/* Episode List (70%) */}
             <div className="lg:col-span-8">
               {/* Episodes Header */}
@@ -999,7 +999,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                       </span>
                       <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showSeasonDropdown ? 'rotate-180' : ''}`} />
                     </button>
-                    
+
                     {showSeasonDropdown && seriesData && (
                       <div className="absolute right-0 mt-3 w-full sm:w-64 bg-[#121214] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl">
                         <div className="p-2 grid grid-cols-1 gap-1">
@@ -1011,11 +1011,10 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                                 setShowSeasonDropdown(false);
                                 fetchSeasonDetails(season.season_number);
                               }}
-                              className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                                selectedSeason === season.season_number 
-                                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' 
-                                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                              }`}
+                              className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${selectedSeason === season.season_number
+                                ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                }`}
                             >
                               <span>Season {season.season_number}</span>
                               <span className="text-[10px] opacity-60 bg-black/20 px-2 py-0.5 rounded-full">
@@ -1040,8 +1039,8 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
               </div>
 
               {/* Episodes Scrollable Area */}
-              <div 
-                ref={episodesContainerRef} 
+              <div
+                ref={episodesContainerRef}
                 className="space-y-4 max-h-[800px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
               >
                 {isSeasonLoading ? (
@@ -1056,11 +1055,10 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       onClick={() => handleEpisodePlay(ep.episode)}
-                      className={`group relative flex flex-col md:flex-row gap-6 p-4 rounded-3xl transition-all duration-500 border cursor-pointer ${
-                        ep.isCurrent 
-                          ? 'bg-red-600/10 border-red-500/30' 
-                          : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
-                      }`}
+                      className={`group relative flex flex-col md:flex-row gap-6 p-4 rounded-3xl transition-all duration-500 border cursor-pointer ${ep.isCurrent
+                        ? 'bg-red-600/10 border-red-500/30'
+                        : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
+                        }`}
                     >
                       {/* Episode Thumbnail */}
                       <div className="relative w-full md:w-64 h-36 shrink-0 rounded-2xl overflow-hidden shadow-2xl">
@@ -1077,7 +1075,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                             <Play className="w-12 h-12 text-gray-700" />
                           </div>
                         )}
-                        
+
                         {/* Play Overlay */}
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-2xl transform scale-75 group-hover:scale-100 transition-transform">
@@ -1088,9 +1086,9 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                         {/* Progress Bar */}
                         {ep.progress > 0 && (
                           <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-                            <div 
-                              className="h-full bg-red-600 shadow-[0_0_8px_rgba(229,9,20,0.8)]" 
-                              style={{ width: `${ep.progress}%` }} 
+                            <div
+                              className="h-full bg-red-600 shadow-[0_0_8px_rgba(229,9,20,0.8)]"
+                              style={{ width: `${ep.progress}%` }}
                             />
                           </div>
                         )}
@@ -1119,7 +1117,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                         <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed mb-4 group-hover:text-gray-300 transition-colors">
                           {ep.episode.overview || "No overview available for this episode."}
                         </p>
-                        
+
                         <div className="flex items-center gap-4">
                           <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold text-white transition-all active:scale-95">
                             <Download className="w-4 h-4" />
@@ -1145,9 +1143,9 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
 
             {/* AI Insights (30%) */}
             <div className="lg:col-span-4">
-              <AIInsights 
-                seriesId={id} 
-                seriesTitle={title} 
+              <AIInsights
+                seriesId={id}
+                seriesTitle={title}
                 onShowMap={() => setShowNarrativeMap(true)}
               />
             </div>
@@ -1156,7 +1154,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
 
         <AnimatePresence>
           {showNarrativeMap && (
-            <DetailedNarrativeMap 
+            <DetailedNarrativeMap
               contentId={id.toString()}
               title={title}
               onClose={() => setShowNarrativeMap(false)}
@@ -1180,28 +1178,28 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
                 priority
               />
-              
+
               {/* Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300" />
-              
+
               {/* Play Button */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="bg-red-600 hover:bg-red-700 rounded-full p-4 transform transition-all duration-300 group-hover:scale-110 group-hover:p-5 shadow-2xl">
                   <Play className="w-8 h-8 text-white ml-1" fill="white" />
                 </div>
               </div>
-              
+
               {/* YouTube Badge */}
               <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-lg">
                 <span className="text-white text-sm font-medium">YouTube</span>
               </div>
-              
+
               {/* Trailer Text */}
               <div className="absolute bottom-4 left-4">
                 <p className="text-white text-lg font-medium">Watch Trailer</p>
                 <p className="text-gray-300 text-sm">Click to play</p>
               </div>
-              
+
               {/* Hidden iframe that loads on click */}
               <iframe
                 src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0`}
@@ -1227,7 +1225,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                 <h2 className="text-2xl font-bold text-white uppercase tracking-tight">Series Cast</h2>
               </div>
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => {
                     const el = document.getElementById('cast-scroll-container');
                     if (el) el.scrollBy({ left: -400, behavior: 'smooth' });
@@ -1236,7 +1234,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     const el = document.getElementById('cast-scroll-container');
                     if (el) el.scrollBy({ left: 400, behavior: 'smooth' });
@@ -1247,14 +1245,14 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                 </button>
               </div>
             </div>
-            
-            <div 
+
+            <div
               id="cast-scroll-container"
               className="flex gap-8 overflow-x-auto scrollbar-hide scroll-smooth pb-4 px-2"
             >
               {cast.map((person) => (
-                <motion.div 
-                  key={person.id} 
+                <motion.div
+                  key={person.id}
                   whileHover={{ y: -8 }}
                   onClick={() => router.push(`/${person.name}/info`)}
                   className="w-32 flex-shrink-0 group cursor-pointer"
@@ -1274,12 +1272,12 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                           <Users className="w-12 h-12" />
                         </div>
                       )}
-                      
+
                       {/* Glow Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-red-600/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
-                  
+
                   <div className="text-center px-1">
                     <p className="text-white font-bold text-xs tracking-tight group-hover:text-red-500 transition-colors line-clamp-1">
                       {person.name}
@@ -1327,7 +1325,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
               {/* Row 1: Series Info & AI Insight */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Series Info Card */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -1398,7 +1396,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                       <div className="flex flex-wrap gap-2">
                         {seriesData.genres?.map(genre => (
                           <span key={genre.id} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-gray-300 hover:text-white hover:border-white/20 transition-all cursor-default">
-                             {genre.name}
+                            {genre.name}
                           </span>
                         ))}
                       </div>
@@ -1407,7 +1405,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                 </motion.div>
 
                 {/* AI Series Insight Card */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -1416,7 +1414,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                 >
                   {/* Decorative AI Glow */}
                   <div className="absolute top-0 right-0 w-32 h-32 bg-purple-600/10 blur-[60px] rounded-full" />
-                  
+
                   <div className="flex items-center justify-between mb-10">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
@@ -1445,16 +1443,16 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                           <div className="relative w-16 h-16 shrink-0">
                             <svg className="w-full h-full -rotate-90">
                               <circle cx="32" cy="32" r="28" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
-                              <circle 
-                                cx="32" 
-                                cy="32" 
-                                r="28" 
-                                fill="transparent" 
-                                stroke="#FF2E63" 
-                                strokeWidth="4" 
-                                strokeDasharray="175.9" 
-                                strokeDashoffset={175.9 * (1 - seriesInsights.completionRate / 100)} 
-                                strokeLinecap="round" 
+                              <circle
+                                cx="32"
+                                cy="32"
+                                r="28"
+                                fill="transparent"
+                                stroke="#FF2E63"
+                                strokeWidth="4"
+                                strokeDasharray="175.9"
+                                strokeDashoffset={175.9 * (1 - seriesInsights.completionRate / 100)}
+                                strokeLinecap="round"
                                 className="transition-all duration-1000"
                               />
                             </svg>
@@ -1496,7 +1494,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                         <span className="text-[10px] font-black text-amber-500 uppercase bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">{seriesInsights.storyProgression}</span>
                       </div>
                       <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
-                        <motion.div 
+                        <motion.div
                           initial={{ width: 0 }}
                           whileInView={{ width: '85%' }}
                           className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.4)]"
@@ -1529,12 +1527,12 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
               {/* Row 2: Composition & Engagement */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
                 {/* Engagement DNA (Pie Chart) (40%) */}
-                <motion.div 
-                   initial={{ opacity: 0, y: 20 }}
-                   whileInView={{ opacity: 1, y: 0 }}
-                   viewport={{ once: true }}
-                   transition={{ delay: 0.2 }}
-                   className="glass-card glow-purple p-8 lg:col-span-12 xl:col-span-5 flex flex-col border border-white/10"
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 }}
+                  className="glass-card glow-purple p-8 lg:col-span-12 xl:col-span-5 flex flex-col border border-white/10"
                 >
                   <div className="flex items-center gap-3 mb-8">
                     <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
@@ -1564,7 +1562,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
-                          <Tooltip 
+                          <Tooltip
                             contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
                             itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
                           />
@@ -1591,7 +1589,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                 </motion.div>
 
                 {/* Engagement Curve (Area Chart) (70%) */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -1619,30 +1617,30 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                       <AreaChart data={seriesInsights.engagementCurve}>
                         <defs>
                           <linearGradient id="colorEngage" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <XAxis 
-                          dataKey="name" 
-                          stroke="#4b5563" 
-                          fontSize={10} 
+                        <XAxis
+                          dataKey="name"
+                          stroke="#4b5563"
+                          fontSize={10}
                           fontWeight="bold"
                           tickLine={false}
                           axisLine={false}
                         />
                         <YAxis hide />
-                        <Tooltip 
+                        <Tooltip
                           contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
                           itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'black' }}
                         />
-                        <Area 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke="#3b82f6" 
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#3b82f6"
                           strokeWidth={4}
-                          fillOpacity={1} 
-                          fill="url(#colorEngage)" 
+                          fillOpacity={1}
+                          fill="url(#colorEngage)"
                           animationDuration={2000}
                         />
                       </AreaChart>
@@ -1681,7 +1679,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                 </div>
               </div>
               <div className="flex gap-3">
-                <button 
+                <button
                   onClick={() => {
                     const el = document.getElementById('crew-scroll-container');
                     if (el) el.scrollBy({ left: -400, behavior: 'smooth' });
@@ -1690,7 +1688,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                 >
                   <ChevronLeft className="w-6 h-6 text-gray-400" />
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     const el = document.getElementById('crew-scroll-container');
                     if (el) el.scrollBy({ left: 400, behavior: 'smooth' });
@@ -1701,14 +1699,14 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                 </button>
               </div>
             </div>
-            
-            <div 
+
+            <div
               id="crew-scroll-container"
               className="flex gap-12 overflow-x-auto scrollbar-hide scroll-smooth pb-8 px-2"
             >
               {crew.map((person) => (
-                <motion.div 
-                  key={`${person.id}-${person.job}`} 
+                <motion.div
+                  key={`${person.id}-${person.job}`}
                   whileHover={{ scale: 1.05 }}
                   className="w-36 flex-shrink-0 group cursor-default"
                 >
@@ -1727,12 +1725,12 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                           <Users className="w-16 h-16" />
                         </div>
                       )}
-                      
+
                       {/* Premium Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-amber-600/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     </div>
                   </div>
-                  
+
                   <div className="text-center space-y-1">
                     <p className="text-white font-black text-sm tracking-tight group-hover:text-amber-400 transition-colors line-clamp-1 uppercase">
                       {person.name}
@@ -1761,7 +1759,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
               {similarSeries.slice(0, 14).map((item) => (
-                <motion.div 
+                <motion.div
                   key={item.id}
                   whileHover={{ scale: 1.05 }}
                   className="group cursor-pointer"
@@ -1780,7 +1778,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                         <Tv className="w-12 h-12" />
                       </div>
                     )}
-                    
+
                     {/* Hover Info */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
                       <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md w-fit px-2 py-0.5 rounded-md border border-white/10">
@@ -1803,7 +1801,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
       <div className="py-16 bg-gradient-to-b from-black via-gray-950 to-black border-t border-white/5">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-            
+
             {/* YouTube Style Comments (65%) */}
             <div className="lg:col-span-8">
               <div className="flex items-center justify-between mb-8">
@@ -1828,7 +1826,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                       <span className="text-sm font-medium">Sort by</span>
                       <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
-                    
+
                     {isDropdownOpen && (
                       <div className="absolute right-0 mt-2 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
                         {[
@@ -1872,7 +1870,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                     }}
                   />
                   {newComment.trim() && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="flex justify-end gap-3 mt-4"
@@ -1917,21 +1915,21 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                         <p className="text-gray-300 leading-relaxed mb-3">{comment.content}</p>
                         <div className="flex items-center gap-6">
                           <div className="flex items-center gap-4">
-                            <button 
+                            <button
                               onClick={() => handleLikeComment(comment.id)}
                               className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${comment.isLiked ? 'text-red-500' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                               <ThumbsUp className={`w-4 h-4 ${comment.isLiked ? 'fill-current' : ''}`} />
                               <span>{comment.likes}</span>
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleDislikeComment(comment.id)}
                               className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${comment.isDisliked ? 'text-red-500' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                               <ThumbsDown className={`w-4 h-4 ${comment.isDisliked ? 'fill-current' : ''}`} />
                             </button>
                           </div>
-                          <button 
+                          <button
                             onClick={() => handleReplyToggle(comment.id)}
                             className="text-xs font-bold text-gray-500 hover:text-white transition-colors"
                           >
@@ -1942,17 +1940,17 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                         {/* Replies */}
                         {comment.replyCount > 0 && (
                           <div className="mt-4">
-                            <button 
+                            <button
                               onClick={() => handleReplyToggle(comment.id)}
                               className="flex items-center gap-2 text-xs font-bold text-blue-500 hover:text-blue-400"
                             >
                               <ChevronDown className={`w-4 h-4 transition-transform ${expandedComments.includes(comment.id) ? 'rotate-180' : ''}`} />
                               {expandedComments.includes(comment.id) ? 'Hide' : 'Show'} {comment.replyCount} {comment.replyCount === 1 ? 'reply' : 'replies'}
                             </button>
-                            
+
                             <AnimatePresence>
                               {expandedComments.includes(comment.id) && (
-                                <motion.div 
+                                <motion.div
                                   initial={{ opacity: 0, height: 0 }}
                                   animate={{ opacity: 1, height: 'auto' }}
                                   exit={{ opacity: 0, height: 0 }}
@@ -1973,7 +1971,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                                         />
                                         {(replyText[comment.id] || '').trim() && (
                                           <div className="flex justify-end gap-2 mt-2">
-                                            <button 
+                                            <button
                                               onClick={() => handlePostReply(comment.id)}
                                               className="px-4 py-1.5 bg-red-600 text-white rounded-full text-xs font-bold"
                                             >
@@ -1983,7 +1981,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                                         )}
                                       </div>
                                     </div>
-                                    
+
                                     {/* Cached Replies Display */}
                                     {comment.replies.map((reply) => (
                                       <div key={reply.id} className="flex gap-3">
@@ -2028,7 +2026,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                 <div className="grid grid-cols-1 gap-6">
                   {scenes.length > 0 ? (
                     scenes.map((scene, index) => (
-                      <motion.div 
+                      <motion.div
                         key={index}
                         whileHover={{ scale: 1.02 }}
                         className="group relative aspect-video rounded-2xl overflow-hidden bg-gray-900 border border-white/5 cursor-pointer shadow-2xl"
@@ -2041,7 +2039,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                           className="object-cover transition-transform duration-700 group-hover:scale-110"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent group-hover:via-black/40 transition-all duration-300" />
-                        
+
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-2xl transform scale-75 group-hover:scale-100 transition-transform">
                             <Play className="w-6 h-6 text-white ml-1 fill-current" />
@@ -2059,7 +2057,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                             </span>
                           </div>
                         </div>
-                        
+
                         {/* YouTube Badge */}
                         <div className="absolute top-3 right-3 px-2 py-1 bg-red-600 rounded flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Play className="w-2.5 h-2.5 text-white fill-current" />
@@ -2075,7 +2073,7 @@ const BingeSeriesInfo = ({ id }: BingeSeriesInfoProps) => {
                   )}
                 </div>
 
-                <motion.button 
+                <motion.button
                   whileHover={{ x: 5 }}
                   className="w-full mt-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold text-sm tracking-widest uppercase hover:bg-white/10 transition-all flex items-center justify-center gap-3"
                 >

@@ -57,15 +57,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check profile limit
+    // Check profile limit (Plan-based)
     const userId = session.user.id;
-    const user = await User.findById(userId).select('profilesLimit').lean();
-    const maxProfiles = (user as Record<string, unknown>)?.profilesLimit as number || 5;
+    const user = await User.findById(userId).select('subscription').lean();
+    
+    const limits = { mobile: 1, basic: 3, premium: 5 };
+    const maxProfiles = (limits as any)[user?.subscription || "mobile"];
+    
     const existingCount = await Profile.countDocuments({ userId });
 
     if (existingCount >= maxProfiles) {
       return NextResponse.json(
-        { success: false, error: 'Maximum profiles reached' },
+        { success: false, error: `Maximum profiles reached for your ${user?.subscription || 'basic'} plan` },
         { status: 400 }
       );
     }

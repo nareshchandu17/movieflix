@@ -35,7 +35,6 @@ const FilterBar = () => {
   const sortOptions = [
     { value: "trending", label: "Trending" },
     { value: "newest", label: "Newest" },
-    { value: "for-you", label: "For You" },
     { value: "critics", label: "Critics" }
   ];
 

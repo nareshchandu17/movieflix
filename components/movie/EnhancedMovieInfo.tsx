@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import "@/styles/movie-insights.css";
-import { ReactionCarousel } from "../reactions/ReactionCarousel";
+import { MovieReactionsSection } from "../fan-reactions/MovieReactionsSection";
 import PremiumReactionClip from "../reaction/PremiumReactionClip";
 import CollectionPopup from "../collections/CollectionPopup";
 
@@ -1287,7 +1287,7 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
       )}
 
       {/* Fan Reactions Section */}
-      <ReactionCarousel movieId={id.toString()} />
+      <MovieReactionsSection movieId={id} />
 
       {/* Movie Insights Section */}
       {movieData && (
@@ -2255,11 +2255,6 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
           </div>
         </div>
       </div>
-      
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/*                     FAN REACTIONS CAROUSEL                     */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      <ReactionCarousel movieId={String(id)} />
       
       {/* Reaction Modal */}
       <PremiumReactionClip />

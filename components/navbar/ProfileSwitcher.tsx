@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { AVATAR_MAP } from "@/lib/avatars";
 import { useProfile } from "@/contexts/ProfileContext";
-import { ChevronDown, Plus, UserCircle, Settings, SwitchCamera, Sparkles, Download, LogOut, User, Dna } from "lucide-react";
+import { ChevronDown, Plus, UserCircle, Settings, SwitchCamera, Sparkles, Download, LogOut, User, Dna, Video } from "lucide-react";
 import { DownloadIcon } from "./DownloadIcon";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -182,12 +182,12 @@ export default function ProfileSwitcher() {
                 </Link>
 
                 <Link
-                  href="/for-you"
+                  href="/fan-reactions"
                   className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group"
                   onClick={() => setIsOpen(false)}
                 >
-                  <Sparkles className="w-4 h-4 text-white/40 group-hover:text-[#00E5FF] transition-colors" />
-                  <span className="text-sm text-white/70 group-hover:text-white transition-colors">For You</span>
+                  <Video className="w-4 h-4 text-white/40 group-hover:text-white/70 transition-colors" />
+                  <span className="text-sm text-white/70 group-hover:text-white transition-colors">Fan Reactions</span>
                 </Link>
 
                 <Link

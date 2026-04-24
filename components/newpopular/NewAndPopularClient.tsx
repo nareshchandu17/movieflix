@@ -8,7 +8,7 @@ import Top10Row from "./Top10Row";
 import NewReleasesGrid from "./NewReleasesGrid";
 import EnhancedNewReleasesGrid from "./EnhancedNewReleasesGrid";
 import TrendingCarousel from "./TrendingCarousel";
-import NewForYouGrid from "./NewForYouGrid";
+
 import { TMDBMovie, TMDBTVShow } from "@/lib/types";
 import { api } from "@/lib/api";
 import { PageLoading } from "@/components/loading/PageLoading";
@@ -97,9 +97,6 @@ const NewAndPopularClient = () => {
           break;
         case "rating":
           sorted = sorted.sort((a, b) => b.vote_average - a.vote_average);
-          break;
-        case "for-you":
-          sorted = sorted.sort(() => Math.random() - 0.5);
           break;
         default: // trending
           sorted = sorted.sort((a, b) => b.popularity - a.popularity);
@@ -342,8 +339,7 @@ const NewAndPopularClient = () => {
     { id: 'hero', title: 'Featured', icon: Sparkles },
     { id: 'top10', title: 'Top 10', icon: Crown },
     { id: 'new', title: 'New Releases', icon: Clock },
-    { id: 'trending', title: 'Trending Now', icon: Flame },
-    { id: 'foryou', title: 'For You', icon: Zap }
+    { id: 'trending', title: 'Trending Now', icon: Flame }
   ];
 
   return (

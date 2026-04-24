@@ -20,7 +20,6 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   const isMoviePage = pathname?.startsWith('/movie/');
   const isSeriesPage = pathname?.startsWith('/series/');
   const isCastInfoPage = pathname?.includes('/info');
-  const isForYouPage = pathname?.startsWith('/for-you');
   const isAccountPage = pathname?.startsWith('/account');
   const isDownloadsPage = pathname?.startsWith('/downloads');
   const isProfilesPage = pathname?.startsWith('/profiles');
@@ -48,7 +47,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       />
 
       <div className="min-h-screen relative z-[90]">
-        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isForYouPage && !isDownloadsPage && !isProfilesPage && <Header />}
+        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isDownloadsPage && !isProfilesPage && <Header />}
         <main className={cn(
           mounted && showDeepOverlay 
             ? "transition-all duration-700 blur-xl scale-[0.97] opacity-20 pointer-events-none" 
@@ -56,7 +55,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         )}>
           {children}
         </main>
-        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isForYouPage && !isDownloadsPage && !isProfilesPage && <Footer />}
+        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isDownloadsPage && !isProfilesPage && <Footer />}
         <Toaster position="top-right" richColors />
       </div>
     </>

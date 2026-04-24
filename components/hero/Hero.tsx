@@ -1,538 +1,297 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { TMDBMovie, TMDBTVShow } from "@/lib/types";
 import { api } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Play, Pause, PlayIcon, Info, ChevronLeft, ChevronRight } from "lucide-react";
-import { PageLoading } from "../loading/PageLoading";
+import {
+  Play,
+  Info,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  Pause,
+  PlayCircle,
+  Volume2,
+  VolumeX
+} from "lucide-react";
 
-const Hero = () => {
-  const [slides, setSlides] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
-  const [loading, setLoading] = useState(true);
+// Curated list as requested
+const curatedTitles = [
+  { id: 693134, type: 'movie', title: 'Dune: Part Two' },
+  { id: 533535, type: 'movie', title: 'Deadpool & Wolverine' },
+  { id: 1291608, type: 'movie', title: 'Dhurandhar' },
+  { id: 76479, type: 'tv', title: 'The Boys' },
+  { id: 94997, type: 'tv', title: 'House of the Dragon' },
+  { id: 65930, type: 'tv', title: 'My Hero Academia' }
+];
+
+export default function Hero() {
+  const [slides, setSlides] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [imageError, setImageError] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [direction, setDirection] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [announceText, setAnnounceText] = useState("");
+  const [isMuted, setIsMuted] = useState(true);
   const router = useRouter();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch hero slides data
-  useEffect(() => {
-    const fetchHeroSlides = async () => {
-      try {
-        // Try to fetch both movie and TV data with individual error handling
-        const [movieResult, tvResult, trendingResult] = await Promise.allSettled([
-          api.getPopular("movie", 1),
-          api.getPopular("tv", 1),
-          api.getTrending("all", "week"),
-        ]);
-
-        const movieData =
-          movieResult.status === "fulfilled"
-            ? movieResult.value.results.slice(0, 3)
-            : [];
-        const tvData =
-          tvResult.status === "fulfilled"
-            ? tvResult.value.results.slice(0, 2)
-            : [];
-        const trendingData =
-          trendingResult.status === "fulfilled"
-            ? trendingResult.value.results.slice(0, 1)
-            : [];
-
-        // Log any failures for debugging
-        if (movieResult.status === "rejected") {
-          console.warn(
-            "Failed to fetch popular movies for hero:",
-            movieResult.reason
-          );
-        }
-        if (tvResult.status === "rejected") {
-          console.warn(
-            "Failed to fetch popular TV shows for hero:",
-            tvResult.reason
-          );
-        }
-        if (trendingResult.status === "rejected") {
-          console.warn(
-            "Failed to fetch trending content for hero:",
-            trendingResult.reason
-          );
-        }
-
-        // Combine available data to get exactly 6 slides
-        const combined = [...movieData, ...tvData, ...trendingData];
-
-        // If we have no data at all, return some fallback data or empty array
-        if (combined.length === 0) {
-          console.warn("No hero slides data available, using empty array");
-          setSlides([]);
-          return;
-        }
-
-        // If we have less than 6, fetch more from popular movies
-        let finalSlides = combined.slice(0, 6);
-        if (finalSlides.length < 6) {
-          const additionalMovies = await api.getPopular("movie", Math.ceil((6 - finalSlides.length) / 20) + 1);
-          const moreMovies = additionalMovies.results
-            .filter(movie => !finalSlides.some(slide => slide.id === movie.id))
-            .slice(0, 6 - finalSlides.length);
-          finalSlides = [...finalSlides, ...moreMovies];
-        }
-
-        // Validate and normalize dates to timestamps
-        const getValidTimestamp = (
-          dateStr: string | null | undefined
-        ): number => {
-          if (!dateStr || dateStr.trim() === "") {
-            return Number.NEGATIVE_INFINITY; // Sort invalid dates to end
+  const fetchHeroSlides = useCallback(async () => {
+    console.log("[Hero] Starting fetch for curated slides...");
+    try {
+      const results = await Promise.all(
+        curatedTitles.map(async (item) => {
+          try {
+            console.log(`[Hero] Fetching details for ${item.title} (${item.id})...`);
+            const data = await (item.type === 'movie'
+              ? api.getDetails('movie', item.id)
+              : api.getDetails('tv', item.id));
+            return data;
+          } catch (err) {
+            console.error(`[Hero] Error fetching ${item.title}:`, err);
+            return null;
           }
-          const timestamp = Date.parse(dateStr);
-          return isNaN(timestamp) ? Number.NEGATIVE_INFINITY : timestamp;
-        };
+        })
+      );
 
-        const sortedSlides = finalSlides.sort((a, b) => {
-          // Extract candidate date strings
-          const dateStringA =
-            "release_date" in a ? a.release_date : a.first_air_date;
-          const dateStringB =
-            "release_date" in b ? b.release_date : b.first_air_date;
+      const validSlides = results.filter((s) => s !== null);
+      console.log(`[Hero] Successfully loaded ${validSlides.length} slides.`);
 
-          const timestampA = getValidTimestamp(dateStringA);
-          const timestampB = getValidTimestamp(dateStringB);
-
-          return timestampB - timestampA; // Latest first
-        });
-
-        setSlides(sortedSlides.slice(0, 6)); // Ensure exactly 6 slides
-      } catch (error) {
-        console.error("Critical error in fetchHeroSlides:", error);
-        setSlides([]);
-      } finally {
-        setLoading(false);
+      if (validSlides.length === 0) {
+        console.warn("[Hero] No curated slides loaded, falling back to popular...");
+        const popular = await api.getPopular('movie', 1);
+        setSlides(popular.results.slice(0, 6));
+      } else {
+        setSlides(validSlides);
       }
-    };
-
-    fetchHeroSlides();
+    } catch (error) {
+      console.error("[Hero] Fatal error in fetchHeroSlides:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Reset currentIndex if it becomes invalid when slides array changes
   useEffect(() => {
-    if (slides && slides.length > 0) {
-      setCurrentIndex((ci) => (ci >= slides.length ? 0 : ci));
+    fetchHeroSlides();
+  }, [fetchHeroSlides]);
+
+  const nextSlide = useCallback(() => {
+    setDirection(1);
+    setCurrentIndex((prev) => (prev + 1) % slides.length);
+  }, [slides.length]);
+
+  const prevSlide = useCallback(() => {
+    setDirection(-1);
+    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
+  }, [slides.length]);
+
+  useEffect(() => {
+    if (slides.length <= 1 || isPaused) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
     }
-  }, [slides]);
 
-  // Reset image error when slide changes
-  useEffect(() => {
-    setImageError(false);
-  }, [currentIndex]);
+    timerRef.current = setInterval(nextSlide, 8000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [nextSlide, slides.length, isPaused]);
 
-  // Announce slide changes for screen readers
-  useEffect(() => {
-    if (slides && slides.length > 0) {
-      const currentSlide = slides[currentIndex];
-      const isTV = "name" in currentSlide;
-      const title = isTV ? currentSlide.name : currentSlide.title;
-      setAnnounceText(
-        `Now showing: ${title}, slide ${currentIndex + 1} of ${slides.length}`
-      );
-    }
-  }, [currentIndex, slides]);
-
-  // Auto-slide functionality - change slides every 10 seconds when not paused
-  useEffect(() => {
-    if (!slides || slides.length <= 1 || isPaused) return;
-
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) =>
-        prevIndex === slides.length - 1 ? 0 : prevIndex + 1
-      );
-    }, 5000); // 5 seconds
-
-    return () => clearInterval(interval);
-  }, [slides, isPaused]);
-
-  // Early return after all hooks are called
   if (loading) {
-    return <PageLoading>Wait a moment...</PageLoading>;
+    return (
+      <div className="relative h-screen w-full bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-red-600 border-t-transparent rounded-full animate-spin shadow-[0_0_20px_rgba(220,38,38,0.5)]" />
+          <p className="text-white/50 font-bold tracking-widest animate-pulse">PREPARING CINEMATIC EXPERIENCE</p>
+        </div>
+      </div>
+    );
   }
 
-  if (!slides || slides.length === 0) {
-    return <div className="relative h-screen w-full bg-black" />;
-  }
+  if (slides.length === 0) return null;
 
   const currentSlide = slides[currentIndex];
-  const isTV = "name" in currentSlide;
-  const title = isTV ? currentSlide.name : currentSlide.title;
-  const href = isTV
-    ? `/series/${currentSlide.id}`
-    : `/movie/${currentSlide.id}`;
+  const isTV = 'name' in currentSlide;
+  const title = isTV ? (currentSlide as TMDBTVShow).name : (currentSlide as TMDBMovie).title;
+  const date = isTV ? (currentSlide as TMDBTVShow).first_air_date : (currentSlide as TMDBMovie).release_date;
+  const year = date ? new Date(date).getFullYear() : 'N/A';
+  const rating = currentSlide.vote_average?.toFixed(1) || 'N/A';
 
-  // Construct full TMDB image URL with fallback
   const backdropUrl = currentSlide.backdrop_path
-    ? `https://image.tmdb.org/t/p/w1280${currentSlide.backdrop_path}`
-    : "https://i.imgur.com/wjVuAGb.png"; // Fallback image
+    ? `https://image.tmdb.org/t/p/original${currentSlide.backdrop_path}`
+    : `https://image.tmdb.org/t/p/original${currentSlide.poster_path}`;
 
-  async function handlePlay(
-    event: React.MouseEvent<HTMLButtonElement, MouseEvent>
-  ): Promise<void> {
-    event.preventDefault();
-    try {
-      await router.push(href);
-    } catch (error) {
-      console.error("Navigation failed:", error);
-    }
-  }
-
-  async function handleMoreInfo(
-    event: React.MouseEvent<HTMLButtonElement, MouseEvent>
-  ): Promise<void> {
-    event.preventDefault();
-    try {
-      await router.push(href);
-    } catch (error) {
-      console.error("Navigation failed:", error);
-    }
-  }
-
-  // Handle mouse interactions for accessibility
-  const handleMouseEnter = () => {
-    if (slides.length > 1) {
-      setIsPaused(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (slides.length > 1) {
-      setIsPaused(false);
-    }
-  };
-
-  // Handle focus events for accessibility
-  const handleFocus = () => {
-    if (slides.length > 1) {
-      setIsPaused(true);
-    }
-  };
-
-  const handleBlur = () => {
-    if (slides.length > 1) {
-      setIsPaused(false);
-    }
-  };
-
-  // Toggle pause state
-  const togglePause = () => {
-    if (slides.length > 1) {
-      setIsPaused(!isPaused);
-    }
-  };
-
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-  };
-
-  const handlePrev = () => {
-    setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
-  };
-
-  // Handle keyboard navigation
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (slides.length <= 1) return;
-
-    // Only handle keys when the hero container itself has focus, not child elements
-    if (event.currentTarget !== event.target) return;
-
-    switch (event.key) {
-      case "ArrowLeft":
-        event.preventDefault();
-        setCurrentIndex((prevIndex) =>
-          prevIndex === 0 ? slides.length - 1 : prevIndex - 1
-        );
-        break;
-      case "ArrowRight":
-        event.preventDefault();
-        setCurrentIndex((prevIndex) =>
-          prevIndex === slides.length - 1 ? 0 : prevIndex + 1
-        );
-        break;
-      case " ":
-      case "Enter":
-        event.preventDefault();
-        togglePause();
-        break;
-    }
+  // Premium Flip Variants
+  const flipVariants = {
+    enter: (direction: number) => ({
+      rotateY: direction > 0 ? 90 : -90,
+      opacity: 0,
+      scale: 0.8,
+      z: -500
+    }),
+    center: {
+      rotateY: 0,
+      opacity: 1,
+      scale: 1,
+      z: 0,
+      transition: {
+        rotateY: { type: "spring", stiffness: 100, damping: 20 },
+        opacity: { duration: 0.4 },
+        scale: { duration: 0.8, ease: "easeOut" }
+      }
+    },
+    exit: (direction: number) => ({
+      rotateY: direction < 0 ? 90 : -90,
+      opacity: 0,
+      scale: 0.8,
+      z: -500,
+      transition: {
+        rotateY: { type: "spring", stiffness: 100, damping: 20 },
+        opacity: { duration: 0.3 },
+        scale: { duration: 0.6 }
+      }
+    })
   };
 
   return (
-    <div
-      className="hero-carousel-focus relative w-full overflow-hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2"
-      style={{ height: "100vh" }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-      role="region"
-      aria-label="Hero carousel"
-    >
-      <AnimatePresence mode="wait">
+    <section className="relative h-screen w-full overflow-hidden bg-[#0a0a0a] group perspective-1000">
+      <AnimatePresence initial={false} custom={direction} mode="wait">
         <motion.div
           key={currentIndex}
-          initial={{ opacity: 0, scale: 1.1 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ 
-            duration: 1.2,
-            ease: "easeInOut"
-          }}
-          className="absolute inset-0"
+          custom={direction}
+          variants={flipVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          className="absolute inset-0 w-full h-full preserve-3d"
         >
-          <Image
-            src={imageError ? "https://i.imgur.com/wjVuAGb.png" : backdropUrl}
-            alt={`${title || "Featured content"} backdrop image`}
-            fill
-            className="object-cover"
-            priority
-            onError={() => {
-              setImageError(true);
-            }}
-            onLoad={() => {
-              setImageError(false);
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          {/* Hero Background Layer */}
+          <div className="absolute inset-0 z-0">
+            <Image
+              src={backdropUrl}
+              alt={title}
+              fill
+              priority
+              className="object-cover object-top brightness-[0.6] transition-transform duration-[10000ms] ease-linear scale-100 group-hover:scale-110"
+              sizes="100vw"
+            />
+            {/* Multi-layered Vignette & Gradients */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/30 to-transparent" />
+            <div className="absolute inset-0 shadow-[inset_0_0_200px_rgba(0,0,0,0.8)]" />
+          </div>
+
+          {/* Main Content Layer */}
+          <div className="relative z-10 h-full container mx-auto px-6 md:px-12 lg:px-24 flex flex-col justify-end pb-24 lg:pb-32">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
+              className="max-w-4xl space-y-6"
+            >
+              {/* Meta Info Badges */}
+              <div className="flex flex-wrap items-center gap-3">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="px-2 py-0.5 bg-red-600 text-white text-[10px] font-black rounded-sm uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(220,38,38,0.4)]"
+                >
+                  Premium Spotlight
+                </motion.div>
+                <div className="flex items-center gap-1.5 text-yellow-400">
+                  <Star className="w-4 h-4 fill-current drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" />
+                  <span className="text-base font-black text-white">{rating}</span>
+                </div>
+                <div className="w-1 h-1 rounded-full bg-white/20" />
+                <span className="text-gray-300 text-base font-bold tracking-tight">{year}</span>
+              </div>
+
+              {/* Cinematic Title */}
+              <div className="space-y-1">
+                <motion.h1
+                  layoutId="title"
+                  className="text-4xl md:text-6xl lg:text-7xl font-[900] text-white tracking-tighter leading-[0.9] uppercase drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)] italic"
+                >
+                  {title}
+                </motion.h1>
+              </div>
+
+              {/* Engaging Description */}
+              <p className="text-gray-200 text-lg md:text-xl line-clamp-2 font-medium max-w-2xl leading-snug drop-shadow-lg text-balance opacity-80">
+                {currentSlide.overview}
+              </p>
+
+              {/* Dynamic Action Buttons */}
+              <div className="flex flex-wrap items-center gap-4 pt-2">
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: "0 0-20px rgba(220,38,38,0.4)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push(`/${isTV ? 'tv' : 'movie'}/${currentSlide.id}`)}
+                  className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg font-black text-sm transition-all shadow-2xl relative overflow-hidden group/btn"
+                >
+                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-500" />
+                  <Play className="w-5 h-5 fill-current" />
+                  WATCH NOW
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.2)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push(`/${isTV ? 'tv' : 'movie'}/${currentSlide.id}`)}
+                  className="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-2xl text-white border border-white/20 rounded-lg font-black text-sm transition-all"
+                >
+                  <Info className="w-5 h-5" />
+                  DETAILS
+                </motion.button>
+              </div>
+            </motion.div>
+          </div>
         </motion.div>
       </AnimatePresence>
 
-      <div className="relative z-10 flex h-full items-center px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, x: -80 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ 
-            duration: 0.8, 
-            delay: 0.2,
-            type: "spring",
-            stiffness: 100,
-            damping: 20
-          }}
-          className="max-w-3xl text-white"
-        >
-          {/* Title */}
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ 
-              duration: 0.8, 
-              delay: 0.4,
-              type: "spring",
-              stiffness: 90,
-              damping: 18
-            }}
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 leading-tight"
-          >
-            {title}
-          </motion.h1>
-
-          {/* Metadata */}
-          <motion.div
-            initial={{ opacity: 0, y: 25 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ 
-              duration: 0.8, 
-              delay: 0.5,
-              type: "spring",
-              stiffness: 95,
-              damping: 19
-            }}
-            className="flex flex-wrap items-center gap-3 mb-4 text-sm sm:text-base text-gray-300"
-          >
-            <div className="flex items-center gap-1">
-              <span className="text-yellow-500">⭐</span>
-              <span className="font-medium">{currentSlide.vote_average?.toFixed(1) || 'N/A'} IMDb</span>
-            </div>
-            <span>•</span>
-            <span>{isTV ? 'Crime, Drama' : 'Action, Thriller'}</span>
-            <span>•</span>
-            <span>{isTV ? '2018–Present' : currentSlide.release_date?.slice(0, 4) || '2024'}</span>
-            <span>•</span>
-            <span>{isTV ? '5 Seasons' : '2h 15m'}</span>
-          </motion.div>
-
-          {/* Tagline */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ 
-              duration: 0.8, 
-              delay: 0.6,
-              type: "spring",
-              stiffness: 85,
-              damping: 17
-            }}
-            className="mb-4"
-          >
-            <p className="text-lg sm:text-xl text-white font-medium italic">
-              A late bloomer. A second chance. A rookie who refuses to quit.
-            </p>
-          </motion.div>
-
-          {/* Description */}
-          <motion.p
-            initial={{ opacity: 0, y: 25 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ 
-              duration: 0.8, 
-              delay: 0.7,
-              type: "spring",
-              stiffness: 88,
-              damping: 18
-            }}
-            className="text-base sm:text-lg text-gray-300 mb-6 line-clamp-2 max-w-2xl"
-          >
-            Starting over isn't easy when you're the oldest rookie in the LAPD. Follow John Nolan as he navigates the challenges of police work while proving it's never too late to pursue your dreams.
-          </motion.p>
-
-          {/* Why Watch Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ 
-              duration: 0.8, 
-              delay: 0.8,
-              type: "spring",
-              stiffness: 92,
-              damping: 19
-            }}
-            className="flex flex-wrap gap-4 mb-8 text-sm"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-orange-500">🔥</span>
-              <span className="text-gray-300">
-                <span className="font-medium">Why watch:</span> Strong character growth + realistic cases
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-blue-500">🎯</span>
-              <span className="text-gray-300">
-                <span className="font-medium">Best for:</span> Crime drama lovers
-              </span>
-            </div>
-          </motion.div>
-
-          {/* Action Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ 
-              duration: 0.8, 
-              delay: 0.9,
-              type: "spring",
-              stiffness: 95,
-              damping: 20
-            }}
-            className="flex flex-wrap gap-3"
-          >
-            <Button
-              size="default"
-              className="bg-white hover:bg-gray-100 text-black font-semibold px-8 py-3 rounded-lg transition-all duration-200 hover:scale-105"
-              onClick={handlePlay}
-              aria-label={`Play ${title}`}
-            >
-              <Play className="mr-2 h-5 w-5" />
-              Play
-            </Button>
-
-            <Button
-              variant="outline"
-              size="default"
-              className="border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 hover:border-white/50 font-semibold px-8 py-3 rounded-lg transition-all duration-200 hover:scale-105"
-              onClick={handleMoreInfo}
-              aria-label={`More info about ${title}`}
-            >
-              <Info className="mr-2 h-5 w-5" />
-              More Details
-            </Button>
-          </motion.div>
-        </motion.div>
-      </div>
-
-      {/* Navigation Arrows */}
-      <div className="absolute inset-y-0 left-0 flex items-center px-4 z-30">
-        <button
-          onClick={handlePrev}
-          className="p-3 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm border border-white/10 text-white transition-all duration-300 hover:scale-110 group"
-          aria-label="Previous slide"
-        >
-          <ChevronLeft className="w-6 h-6 group-hover:-translate-x-0.5 transition-transform" />
-        </button>
-      </div>
-
-      <div className="absolute inset-y-0 right-0 flex items-center px-4 z-30">
-        <button
-          onClick={handleNext}
-          className="p-3 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm border border-white/10 text-white transition-all duration-300 hover:scale-110 group"
-          aria-label="Next slide"
-        >
-          <ChevronRight className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
-        </button>
-      </div>
-
-      {/* Slide indicators and pause/play control */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-4 z-20">
-        {/* Slide dots */}
-        <div className="flex space-x-2">
-          {slides.map((_, index) => (
+      {/* Persistent Navigation Elements */}
+      <div className="absolute bottom-12 right-12 z-30 flex flex-col items-end gap-8">
+        {/* Indicators */}
+        <div className="flex flex-col gap-4 items-end">
+          {slides.map((_, i) => (
             <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-black cursor-pointer ${
-                index === currentIndex
-                  ? "bg-red-600 w-4"
-                  : "bg-white/50 hover:bg-white/70"
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-              aria-current={index === currentIndex ? "true" : "false"}
-            />
+              key={i}
+              onClick={() => {
+                setDirection(i > currentIndex ? 1 : -1);
+                setCurrentIndex(i);
+              }}
+              className="group/dot relative flex items-center gap-4"
+            >
+              <span className={`text-[10px] font-black tracking-widest transition-all duration-300 ${i === currentIndex ? 'text-red-500 opacity-100' : 'text-white opacity-0 group-hover/dot:opacity-40'
+                }`}>
+                0{i + 1}
+              </span>
+              <div className={`h-1 transition-all duration-500 rounded-full ${i === currentIndex
+                  ? 'w-16 bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.6)]'
+                  : 'w-4 bg-white/20 group-hover/dot:bg-white/40 group-hover/dot:w-8'
+                }`} />
+            </button>
           ))}
         </div>
 
-        {/* Pause/Play control - only show if multiple slides */}
-        {slides.length > 1 && (
-          <button
-            onClick={togglePause}
-            className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black cursor-pointer"
-            aria-label={isPaused ? "Resume slideshow" : "Pause slideshow"}
-            aria-pressed={isPaused}
-          >
-            {isPaused ? (
-              <PlayIcon className="h-4 w-4" />
-            ) : (
-              <Pause className="h-4 w-4" />
-            )}
-          </button>
-        )}
+
       </div>
 
-      {/* Pause indicator */}
-      {isPaused && slides.length > 1 && (
-        <div className="absolute top-8 right-8 bg-black/50 text-white px-3 py-1 rounded-full text-sm flex items-center space-x-2 z-20">
-          <Pause className="h-3 w-3" />
-          <span>Paused</span>
-        </div>
-      )}
+      {/* Global Bottom Shadow for blending with categories */}
+      <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-[#000000] to-transparent z-20 pointer-events-none" />
 
-      {/* Screen reader announcements */}
-      <div className="sr-only" aria-live="polite" aria-atomic="true">
-        {announceText}
-      </div>
-    </div>
+      {/* 3D Perspective CSS */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .perspective-1000 {
+          perspective: 1500px;
+        }
+        .preserve-3d {
+          transform-style: preserve-3d;
+        }
+      `}} />
+    </section>
   );
-};
-
-export default Hero;
+}
