@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
+import { GoogleAuthModal } from "@/components/auth/GoogleAuthModal";
 import { useRouter } from "next/navigation";
 import {
   PLANS,
@@ -237,6 +238,8 @@ export default function PricingPage() {
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [selectedPlan, setSelectedPlan] = useState<PlanTier | null>(null);
   const [hoveredPlan, setHoveredPlan] = useState<PlanTier | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [pendingPlanId, setPendingPlanId] = useState<PlanTier | null>(null);
 
   const { subscription, hasActiveSubscription, loading: subLoading } = useSubscription();
 
@@ -249,11 +252,23 @@ export default function PricingPage() {
 
   const handleSubscribe = async (planId: PlanTier) => {
     if (!session) {
-      router.push(`/auth/signin?callbackUrl=/pricing`);
+      setPendingPlanId(planId);
+      setIsAuthModalOpen(true);
       return;
     }
     setSelectedPlan(planId);
     await initiatePayment(planId, billing);
+  };
+
+  // After auth modal closes, check if user is now signed in and process pending plan
+  const handleAuthModalClose = () => {
+    setIsAuthModalOpen(false);
+    // If user signed in while modal was open, process the pending plan
+    if (session && pendingPlanId) {
+      setSelectedPlan(pendingPlanId);
+      initiatePayment(pendingPlanId, billing);
+      setPendingPlanId(null);
+    }
   };
 
   const selectedPlanData = selectedPlan ? PLANS.find((p) => p.id === selectedPlan) : null;
@@ -625,6 +640,8 @@ export default function PricingPage() {
           ))}
         </div>
       </div>
+      {/* Auth Modal */}
+      <GoogleAuthModal isOpen={isAuthModalOpen} onClose={handleAuthModalClose} />
     </div>
   );
 }

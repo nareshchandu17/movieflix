@@ -22,7 +22,7 @@ interface CustomSocket extends Socket {
 
 // Models
 import User from '@/models/User';
-import WatchPartyRoom from '@/models/WatchPartyRoom';
+import WatchPartyRoom from '../models/WatchPartyRoom';
 
 interface RoomParticipant {
   userId: string;
@@ -50,7 +50,7 @@ class SocketServer {
   constructor() {
     this.io = new Server(this.createHttpServer(), {
       cors: {
-        origin: process.env.NODE_ENV === 'production' 
+        origin: process.env.NODE_ENV === 'production'
           ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://movieflix.com']
           : ['http://localhost:3000', 'http://localhost:3001'],
         methods: ['GET', 'POST'],
@@ -79,7 +79,7 @@ class SocketServer {
         try {
           const payload = JSON.parse(message);
           const { userId, notification } = payload;
-          
+
           const socketId = this.userSockets.get(userId);
           if (socketId) {
             this.io.to(socketId).emit('new-notification', notification);
@@ -101,19 +101,23 @@ class SocketServer {
   }
 
   private setupEventHandlers(): void {
-    this.io.on('connection', (socket) => this.handleConnection(socket));
-    this.io.on('disconnect', (socket) => this.handleDisconnection(socket));
+    this.io.on('connection', (socket: CustomSocket) => {
+      this.handleConnection(socket);
+
+      socket.on('disconnect', () => {
+        this.handleDisconnection(socket);
+      });
+    });
   }
 
   private async handleConnection(socket: CustomSocket): Promise<void> {
     console.log(`👤 User connected: ${socket.id}`);
 
     // Authentication middleware
-    socket.on('authenticate', async (data) => {
+    socket.on('authenticate', async () => {
       try {
-        const { token } = data;
         const session = await getServerSession(authOptions);
-        
+
         if (!session?.user?.id) {
           socket.emit('authentication-error', { message: 'Invalid authentication' });
           return;
@@ -122,10 +126,10 @@ class SocketServer {
         // Store user mapping
         this.userSockets.set(session.user.id, socket.id);
         socket.userId = session.user.id;
-        socket.userName = session.user.name;
+        socket.userName = session.user.name ?? undefined;
 
-        socket.emit('authenticated', { 
-          success: true, 
+        socket.emit('authenticated', {
+          success: true,
           user: { id: session.user.id, name: session.user.name }
         });
 
@@ -229,8 +233,8 @@ class SocketServer {
   }
 
   private async handleJoinRoom(socket: CustomSocket, data: any): Promise<void> {
-    const { roomId, userName } = data;
-    
+    const { roomId, userName, password } = data;
+
     // For E2E testing/Guest flow, allow join if userName is provided
     if (!socket.userId && userName) {
       socket.userId = `guest_${Math.random().toString(36).substring(7)}`;
@@ -246,7 +250,7 @@ class SocketServer {
 
     // Find or create room
     let room = await WatchPartyRoom.findOne({ roomId }).populate('hostId').catch(() => null);
-    
+
     if (!room) {
       console.log(`ℹ️ Room ${roomId} not in DB, initializing in memory for Guest flow`);
       if (!this.rooms.has(roomId)) {
@@ -288,7 +292,7 @@ class SocketServer {
     // Update room in database if it exists
     if (room) {
       await WatchPartyRoom.findByIdAndUpdate(room._id, {
-        $push: { participants: participants.map(p => p.userId) }
+        $push: { participants: participant }
       });
     }
 
@@ -320,7 +324,7 @@ class SocketServer {
 
   private async handleLeaveRoom(socket: CustomSocket, data: any): Promise<void> {
     const { roomId } = data;
-    
+
     if (!socket.userId) {
       socket.emit('error', { message: 'Authentication required' });
       return;
@@ -337,7 +341,7 @@ class SocketServer {
 
     const participants = this.rooms.get(roomId) || [];
     const leavingParticipant = participants.find(p => p.socketId === socket.id);
-    
+
     if (!leavingParticipant) {
       socket.emit('error', { message: 'Not in room' });
       return;
@@ -349,7 +353,7 @@ class SocketServer {
 
     // Update room in database
     await WatchPartyRoom.findByIdAndUpdate(room._id, {
-      $pull: { participants: leavingParticipant.userId }
+      $pull: { participants: { userId: leavingParticipant.userId } }
     });
 
     // Leave socket room
@@ -428,7 +432,7 @@ class SocketServer {
 
   private async handlePlayerControl(socket: CustomSocket, action: string, data: any): Promise<void> {
     const { roomId } = data;
-    
+
     if (!socket.userId) {
       socket.emit('error', { message: 'Authentication required' });
       return;
@@ -446,7 +450,7 @@ class SocketServer {
 
     // Update room state
     let updateData: any = {};
-    
+
     switch (action) {
       case 'play':
         updateData = { currentPlayState: 'playing', lastUpdated: new Date() };
@@ -478,7 +482,7 @@ class SocketServer {
 
   private async handleCreateRoom(socket: CustomSocket, data: any): Promise<void> {
     const { roomName, movieId, isPrivate = false, password = '', maxParticipants = 10 } = data;
-    
+
     if (!socket.userId) {
       socket.emit('error', { message: 'Authentication required' });
       return;
@@ -603,16 +607,16 @@ class SocketServer {
     // Find and remove user from all rooms
     for (const [roomId, participants] of this.rooms.entries()) {
       const participantIndex = participants.findIndex(p => p.socketId === socket.id);
-      
+
       if (participantIndex !== -1) {
         participants.splice(participantIndex, 1);
         this.rooms.set(roomId, participants);
 
         // Update room in database
-        await WatchPartyRoom.findByIdAndUpdate(
+        await WatchPartyRoom.findOneAndUpdate(
           { roomId },
           {
-            $pull: { participants: socket.userId }
+            $pull: { participants: { userId: socket.userId } }
           }
         );
 
@@ -650,7 +654,7 @@ class SocketServer {
   // Graceful shutdown
   public shutdown(): void {
     console.log('🔄 Shutting down Socket.io server...');
-    
+
     this.io.close(() => {
       console.log('✅ Socket.io server closed');
       mongoose.connection.close();
