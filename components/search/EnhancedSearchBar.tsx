@@ -94,18 +94,14 @@ const EnhancedSearchBar = ({
     setShowSuggestionsDropdown(false);
 
     try {
-      const results = await smartSearch(query, {
-        includeMovies: true,
-        includeTV: true,
-        maxResults: 20
-      });
+      const results = await smartSearch(query);
 
       // Navigate to search results page
       router.push(`/search?q=${encodeURIComponent(query.trim())}`);
 
       // Notify parent if callback provided
       if (onSearch) {
-        onSearch(results, query);
+        onSearch(results.results, query);
       }
     } catch (error) {
       console.error('Search failed:', error);
@@ -186,14 +182,14 @@ const EnhancedSearchBar = ({
       {/* Search Container */}
       <div
         className={`relative flex items-center bg-gradient-to-r from-black/90 to-gray-900/90 backdrop-blur-xl rounded-2xl border-2 transition-all duration-300 overflow-hidden ${isFocused
-            ? "border-blue-500 shadow-lg shadow-blue-500/20 scale-[1.02]"
+            ? "border-red-600 shadow-lg shadow-red-600/20 scale-[1.02]"
             : "border-gray-700 hover:border-gray-600"
           }`}
       >
         {/* Search Icon */}
         <div className="pl-4 pr-3">
           <BiSearch
-            className={`text-xl transition-colors duration-300 ${isFocused ? "text-blue-400" : "text-gray-400"
+            className={`text-xl transition-colors duration-300 ${isFocused ? "text-red-500" : "text-gray-400"
               }`}
           />
         </div>
@@ -219,7 +215,7 @@ const EnhancedSearchBar = ({
         {/* Loading Indicator */}
         {isLoading && (
           <div className="px-3">
-            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
         )}
 
@@ -239,7 +235,7 @@ const EnhancedSearchBar = ({
         <button
           type="button"
           aria-label="Search"
-          className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-4 transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold px-6 py-4 transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={() => handleSearch()}
           disabled={!searchValue.trim() || isLoading}
         >
@@ -256,13 +252,13 @@ const EnhancedSearchBar = ({
           <div className="p-2">
             {suggestions.map((suggestion, index) => (
               <button
-                key={suggestion}
+                key={`${suggestion}-${index}`}
                 data-suggestion-item={index}
                 onClick={() => handleSuggestionClick(suggestion)}
                 className="w-full text-left px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-all duration-150 flex items-center gap-3 group"
                 onMouseDown={(e) => e.preventDefault()} // Prevent blur before click
               >
-                <BiSearch className="text-gray-500 group-hover:text-blue-400 text-sm" />
+                <BiSearch className="text-gray-500 group-hover:text-red-500 text-sm" />
                 <span className="flex-1 truncate">{suggestion}</span>
                 <span className="text-xs text-gray-500">Press Enter</span>
               </button>
@@ -273,7 +269,7 @@ const EnhancedSearchBar = ({
           <div className="border-t border-gray-700 px-4 py-2">
             <button
               onClick={() => handleSearch()}
-              className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+              className="text-sm text-red-500 hover:text-red-400 transition-colors"
             >
               Search for "{searchValue}" →
             </button>

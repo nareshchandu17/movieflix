@@ -49,39 +49,42 @@ const Header = () => {
   return (
     <nav
       className={`
-        fixed top-0 w-full z-[1100]
+        fixed top-0 z-[1100]
         transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
         ${hidden ? "-translate-y-full" : "translate-y-0"}
         ${scrolled || isSearching
           ? "bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] h-14"
           : "bg-gradient-to-b from-black/95 via-black/60 to-transparent h-20"
         }
+        ${isSignedIn && isClient ? "lg:left-[72px] lg:w-[calc(100%-72px)] w-full left-0" : "w-full left-0"}
       `}
     >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-full">
-        {/* Logo */}
-        <Logo />
+        {/* Logo - Only show for Guest Users */}
+        {!isSignedIn && <Logo />}
 
-        {/* Desktop Nav */}
-        <div className="hidden md:flex space-x-8 text-sm font-medium tracking-wide">
-          {[
-            { href: "/movie", label: "Movies" },
-            { href: "/series", label: "Series" },
-            { href: "/mood-engine", label: "AI Mood" },
-            { href: "/new-popular", label: "New & Popular" },
-            { href: "/my-list", label: "My List" },
-            { href: "/scenes", label: "Scenes" },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="relative text-white/50 hover:text-white transition duration-300 group"
-            >
-              {item.label}
-              <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-gradient-to-r from-white/60 to-white/20 transition-all duration-300 group-hover:w-full shadow-[0_0_8px_rgba(255,255,255,0.3)]" />
-            </Link>
-          ))}
-        </div>
+        {/* Desktop Nav - Only show for Guest Users */}
+        {!isSignedIn && (
+          <div className="hidden md:flex space-x-8 text-sm font-medium tracking-wide">
+            {[
+              { href: "/movie", label: "Movies" },
+              { href: "/series", label: "Series" },
+              { href: "/mood-engine", label: "AI Mood" },
+              { href: "/new-popular", label: "New & Popular" },
+              { href: "/my-list", label: "My List" },
+              { href: "/scenes", label: "Scenes" },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="relative text-white/50 hover:text-white transition duration-300 group"
+              >
+                {item.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-gradient-to-r from-white/60 to-white/20 transition-all duration-300 group-hover:w-full shadow-[0_0_8px_rgba(255,255,255,0.3)]" />
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* Right Section */}
         <div className="flex items-center gap-8">
@@ -111,7 +114,7 @@ const Header = () => {
             </button>
           )}
 
-          <MobileMenu />
+          {!isSignedIn && <MobileMenu />}
         </div>
       </div>
       <GoogleAuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />

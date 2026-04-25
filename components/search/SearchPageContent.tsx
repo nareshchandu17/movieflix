@@ -6,6 +6,9 @@ import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SearchResult } from "@/lib/smartSearch";
 import { PageLoading } from "../loading/PageLoading";
+import { api } from "@/lib/api";
+import { TMDBMovie, TMDBTVShow } from "@/lib/types";
+import EnhancedMediaCard from "../display/EnhancedMediaCard";
 
 type ContentSource = "search" | "filter" | "none";
 const MIN_SEARCH_LENGTH = 2;
@@ -17,6 +20,7 @@ interface AsyncResultsSectionProps {
   currentError: string | null;
   statusMessage: string | null;
   query: string;
+  actor?: any;
 }
 
 const AsyncResultsSection = ({
@@ -26,6 +30,7 @@ const AsyncResultsSection = ({
   currentError,
   statusMessage,
   query,
+  actor,
 }: AsyncResultsSectionProps) => {
   return (
     <>
@@ -35,7 +40,7 @@ const AsyncResultsSection = ({
           <div
             className={`px-4 py-2 rounded-lg text-sm font-medium ${currentError
                 ? "bg-red-900/50 text-red-300 border border-red-700"
-                : "bg-blue-900/50 text-blue-300 border border-blue-700"
+                : "bg-red-900/20 text-red-400 border border-red-500/30 backdrop-blur-md"
               }`}
           >
             {statusMessage}
@@ -49,6 +54,7 @@ const AsyncResultsSection = ({
           results={displayResults}
           query={query}
           isLoading={isLoading}
+          actor={actor}
         />
       )}
 
@@ -59,16 +65,9 @@ const AsyncResultsSection = ({
         </div>
       )}
 
-      {/* Empty State */}
+      {/* Empty State / Trending */}
       {!isLoading && activeSource === "none" && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="text-gray-400 text-lg mb-2">
-            Ready to discover amazing content?
-          </div>
-          <div className="text-gray-500 text-sm">
-            Use the enhanced search bar above or apply filters to find movies and TV shows
-          </div>
-        </div>
+        <SearchTrendingSection />
       )}
     </>
   );
@@ -80,9 +79,11 @@ const SearchPageContent = () => {
 
   // Search-related state
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [actorData, setActorData] = useState<any>(null);
   const [typedValue, setTypedValue] = useState<string>("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [isFallback, setIsFallback] = useState(false);
 
   // Filter-related state
   const [filterResults, setFilterResults] = useState<SearchResult[]>([]);
@@ -112,6 +113,7 @@ const SearchPageContent = () => {
   const performSearch = async (query: string) => {
     if (query.trim().length < MIN_SEARCH_LENGTH) {
       setSearchResults([]);
+      setActorData(null);
       setSearchError(null);
       setActiveSource((prev) => (prev === "search" ? "none" : prev));
       setDisplayResults([]);
@@ -133,10 +135,12 @@ const SearchPageContent = () => {
 
       if (data.success) {
         setSearchResults(data.results);
+        setActorData(data.actor || null);
+        setIsFallback(!!data.empty);
         setActiveSource("search");
         setDisplayResults(data.results);
 
-        if (data.results.length === 0) {
+        if (data.results.length === 0 && !data.empty && !data.actor) {
           setSearchError(`No results found for "${query}"`);
         }
       } else {
@@ -223,6 +227,9 @@ const SearchPageContent = () => {
     if (currentError) return currentError;
 
     if (activeSource === "search" && searchResults.length > 0) {
+      if (isFallback) {
+        return `No results found for "${typedValue}". Showing trending content instead.`;
+      }
       return `Found ${searchResults.length} ranked result(s) for "${typedValue}"`;
     }
 
@@ -236,7 +243,7 @@ const SearchPageContent = () => {
   return (
     <div className="container mx-auto px-4 pb-12">
       {/* Enhanced Search Bar Section */}
-      <div className="mb-8">
+      <div className="mb-8 flex justify-center w-full">
         <EnhancedSearchBar
           onTyping={handleSearchInput}
           initialValue={typedValue}
@@ -262,6 +269,7 @@ const SearchPageContent = () => {
           currentError={currentError}
           statusMessage={statusMessage}
           query={typedValue}
+          actor={actorData}
         />
       </Suspense>
     </div>
@@ -269,3 +277,77 @@ const SearchPageContent = () => {
 };
 
 export default SearchPageContent;
+
+const SearchTrendingSection = () => {
+  const [trendingMovies, setTrendingMovies] = useState<TMDBMovie[]>([]);
+  const [trendingSeries, setTrendingSeries] = useState<TMDBTVShow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        setIsLoading(true);
+        const [moviesRes, seriesRes] = await Promise.all([
+          api.getTrending("movie", "day"),
+          api.getTrending("tv", "day"),
+        ]);
+        
+        // Take top 6 items
+        setTrendingMovies(moviesRes.results.slice(0, 6) as TMDBMovie[]);
+        setTrendingSeries(seriesRes.results.slice(0, 6) as TMDBTVShow[]);
+      } catch (error) {
+        console.error("Failed to load trending content:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTrending();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-12 w-full mt-8 animate-pulse">
+        <div>
+          <div className="h-8 w-48 bg-gray-800 rounded mb-6"></div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="aspect-[2/3] bg-gray-800 rounded-xl"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-12 w-full mt-4">
+      {/* Trending Movies */}
+      {trendingMovies.length > 0 && (
+        <div>
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <span className="text-red-500">🎬</span> Trending Movies
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {trendingMovies.map((movie) => (
+              <EnhancedMediaCard key={movie.id} media={movie} variant="grid" />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Trending Series */}
+      {trendingSeries.length > 0 && (
+        <div>
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <span className="text-yellow-500">📺</span> Trending Series
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {trendingSeries.map((series) => (
+              <EnhancedMediaCard key={series.id} media={series} variant="grid" />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

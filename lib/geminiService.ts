@@ -51,7 +51,7 @@ interface AISuggestionResponse {
 class GeminiService {
   private ai: GoogleGenAI;
   private logger = getLogger();
-  private readonly MODEL_NAME = "gemini-2.5-flash";
+  private readonly MODEL_NAME = "gemini-1.5-flash";
 
   constructor(apiKey?: string) {
     if (!apiKey?.trim()) {

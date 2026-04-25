@@ -6,17 +6,89 @@ import EnhancedMediaCard from "@/components/display/EnhancedMediaCard";
 import { Play, Star, Calendar, Clock, TrendingUp, Film, Tv, User } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 interface PremiumSearchDisplayProps {
   results: SearchResult[];
   query: string;
   isLoading?: boolean;
+  actor?: {
+    id: number;
+    name: string;
+    profile_path: string;
+    known_for_department: string;
+    biography?: string;
+  } | null;
 }
+
+const ActorSection: React.FC<{ actor: NonNullable<PremiumSearchDisplayProps['actor']> }> = ({ actor }) => {
+  return (
+    <div className="bg-gradient-to-br from-red-900/20 via-black to-black rounded-3xl p-8 border border-red-500/30 overflow-hidden relative group">
+      {/* Background Accent */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 blur-[100px] rounded-full -mr-20 -mt-20" />
+      
+      <div className="flex flex-col md:flex-row gap-8 items-center relative z-10">
+        <div className="flex-shrink-0 relative">
+          <div className="w-40 h-40 md:w-56 md:h-56 rounded-2xl overflow-hidden border-4 border-red-600/50 shadow-[0_0_40px_rgba(229,9,20,0.3)]">
+            {actor.profile_path ? (
+              <Image
+                src={`https://image.tmdb.org/t/p/h632${actor.profile_path}`}
+                alt={actor.name}
+                width={224}
+                height={224}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                <User className="w-20 h-20 text-gray-600" />
+              </div>
+            )}
+          </div>
+          <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-1 rounded-full text-xs font-bold tracking-widest shadow-lg">
+            ACTOR
+          </div>
+        </div>
+
+        <div className="flex-1 text-center md:text-left">
+          <h2 className="text-4xl md:text-6xl font-black italic text-white mb-2 drop-shadow-[0_0_15px_rgba(229,9,20,0.4)]">
+            {actor.name.toUpperCase()}
+          </h2>
+          <div className="flex items-center justify-center md:justify-start gap-4 mb-4">
+            <span className="text-red-500 font-bold tracking-tighter flex items-center gap-2">
+              <Star className="w-4 h-4 fill-red-500" />
+              {actor.known_for_department}
+            </span>
+            <span className="text-white/40">|</span>
+            <span className="text-white/60">Verified Profile</span>
+          </div>
+          
+          <p className="text-gray-400 text-sm md:text-base leading-relaxed max-w-2xl mb-6">
+            Explore the legendary filmography and career highlights of {actor.name}. 
+            From blockbuster performances to critically acclaimed masterpieces.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
+            <Link 
+              href={`/person/${actor.id}`}
+              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold transition-all hover:scale-105 shadow-[0_0_20px_rgba(229,9,20,0.4)]"
+            >
+              View Full Profile
+            </Link>
+            <button className="bg-white/5 hover:bg-white/10 text-white px-8 py-3 rounded-xl font-bold border border-white/10 transition-all">
+              Save to Favorites
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const PremiumSearchDisplay: React.FC<PremiumSearchDisplayProps> = ({
   results,
   query,
   isLoading = false,
+  actor = null,
 }) => {
   const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'tv'>('all');
 
@@ -42,7 +114,7 @@ const PremiumSearchDisplay: React.FC<PremiumSearchDisplayProps> = ({
 
   // Count by type
   const counts = useMemo(() => ({
-    movies: results.filter(r => r._source === 'movie').length,
+    movies: results.filter(r => r._source === 'movie' || r._source === 'person_credit').length,
     tv: results.filter(r => r._source === 'tv').length,
     total: results.length
   }), [results]);
@@ -51,28 +123,28 @@ const PremiumSearchDisplay: React.FC<PremiumSearchDisplayProps> = ({
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Searching for "{query}"...</p>
+          <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4 shadow-[0_0_15px_rgba(229,9,20,0.4)]"></div>
+          <p className="text-gray-400 animate-pulse italic">Decoding cinematic DNA for "{query}"...</p>
         </div>
       </div>
     );
   }
 
-  if (results.length === 0) {
+  if (results.length === 0 && !actor) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center max-w-md">
-          <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Film className="w-10 h-10 text-gray-600" />
+          <div className="w-20 h-20 bg-gray-900 border border-white/5 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
+            <Film className="w-10 h-10 text-red-600/50" />
           </div>
-          <h3 className="text-xl font-semibold text-white mb-2">No results found</h3>
-          <p className="text-gray-400 mb-4">
-            We couldn't find anything matching "{query}"
+          <h3 className="text-2xl font-black italic text-white mb-2 tracking-tighter">SIGNAL LOST</h3>
+          <p className="text-gray-400 mb-6 font-medium">
+            We couldn't find a cinematic match for "{query}"
           </p>
-          <div className="space-y-2 text-sm text-gray-500">
-            <p>• Check your spelling</p>
-            <p>• Try different keywords</p>
-            <p>• Use more general terms</p>
+          <div className="grid grid-cols-1 gap-2 text-sm text-gray-500">
+            <div className="bg-white/5 p-3 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">Check your spelling</div>
+            <div className="bg-white/5 p-3 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">Try different keywords</div>
+            <div className="bg-white/5 p-3 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">Use more general terms</div>
           </div>
         </div>
       </div>
@@ -80,150 +152,120 @@ const PremiumSearchDisplay: React.FC<PremiumSearchDisplayProps> = ({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
+      {/* 🎭 Actor Profile (Priority #1) */}
+      {actor && activeTab === 'all' && (
+        <ActorSection actor={actor} />
+      )}
+
       {/* Search Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-1">
-            Results for "{query}"
+          <h2 className="text-3xl font-black italic text-white mb-2 tracking-tighter">
+            DISCOVERY FEED <span className="text-red-600">/</span> {query.toUpperCase()}
           </h2>
-          <p className="text-gray-400">
-            Found {counts.total} results
-            {counts.movies > 0 && ` • ${counts.movies} movies`}
-            {counts.tv > 0 && ` • ${counts.tv} TV shows`}
-          </p>
+          <div className="flex items-center gap-2 text-sm text-white/40 font-bold tracking-widest">
+            <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3" /> RANKED {counts.total}</span>
+            <span>•</span>
+            <span className="text-red-500/60 uppercase">{activeTab} VIEW</span>
+          </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 bg-gray-900 rounded-lg p-1">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-400 hover:text-white'
-              }`}
-          >
-            All ({counts.total})
-          </button>
-          <button
-            onClick={() => setActiveTab('movies')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'movies'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-400 hover:text-white'
-              }`}
-          >
-            Movies ({counts.movies})
-          </button>
-          <button
-            onClick={() => setActiveTab('tv')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'tv'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-400 hover:text-white'
-              }`}
-          >
-            TV Shows ({counts.tv})
-          </button>
+        <div className="flex gap-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-1.5 shadow-2xl">
+          {(['all', 'movies', 'tv'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "px-6 py-2.5 rounded-xl text-xs font-black tracking-widest uppercase transition-all duration-300",
+                activeTab === tab
+                  ? "bg-red-600 text-white shadow-[0_0_20px_rgba(229,9,20,0.4)]"
+                  : "text-white/40 hover:text-white hover:bg-white/5"
+              )}
+            >
+              {tab} ({tab === 'all' ? counts.total : tab === 'movies' ? counts.movies : counts.tv})
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Top Result (Netflix-style) */}
-      {topResult && activeTab === 'all' && (
-        <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-2xl p-6 border border-blue-500/30">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-              TOP RESULT
-            </div>
-            {topResult._isExactMatch && (
-              <div className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                EXACT MATCH
-              </div>
-            )}
-            {topResult._searchScore && topResult._searchScore > 150 && (
-              <div className="bg-orange-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                POPULAR
-              </div>
-            )}
-          </div>
-
-          <div className="flex gap-6">
-            {/* Top Result Poster */}
+      {/* Top Result (only if not an actor search or if searching in tabs) */}
+      {topResult && activeTab === 'all' && !actor && (
+        <div className="bg-gradient-to-r from-red-900/10 via-black to-black rounded-3xl p-1 border border-red-500/20 overflow-hidden group">
+          <div className="bg-black/60 backdrop-blur-2xl p-8 rounded-[22px] flex flex-col md:flex-row gap-8">
             <div className="flex-shrink-0">
               <Link href={topResult._source === 'movie' ? `/movie/${topResult.id}` : `/series/${topResult.id}`}>
-                <div className="relative group cursor-pointer">
+                <div className="relative group cursor-pointer w-full md:w-64 aspect-[2/3] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
                   {topResult.poster_path ? (
                     <Image
-                      src={`https://image.tmdb.org/t/p/w342${topResult.poster_path}`}
+                      src={`https://image.tmdb.org/t/p/w500${topResult.poster_path}`}
                       alt={topResult.title || topResult.name || 'Content'}
-                      width={240}
-                      height={360}
-                      className="rounded-xl shadow-2xl group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                   ) : (
-                    <div className="w-60 h-90 bg-gray-800 rounded-xl flex items-center justify-center">
+                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
                       <Film className="w-12 h-12 text-gray-600" />
                     </div>
                   )}
-
-                  {/* Play Button Overlay */}
-                  <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="bg-blue-600 rounded-full p-4">
-                      <Play className="w-8 h-8 text-white" />
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="bg-red-600 rounded-full p-4 shadow-[0_0_30px_rgba(229,9,20,0.6)]">
+                      <Play className="w-8 h-8 text-white fill-white" />
                     </div>
                   </div>
                 </div>
               </Link>
             </div>
 
-            {/* Top Result Details */}
-            <div className="flex-1">
+            <div className="flex-1 flex flex-col justify-center">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">TOP MATCH</span>
+                {topResult._isExactMatch && (
+                  <span className="bg-white/10 text-white px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border border-white/10">EXACT</span>
+                )}
+              </div>
+
               <Link href={topResult._source === 'movie' ? `/movie/${topResult.id}` : `/series/${topResult.id}`}>
-                <h3 className="text-3xl font-bold text-white mb-2 hover:text-blue-400 transition-colors">
+                <h3 className="text-4xl md:text-5xl font-black italic text-white mb-4 hover:text-red-500 transition-colors tracking-tighter">
                   {topResult.title || topResult.name}
                 </h3>
               </Link>
 
-              <div className="flex items-center gap-4 mb-4 text-gray-300">
+              <div className="flex items-center gap-6 mb-6 text-sm font-bold tracking-widest text-white/60">
                 {topResult.vote_average && (
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                  <div className="flex items-center gap-1.5 text-red-500">
+                    <Star className="w-4 h-4 fill-red-500" />
                     <span>{topResult.vote_average.toFixed(1)}</span>
                   </div>
                 )}
-
                 {(topResult.release_date || topResult.first_air_date) && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5 uppercase">
                     <Calendar className="w-4 h-4" />
                     <span>{new Date(topResult.release_date || topResult.first_air_date || '').getFullYear()}</span>
                   </div>
                 )}
-
-                {topResult._source && (
-                  <div className="flex items-center gap-1">
-                    {topResult._source === 'movie' ? (
-                      <Film className="w-4 h-4" />
-                    ) : (
-                      <Tv className="w-4 h-4" />
-                    )}
-                    <span className="capitalize">{topResult._source}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-1.5 uppercase">
+                  {topResult._source === 'movie' ? <Film className="w-4 h-4" /> : <Tv className="w-4 h-4" />}
+                  <span>{topResult._source}</span>
+                </div>
               </div>
 
-              <p className="text-gray-300 line-clamp-3 mb-4">
+              <p className="text-gray-400 text-lg line-clamp-3 mb-8 leading-relaxed max-w-3xl">
                 {topResult.overview}
               </p>
 
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <Link
                   href={topResult._source === 'movie' ? `/movie/${topResult.id}` : `/series/${topResult.id}`}
-                  className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+                  className="bg-red-600 hover:bg-red-700 text-white px-10 py-4 rounded-xl font-black tracking-widest uppercase transition-all hover:scale-105 shadow-[0_0_20px_rgba(229,9,20,0.4)] flex items-center gap-3"
                 >
-                  <Play className="w-4 h-4" />
-                  Watch Now
+                  <Play className="w-5 h-5 fill-white" />
+                  Experience Now
                 </Link>
-
-                <button className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-                  + Add to List
+                <button className="bg-white/5 hover:bg-white/10 text-white px-10 py-4 rounded-xl font-black tracking-widest uppercase border border-white/10 transition-all">
+                  + MY LIST
                 </button>
               </div>
             </div>
@@ -233,35 +275,27 @@ const PremiumSearchDisplay: React.FC<PremiumSearchDisplayProps> = ({
 
       {/* Other Results Grid */}
       {filteredResults.length > 0 && (
-        <div>
-          <h3 className="text-xl font-bold text-white mb-4">
-            {activeTab === 'all' ? 'Other Results' : `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`}
-          </h3>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b border-white/5 pb-4">
+            <h3 className="text-xl font-black italic text-white tracking-widest uppercase">
+              {activeTab === 'all' 
+                ? (actor ? `FILMOGRAPHY FOR ${actor.name.toUpperCase()}` : 'EXTENDED DISCOVERY') 
+                : `${activeTab} ARCHIVE`}
+            </h3>
+            <span className="text-[10px] font-bold text-white/20 tracking-[0.3em]">SECURE STREAM</span>
+          </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
             {filteredResults.map((result) => (
-              <div key={result.id} className="relative group">
+              <div key={result.id} className="group relative">
                 <EnhancedMediaCard
                   media={result as TMDBMovie | TMDBTVShow}
-                  className="transform group-hover:scale-105 transition-transform duration-300"
+                  className="transition-all duration-500 group-hover:scale-105 group-hover:-translate-y-2"
                 />
 
-                {/* Match Type Badge */}
-                {result._matchType && (
-                  <div className={`absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${result._matchType === 'exact'
-                      ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                      : result._matchType === 'partial'
-                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                        : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                    }`}>
-                    {result._matchType === 'exact' ? 'Exact' :
-                      result._matchType === 'partial' ? 'Partial' : 'Similar'}
-                  </div>
-                )}
-
                 {/* Score Indicator */}
-                {result._searchScore && result._searchScore > 100 && (
-                  <div className="absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-300 border border-orange-500/30 backdrop-blur-sm">
+                {result._searchScore && result._searchScore > 0 && (
+                  <div className="absolute top-2 right-2 px-2 py-1 rounded-lg text-[10px] font-black bg-black/60 text-red-500 border border-red-500/30 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">
                     <TrendingUp className="w-3 h-3 inline mr-1" />
                     {Math.round(result._searchScore)}
                   </div>
@@ -276,3 +310,4 @@ const PremiumSearchDisplay: React.FC<PremiumSearchDisplayProps> = ({
 };
 
 export default PremiumSearchDisplay;
+

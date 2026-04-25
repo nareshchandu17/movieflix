@@ -2,12 +2,15 @@
 
 import Header from "@/components/navbar/Header";
 import Footer from "@/components/footer/Footer";
+import Sidebar from "@/components/navbar/Sidebar";
+import MobileNav from "@/components/navbar/MobileNav";
 import { ReactNode } from "react";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import { useSearch } from "@/contexts/SearchContext";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 interface ClientLayoutProps {
   children: ReactNode;
@@ -15,6 +18,7 @@ interface ClientLayoutProps {
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname();
+  const { status } = useSession();
   const isWatchPartyPage = pathname?.startsWith('/watch-party');
   const isWatchPage = pathname?.startsWith('/watch/');
   const isMoviePage = pathname?.startsWith('/movie/');
@@ -25,6 +29,8 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   const isProfilesPage = pathname?.startsWith('/profiles');
   const { isSearching, searchQuery } = useSearch();
   const [mounted, setMounted] = useState(false);
+  
+  const isAuthenticated = status === "authenticated";
   
   useEffect(() => {
     setMounted(true);
@@ -48,13 +54,23 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
 
       <div className="min-h-screen relative z-[90]">
         {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isDownloadsPage && !isProfilesPage && <Header />}
+        
+        {/* Sidebar for Desktop */}
+        <Sidebar />
+
         <main className={cn(
+          "transition-all duration-500",
+          mounted && isAuthenticated && !isWatchPage && !isWatchPartyPage && "lg:pl-[72px]", // Only offset if not in a full-screen player
           mounted && showDeepOverlay 
-            ? "transition-all duration-700 blur-xl scale-[0.97] opacity-20 pointer-events-none" 
+            ? "blur-xl scale-[0.97] opacity-20 pointer-events-none" 
             : "opacity-100"
         )}>
           {children}
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        <MobileNav />
+
         {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isDownloadsPage && !isProfilesPage && <Footer />}
         <Toaster position="top-right" richColors />
       </div>

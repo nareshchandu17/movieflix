@@ -7,6 +7,8 @@ import Filter from "./Filter";
 import { TMDBMovie, TMDBTVShow, TMDBGenre } from "@/lib/types";
 import { api } from "@/lib/api";
 
+import { SearchResult } from "@/lib/smartSearch";
+
 interface FilterState {
   genre: string;
   mediaType: string;
@@ -15,7 +17,7 @@ interface FilterState {
 }
 
 interface FilterWrapperProps {
-  onResultsChange: (results: (TMDBMovie | TMDBTVShow)[]) => void;
+  onResultsChange: (results: SearchResult[]) => void;
   onLoadingChange: (isLoading: boolean) => void;
   onErrorChange: (error: string | null) => void;
 }
@@ -76,7 +78,7 @@ const FilterWrapper= ({
     onErrorChange(null);
 
     try {
-      const results: (TMDBMovie | TMDBTVShow)[] = [];
+      const results: SearchResult[] = [];
       const errors: string[] = [];
 
       // Fetch movies if no media type filter or if media type is movie
@@ -88,7 +90,7 @@ const FilterWrapper= ({
           if (filters.minRating) movieParams.minRating = parseFloat(filters.minRating);
 
           const movieResults = await api.discover('movie', movieParams);
-          results.push(...movieResults.results);
+          results.push(...movieResults.results.map(m => ({ ...m, _source: 'movie' })));
         } catch (error) {
           console.error('Movie discovery failed:', error);
           errors.push('Failed to fetch movies');
@@ -104,7 +106,7 @@ const FilterWrapper= ({
           if (filters.minRating) tvParams.minRating = parseFloat(filters.minRating);
 
           const tvResults = await api.discover('tv', tvParams);
-          results.push(...tvResults.results);
+          results.push(...tvResults.results.map(t => ({ ...t, _source: 'tv' })));
         } catch (error) {
           console.error('TV discovery failed:', error);
           errors.push('Failed to fetch TV shows');
