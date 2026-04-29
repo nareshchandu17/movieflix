@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import rateLimit from "express-rate-limit";
 
 // In-memory store for rate limiting (use Redis in production)
 const store = new Map();
