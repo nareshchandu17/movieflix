@@ -309,8 +309,10 @@ export class SyncEngine {
       while (queue.length > 0) {
         const event = queue.shift();
         
-        // Store in Redis for persistence
-        await RedisManager.emitSyncEvent(profileId, event.type, event);
+        if (event) {
+          // Store in Redis for persistence
+          await RedisManager.emitSyncEvent(profileId, event.type, event);
+        }
         
         // Add small delay to prevent overwhelming
         await new Promise(resolve => setTimeout(resolve, 10));
@@ -423,7 +425,7 @@ export class SyncEngine {
         redis: redisStats,
         queueSize: Array.from(this.syncQueue.values()).reduce((sum, queue) => sum + queue.length, 0),
         processingQueues: this.processingQueue.size,
-        connectedProfiles: this.profileRooms.size
+        connectedProfiles: this.wsManager.profileRoomsCount
       };
 
     } catch (error) {
