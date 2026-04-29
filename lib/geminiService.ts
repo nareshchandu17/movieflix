@@ -708,3 +708,50 @@ export function getGeminiService(): GeminiService {
 }
 
 export type { MovieData, AIFactsResponse, AISuggestionResponse };
+
+/**
+ * High-level wrapper for semantic search queries
+ */
+export async function geminiSearch(query: string): Promise<any> {
+  try {
+    const service = getGeminiService();
+    // Use the model to categorize the query and suggest intents
+    const prompt = `Analyze this search query for a movie streaming platform: "${query}"
+    
+    1. Identify the likely intent (KEYWORD, SEMANTIC, MOOD, PERSON, GENRE, TRENDING, HYBRID).
+    2. Extract key entities (movies, actors, directors, genres).
+    3. If it's a mood query, map it to TMDB genres.
+    
+    Return ONLY JSON:
+    {
+      "intent": "...",
+      "entities": {
+        "movies": [],
+        "people": [],
+        "genres": []
+      },
+      "mood_analysis": {
+        "emotion": "...",
+        "suggested_genres": []
+      }
+    }`;
+
+    // Note: We use a lightweight call here
+    if (!process.env.GEMINI_API_KEY) {
+      return { intent: "KEYWORD", entities: { movies: [], people: [], genres: [] } };
+    }
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const response = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: prompt,
+    });
+    
+    const text = response.text?.trim() || "{}";
+    const cleanJson = text.replace(/```json|```/g, "").trim();
+    return JSON.parse(cleanJson);
+  } catch (error) {
+    console.error("[Gemini Search] Error:", error);
+    return { intent: "KEYWORD", error: "Semantic analysis failed" };
+  }
+}
