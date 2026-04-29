@@ -40,6 +40,7 @@ export const authOptions: AuthOptions = {
           await existingUser.save();
           user.id = existingUser._id.toString();
           user.onboardingCompleted = existingUser.onboardingCompleted;
+          user.role = existingUser.role || "user";
         }
 
         return true;
@@ -55,14 +56,16 @@ export const authOptions: AuthOptions = {
         token.email = user.email;
         token.id = user.id;
         token.onboardingCompleted = user.onboardingCompleted;
+        token.role = user.role || "user";
         token.verifiedProfiles = []; // Track PIN-verified profiles in the session
       } else {
         // Subsequent requests
         try {
           await connectDB();
-          const dbUser = await User.findById(token.id).select('onboardingCompleted');
+          const dbUser = await User.findById(token.id).select('onboardingCompleted role');
           if (dbUser) {
             token.onboardingCompleted = dbUser.onboardingCompleted;
+            token.role = dbUser.role || "user";
           }
         } catch (error) {
           console.error("Error refreshing onboarding status:", error);
@@ -76,6 +79,7 @@ export const authOptions: AuthOptions = {
         session.user.email = token.email;
         session.user.id = token.id;
         session.user.onboardingCompleted = token.onboardingCompleted;
+        session.user.role = token.role || "user";
         session.user.verifiedProfiles = token.verifiedProfiles || []; // Expose to client
       }
       return session;
@@ -95,6 +99,23 @@ export const authOptions: AuthOptions = {
   },
 
   secret: process.env.NEXTAUTH_SECRET,
+  
+  logger: {
+    error(code, ...message) {
+      // Suppress harmless JWT_SESSION_ERROR commonly caused by cross-contamination
+      // of localhost cookies from other NextAuth projects or changed secrets.
+      if (code === 'JWT_SESSION_ERROR') {
+        return;
+      }
+      console.error(code, ...message);
+    },
+    warn(code, ...message) {
+      console.warn(code, ...message);
+    },
+    debug(code, ...message) {
+      console.debug(code, ...message);
+    }
+  },
 };
 
 const handler = NextAuth(authOptions);
