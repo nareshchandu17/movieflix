@@ -1,21 +1,28 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-export interface IReactionClip extends Document {
+export interface IReactionClipBase {
   userId: mongoose.Types.ObjectId;
   movieId: string;
   videoUrl: string;
   thumbnailUrl: string;
   movieTimestamp: number;
   moodEmoji: string;
-  visibility: "public" | "private";
+  showInFeed: boolean;
+  showInMoviePage: boolean;
   likesCount: number;
   sharesCount: number;
+  viewsCount: number;
   duration: number;
+  caption?: string;
+  status: "pending" | "approved" | "rejected";
+}
+
+export interface IReactionClip extends IReactionClipBase, Document {
   createdAt: Date;
   updatedAt: Date;
 }
 
-const ReactionClipSchema = new Schema<IReactionClip>(
+const ReactionClipSchema = new Schema<IReactionClipBase>(
   {
     userId: {
       type: Schema.Types.ObjectId,
@@ -43,10 +50,20 @@ const ReactionClipSchema = new Schema<IReactionClip>(
       type: String,
       required: true,
     },
-    visibility: {
+    showInFeed: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    showInMoviePage: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    status: {
       type: String,
-      enum: ["public", "private"],
-      default: "public",
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
       index: true,
     },
     likesCount: {
@@ -57,9 +74,16 @@ const ReactionClipSchema = new Schema<IReactionClip>(
       type: Number,
       default: 0,
     },
+    viewsCount: {
+      type: Number,
+      default: 0,
+    },
     duration: {
       type: Number,
       required: true,
+    },
+    caption: {
+      type: String,
     },
   },
   {
@@ -68,7 +92,8 @@ const ReactionClipSchema = new Schema<IReactionClip>(
 );
 
 // Compound indexes for scalability
-ReactionClipSchema.index({ movieId: 1, visibility: 1, createdAt: -1 });
+ReactionClipSchema.index({ movieId: 1, showInMoviePage: 1, createdAt: -1 });
+ReactionClipSchema.index({ showInFeed: 1, createdAt: -1 });
 ReactionClipSchema.index({ userId: 1, createdAt: -1 });
 
 // Ensure any cached model is replaced in development

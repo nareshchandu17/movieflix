@@ -29,11 +29,13 @@ export async function POST(req: NextRequest) {
     const movieId = formData.get("movieId") as string;
     const movieTimestampStr = formData.get("movieTimestamp") as string;
     const moodEmoji = formData.get("moodEmoji") as string;
-    const visibility = (formData.get("visibility") as string) || "public";
+    const showInFeed = formData.get("showInFeed") === "true";
+    const showInMoviePage = formData.get("showInMoviePage") === "true";
+    const caption = formData.get("caption") as string;
 
     const movieTimestamp = parseFloat(movieTimestampStr);
 
-    console.log(`[Reaction] Metadata: user=${currentUserId}, movie=${movieId}, time=${movieTimestamp}, mood=${moodEmoji}`);
+    console.log(`[Reaction] Metadata: user=${currentUserId}, movie=${movieId}, time=${movieTimestamp}, mood=${moodEmoji}, feed=${showInFeed}, moviePage=${showInMoviePage}`);
     console.log(`[Reaction] Video file present: ${!!reactionVideoFile}, size: ${reactionVideoFile?.size} bytes`);
 
     if (!reactionVideoFile || reactionVideoFile.size === 0 || !movieId || isNaN(movieTimestamp) || !moodEmoji) {
@@ -76,7 +78,10 @@ export async function POST(req: NextRequest) {
         thumbnailUrl: cloudinaryResponse.thumbnailUrl,
         movieTimestamp: Math.round(movieTimestamp),
         moodEmoji,
-        visibility,
+        showInFeed: false, // Forces moderation
+        showInMoviePage: false, // Forces moderation
+        status: "pending",
+        caption,
         duration: cloudinaryResponse.duration || 0,
         likesCount: 0,
         sharesCount: 0,
