@@ -11,9 +11,8 @@ import mongoose from 'mongoose';
 import connectDB from '@/lib/db';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import Redis from 'ioredis';
-import { redisConfig } from '@/lib/redis';
 import { Socket } from 'socket.io';
+import { redis } from '@/lib/redis';
 
 interface CustomSocket extends Socket {
   userId?: string;
@@ -45,14 +44,13 @@ class SocketServer {
   private io: Server;
   private rooms: Map<string, RoomParticipant[]> = new Map();
   private userSockets: Map<string, string> = new Map(); // userId -> socketId
-  private redisSub: Redis;
 
   constructor() {
     this.io = new Server(this.createHttpServer(), {
       cors: {
         origin: process.env.NODE_ENV === 'production'
           ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://movieflix.com']
-          : ['http://localhost:3000', 'http://localhost:3001'],
+          : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001'],
         methods: ['GET', 'POST'],
         credentials: true
       },
@@ -60,43 +58,17 @@ class SocketServer {
       pingInterval: 25000
     });
 
-    this.redisSub = new Redis(redisConfig);
-    this.setupRedisSubscriber();
+
     this.setupEventHandlers();
+    this.setupRedisSubscriber();
   }
 
-  private setupRedisSubscriber(): void {
-    this.redisSub.subscribe('NOTIFICATIONS_CHANNEL', (err) => {
-      if (err) {
-        console.error('❌ Failed to subscribe to NOTIFICATIONS_CHANNEL:', err);
-      } else {
-        console.log('📡 Subscribed to NOTIFICATIONS_CHANNEL');
-      }
-    });
-
-    this.redisSub.on('message', (channel, message) => {
-      if (channel === 'NOTIFICATIONS_CHANNEL') {
-        try {
-          const payload = JSON.parse(message);
-          const { userId, notification } = payload;
-
-          const socketId = this.userSockets.get(userId);
-          if (socketId) {
-            this.io.to(socketId).emit('new-notification', notification);
-            console.log(`🔔 Real-time notification sent to user: ${userId}`);
-          }
-        } catch (error) {
-          console.error('Failed to parse Redis notification message:', error);
-        }
-      }
-    });
-  }
 
   private createHttpServer() {
-    const port = process.env.SOCKET_PORT || 3001;
-    return createServer().listen(port, () => {
+    const port = Number(process.env.SOCKET_PORT) || 3001;
+    return createServer().listen(port, '0.0.0.0', () => {
       console.log(`🚀 Socket.io server running on port ${port}`);
-      console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📱 Reachable at: http://localhost:${port}`);
     });
   }
 
@@ -114,26 +86,41 @@ class SocketServer {
     console.log(`👤 User connected: ${socket.id}`);
 
     // Authentication middleware
-    socket.on('authenticate', async () => {
+    socket.on('authenticate', async (data: { token?: string }) => {
       try {
-        const session = await getServerSession(authOptions);
+        const token = data?.token;
+        if (!token) {
+          socket.emit('authentication-error', { message: 'No token provided' });
+          return;
+        }
 
-        if (!session?.user?.id) {
-          socket.emit('authentication-error', { message: 'Invalid authentication' });
+        const secret = process.env.NEXTAUTH_SECRET;
+        if (!secret) {
+          console.error('❌ NEXTAUTH_SECRET not configured on socket server');
+          socket.emit('authentication-error', { message: 'Server configuration error' });
+          return;
+        }
+
+        // Verify the JWT token
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, secret) as any;
+
+        if (!decoded?.userId) {
+          socket.emit('authentication-error', { message: 'Invalid token payload' });
           return;
         }
 
         // Store user mapping
-        this.userSockets.set(session.user.id, socket.id);
-        socket.userId = session.user.id;
-        socket.userName = session.user.name ?? undefined;
+        this.userSockets.set(decoded.userId, socket.id);
+        socket.userId = decoded.userId;
+        socket.userName = decoded.name || decoded.email || 'User';
 
         socket.emit('authenticated', {
           success: true,
-          user: { id: session.user.id, name: session.user.name }
+          user: { id: decoded.userId, name: socket.userName }
         });
 
-        console.log(`✅ User authenticated: ${session.user.name} (${session.user.id})`);
+        console.log(`✅ User authenticated via JWT: ${socket.userName} (${decoded.userId})`);
       } catch (error) {
         console.error('Authentication error:', error);
         socket.emit('authentication-error', { message: 'Authentication failed' });
@@ -203,6 +190,19 @@ class SocketServer {
       }
     });
 
+    socket.on('sync-progress', async (data) => {
+      const { roomId, currentTime } = data;
+      const participants = this.rooms.get(roomId) || [];
+      const host = participants.find(p => p.isHost);
+      
+      if (host && host.socketId === socket.id) {
+        socket.to(roomId).emit('progress-update', { currentTime, userId: socket.userId });
+        
+        // Update DB occasionally or just keep in memory
+        await WatchPartyRoom.findOneAndUpdate({ roomId }, { currentTime }).catch(() => null);
+      }
+    });
+
     // Room management
     socket.on('create-room', async (data) => {
       try {
@@ -230,6 +230,44 @@ class SocketServer {
         socket.emit('error', { message: 'Failed to get public rooms' });
       }
     });
+  }
+
+  private setupRedisSubscriber(): void {
+    const r = redis;
+    if (!r) {
+      console.warn('⚠️ Upstash Redis not configured, real-time notifications disabled');
+      return;
+    }
+
+    console.log('📡 Notification Bridge: Initializing...');
+
+    setInterval(async () => {
+      try {
+        const keys = await r.keys('sync:*:notification');
+        if (!keys || keys.length === 0) return;
+
+        for (const key of keys) {
+          const data = await r.get<any>(key);
+          if (data && typeof data === 'object') {
+            const { userId, notification } = data;
+            if (userId && notification) {
+              this.sendNotificationToUser(userId, notification);
+              await r.del(key);
+            }
+          }
+        }
+      } catch (err) {
+        // Silent catch for polling errors
+      }
+    }, 2000);
+  }
+
+  private sendNotificationToUser(userId: string, notification: any): void {
+    const socketId = this.userSockets.get(userId);
+    if (socketId) {
+      this.io.to(socketId).emit('new-notification', notification);
+      console.log(`🔔 Pushed real-time notification to user ${userId}`);
+    }
   }
 
   private async handleJoinRoom(socket: CustomSocket, data: any): Promise<void> {
@@ -289,6 +327,14 @@ class SocketServer {
     // Join socket room
     socket.join(roomId);
 
+    // Notify others that a new user joined
+    socket.to(roomId).emit('user-joined', {
+      userId: socket.userId,
+      userName,
+      socketId: socket.id,
+      isHost: participant.isHost
+    });
+
     // Update room in database if it exists
     if (room) {
       await WatchPartyRoom.findByIdAndUpdate(room._id, {
@@ -310,12 +356,15 @@ class SocketServer {
     });
 
     // Notify all participants of the updated state
+    const host = participants.find(p => p.isHost);
     this.io.to(roomId).emit('room-state', {
       roomId,
+      hostId: host?.socketId,
       participants: participants.map(pa => ({
-        id: pa.userId,
-        name: pa.userName,
-        isHost: pa.isHost
+        userId: pa.userId,
+        userName: pa.userName,
+        isHost: pa.isHost,
+        socketId: pa.socketId
       }))
     });
 
@@ -363,9 +412,10 @@ class SocketServer {
     this.io.to(roomId).emit('room-state', {
       roomId,
       participants: updatedParticipants.map(pa => ({
-        id: pa.userId,
-        name: pa.userName,
-        isHost: pa.isHost
+        userId: pa.userId,
+        userName: pa.userName,
+        isHost: pa.isHost,
+        socketId: pa.socketId
       }))
     });
 
@@ -623,13 +673,10 @@ class SocketServer {
         // Notify remaining participants
         participants.forEach(p => {
           if (p.socketId !== socket.id) {
-            this.io.to(p.socketId).emit('participant-disconnected', {
-              participant: { userId: socket.userId, userName: socket.userName },
-              remainingParticipants: participants.map(pa => ({
-                userId: pa.userId,
-                userName: pa.userName,
-                isHost: pa.isHost
-              }))
+            this.io.to(p.socketId).emit('user-left', {
+              socketId: socket.id,
+              userId: socket.userId,
+              userName: socket.userName
             });
           }
         });

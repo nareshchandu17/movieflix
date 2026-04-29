@@ -31,13 +31,32 @@ export default function NotificationBell() {
   useEffect(() => {
     if (!session?.user) return;
 
-    // Connect socket if not connected
-    if (!socket.connected) {
-      socket.connect();
-    }
+    // Connect and Authenticate
+    const connectSocket = async () => {
+      try {
+        const res = await fetch("/api/auth/socket-token");
+        if (!res.ok) throw new Error("Failed to get socket token");
+        const { token } = await res.json();
 
-    // Authenticate with socket server
-    socket.emit("authenticate", { token: "session-token" }); // The socket server handles getServerSession internally
+        // Pass token in auth object during connection
+        socket.auth = { token };
+        
+        if (!socket.connected) {
+          socket.connect();
+          console.log("🔌 Connecting to socket server...");
+          
+          // Emit authenticate event with token
+          socket.emit("authenticate", { token });
+        } else {
+          // If already connected, still authenticate
+          socket.emit("authenticate", { token });
+        }
+      } catch (err) {
+        console.error("❌ Socket auth failed:", err);
+      }
+    };
+
+    connectSocket();
 
     // Listen for new notifications
     const handleNewNotification = (notification: any) => {
@@ -59,9 +78,13 @@ export default function NotificationBell() {
     };
 
     socket.on("new-notification", handleNewNotification);
+    socket.on("connect", () => console.log("✅ Socket connected successfully"));
+    socket.on("connect_error", (err) => console.error("❌ Socket connection error:", err.message));
 
     return () => {
       socket.off("new-notification", handleNewNotification);
+      socket.off("connect");
+      socket.off("connect_error");
     };
   }, [session, queryClient]);
 
