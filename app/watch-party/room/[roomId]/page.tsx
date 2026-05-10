@@ -51,12 +51,14 @@ export default function WatchPartyPage() {
     socketState,
     playbackState,
     chatMessages,
+    reactions,
     sendMessage,
     sendReaction,
     setStatus,
     play,
     pause,
-    seek
+    seek,
+    updateProgress
   } = useWatchPartySocket(roomId || null, isAskingName ? null : userId, userName);
 
   // Fetch Movie Context
@@ -127,7 +129,7 @@ export default function WatchPartyPage() {
           <div className="flex-1 overflow-y-auto overflow-x-hidden p-0 flex flex-col">
 
             {/* The Cinematic Player Section */}
-            <div className="relative aspect-video w-full bg-black shadow-2xl overflow-hidden">
+            <div className="relative flex-1 w-full bg-black shadow-2xl overflow-hidden min-h-[500px]">
               <WatchPartyPlayer
                 watchParty={movieData}
                 userId={userId}
@@ -136,9 +138,11 @@ export default function WatchPartyPage() {
                 onLeave={handleLeave}
                 socketState={socketState}
                 playbackState={playbackState}
+                reactions={reactions}
                 play={play}
                 pause={pause}
                 seek={seek}
+                updateProgress={updateProgress}
                 sendMessage={(m) => sendMessage(m, userName || 'Guest')}
                 sendReaction={(r) => sendReaction(r, userName || 'Guest', playbackState.currentTime)}
                 setStatus={setStatus}
@@ -151,6 +155,9 @@ export default function WatchPartyPage() {
               isPlaying={playbackState.isPlaying}
               latency={42}
               quality={playbackState.quality || 'Auto'}
+              onPlay={() => play(playbackState.currentTime)}
+              onPause={() => pause(playbackState.currentTime)}
+              movieTitle={movieData?.movieTitle}
             />
           </div>
 
@@ -160,7 +167,7 @@ export default function WatchPartyPage() {
             hostName={socketState.hostId ? (socketState.participants.find(p => p.socketId === socketState.hostId)?.userName || 'Host') : 'Host'}
             startTime="Just now"
             onLeave={handleLeave}
-            onReport={() => {}}
+            onReport={() => { }}
           />
         </div>
 

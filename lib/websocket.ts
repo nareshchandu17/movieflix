@@ -1,6 +1,6 @@
 import { Server as ServerIO, Socket } from 'socket.io';
 import { createServer } from 'http';
-import RedisManager from './redis';
+import RedisManager, { redis } from './redis';
 import { AuthManager } from './auth-v2';
 
 interface ClientInfo {
@@ -49,7 +49,7 @@ export class WebSocketManager {
       // Authentication middleware
       this.io.use(async (socket: Socket, next: (err?: Error) => void) => {
         const token = socket.handshake.auth?.token;
-        
+
         if (!token) {
           next(new Error('Authentication required'));
           return;
@@ -82,10 +82,10 @@ export class WebSocketManager {
 
           // Add to connected clients
           this.connectedClients.set(socket.id, deviceInfo);
-          
+
           // Join profile room
           this.joinProfileRoom(deviceInfo.profileId, socket.id);
-          
+
           // Store socket reference in user session
           await RedisManager.setSession(
             deviceInfo.userId,
@@ -101,7 +101,7 @@ export class WebSocketManager {
           (socket as any).userId = decoded.userId;
           (socket as any).profileId = decoded.profileId;
           (socket as any).deviceId = decoded.deviceId;
-          
+
           next();
         } catch (error) {
           console.error('WebSocket auth error:', error);
@@ -112,20 +112,20 @@ export class WebSocketManager {
       // Connection handling
       this.io.on('connection', (socket: Socket) => {
         const clientInfo = this.connectedClients.get(socket.id);
-        
+
         console.log(`🔌 Client connected: ${clientInfo?.deviceName} (${clientInfo?.deviceType})`);
-        
+
         socket.on('disconnect', async () => {
           const info = this.connectedClients.get(socket.id);
           if (info) {
             this.connectedClients.delete(socket.id);
             await RedisManager.updateDeviceStatus(info.deviceId, 'offline');
-            
+
             // Leave profile room
             if (info.profileId) {
               this.leaveProfileRoom(info.profileId, socket.id);
             }
-            
+
             console.log(`🔌 Client disconnected: ${info.deviceName}`);
           }
         });
@@ -135,23 +135,60 @@ export class WebSocketManager {
         });
       });
 
+      // Redis Subscription for cross-instance notifications
+      this.setupRedisSubscription();
+
       console.log('🚀 WebSocket server initialized on port', port);
-      
+
     } catch (error) {
       console.error('❌ Failed to initialize WebSocket server:', error);
       throw error;
     }
   }
 
+  private setupRedisSubscription(): void {
+    const r = redis;
+    if (!r) return;
+
+    console.log('📡 Notification Bridge (WSM): Initializing...');
+
+    setInterval(async () => {
+      try {
+        const keys = await r.keys('sync:*:notification');
+        if (!keys || keys.length === 0) return;
+
+        for (const key of keys) {
+          const payload = await r.get<any>(key);
+          if (payload && typeof payload === 'object') {
+            const { userId, notification } = payload;
+            
+            console.log(`🔔 WSM: Received sync notification for user ${userId}`);
+
+            // Emit to all devices of this user
+            this.io?.to(`profile:${userId}`).emit('new-notification', notification);
+            
+            if (notification.profileId && notification.profileId !== userId) {
+              this.io?.to(`profile:${notification.profileId}`).emit('new-notification', notification);
+            }
+
+            await r.del(key);
+          }
+        }
+      } catch (error) {
+        // Silent catch for polling
+      }
+    }, 2000);
+  }
+
   private joinProfileRoom(profileId: string, socketId: string): void {
     if (!this.profileRooms.has(profileId)) {
       this.profileRooms.set(profileId, new Set());
     }
-    
+
     const room = this.profileRooms.get(profileId);
     if (room) {
       room.add(socketId);
-      
+
       const socket = this.io?.sockets.sockets.get(socketId);
       if (socket) {
         socket.join(`profile:${profileId}`);
@@ -172,7 +209,7 @@ export class WebSocketManager {
       if (socket) {
         socket.leave(`profile:${profileId}`);
       }
-      
+
       const clientInfo = this.connectedClients.get(socketId);
       this.io?.to(`profile:${profileId}`).emit('device:disconnected', {
         socketId,
@@ -184,7 +221,7 @@ export class WebSocketManager {
   // Emit sync event to all devices of a profile
   async emitToProfile(profileId: string, event: string, data: any): Promise<void> {
     if (!this.io) return;
-    
+
     const syncData: SyncData = {
       type: event,
       data,
@@ -194,7 +231,7 @@ export class WebSocketManager {
 
     // Store in Redis for persistence
     await RedisManager.emitSyncEvent(profileId, event, syncData);
-    
+
     // Emit to all clients in profile room
     this.io.to(`profile:${profileId}`).emit(event, syncData);
   }
@@ -202,21 +239,21 @@ export class WebSocketManager {
   // Emit sync event to specific device
   async emitToDevice(deviceId: string, event: string, data: any): Promise<void> {
     if (!this.io) return;
-    
+
     // Find socket by deviceId
     let targetSocketId: string | null = null;
-    for (const [socketId, clientInfo] of this.connectedClients.entries()) {
+    for (const [socketId, clientInfo] of Array.from(this.connectedClients.entries())) {
       if (clientInfo.deviceId === deviceId) {
         targetSocketId = socketId;
         break;
       }
     }
-    
+
     if (!targetSocketId) return;
-    
+
     const clientInfo = this.connectedClients.get(targetSocketId);
     if (!clientInfo) return;
-    
+
     const syncData: SyncData = {
       type: event,
       data,
@@ -227,7 +264,7 @@ export class WebSocketManager {
 
     // Store in Redis for persistence
     await RedisManager.emitSyncEvent(clientInfo.profileId, `device:${event}`, syncData);
-    
+
     // Emit to specific device
     this.io.to(targetSocketId).emit(event, syncData);
   }
@@ -235,13 +272,13 @@ export class WebSocketManager {
   // Get connected devices for a profile
   getConnectedDevices(profileId: string): Array<ClientInfo> {
     const devices: Array<ClientInfo> = [];
-    
-    for (const [socketId, clientInfo] of this.connectedClients.entries()) {
+
+    for (const [socketId, clientInfo] of Array.from(this.connectedClients.entries())) {
       if (clientInfo.profileId === profileId && clientInfo.isOnline()) {
         devices.push(clientInfo);
       }
     }
-    
+
     return devices;
   }
 
@@ -261,7 +298,7 @@ export class WebSocketManager {
     const room = this.profileRooms.get(profileId);
     if (room) {
       const socketIds = Array.from(room);
-      
+
       // Disconnect all sockets
       socketIds.forEach(socketId => {
         const socket = this.io?.sockets.sockets.get(socketId);
@@ -269,15 +306,15 @@ export class WebSocketManager {
           socket.disconnect(true);
         }
       });
-      
+
       // Clear room
       this.profileRooms.delete(profileId);
-      
+
       // Clear Redis sessions
       const patterns = [
         `session:${profileId}:*`
       ];
-      
+
       for (const pattern of patterns) {
         try {
           await RedisManager.del(pattern);
@@ -285,7 +322,7 @@ export class WebSocketManager {
           console.error(`Failed to delete pattern ${pattern}:`, error);
         }
       }
-      
+
       console.log(`📱 Disconnected ${socketIds.length} devices for profile ${profileId}`);
     }
   }
@@ -299,7 +336,7 @@ export class WebSocketManager {
   // Get server statistics
   getStats(): any {
     if (!this.io) return null;
-    
+
     return {
       connected: this.io.sockets.sockets.size,
       rooms: this.io.sockets.adapter.rooms.size,
@@ -322,6 +359,10 @@ export class WebSocketManager {
   // Helper method to get client by socket ID
   getClientBySocketId(socketId: string): ClientInfo | null {
     return this.connectedClients.get(socketId) || null;
+  }
+
+  get profileRoomsCount(): number {
+    return this.profileRooms.size;
   }
 }
 

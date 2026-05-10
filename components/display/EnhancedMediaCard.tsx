@@ -41,8 +41,9 @@ const EnhancedMediaCard: React.FC<EnhancedMediaCardProps> = ({
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Navigate to watch page
-    router.push(`/watch/${media.id}`);
+    const typeStr = isTV ? 'series' : 'movie';
+    // Navigate to watch page with type parameter
+    router.push(`/watch/${media.id}?type=${typeStr}`);
   };
 
   const handleAddClick = (e: React.MouseEvent) => {

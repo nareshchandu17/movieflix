@@ -1,6 +1,56 @@
 import mongoose from "mongoose";
 
-const DeviceSchema = new mongoose.Schema({
+export interface IDevice extends mongoose.Document {
+  userId: mongoose.Types.ObjectId;
+  deviceId: string;
+  deviceName: string;
+  deviceType: "mobile" | "tablet" | "web" | "tv" | "desktop";
+  deviceInfo: {
+    userAgent?: string;
+    platform?: string;
+    browser?: string;
+    os?: string;
+    screenResolution?: string;
+    language?: string;
+    timezone?: string;
+  };
+  isActive: boolean;
+  lastActiveAt: Date;
+  lastSeenAt: Date;
+  location?: {
+    country?: string;
+    city?: string;
+    region?: string;
+    ip?: string;
+  };
+  capabilities?: {
+    supports4K?: boolean;
+    supportsHDR?: boolean;
+    maxBitrate?: string;
+  };
+  preferences?: {
+    autoplay?: boolean;
+    subtitles?: boolean;
+    language?: string;
+    quality?: string;
+  };
+  sessionInfo?: {
+    socketId?: string;
+    lastPing?: Date;
+    connectionCount?: number;
+  };
+  isOnline(): boolean;
+}
+
+export interface IDeviceModel extends mongoose.Model<IDevice> {
+  registerDevice(userId: string, deviceInfo: any): Promise<IDevice>;
+  getUserDevices(userId: string, includeInactive?: boolean): Promise<IDevice[]>;
+  deactivateDevice(userId: string, deviceId: string): Promise<IDevice | null>;
+  updateLastSeen(deviceId: string): Promise<any>;
+  updateSessionInfo(deviceId: string, sessionInfo: any): Promise<any>;
+}
+
+const DeviceSchema = new mongoose.Schema<IDevice, IDeviceModel>({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -47,11 +97,6 @@ const DeviceSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-    index: true
-  },
   location: {
     country: String,
     city: String,
@@ -96,7 +141,7 @@ const DeviceSchema = new mongoose.Schema({
     socketId: String,
     lastPing: {
       type: Date,
-      default: Date.now()
+      default: () => new Date()
     },
     connectionCount: {
       type: Number,
@@ -113,7 +158,12 @@ DeviceSchema.index({ userId: 1, lastActiveAt: -1 });
 DeviceSchema.index({ deviceId: 1, userId: 1 });
 
 // Static methods
-DeviceSchema.statics.registerDevice = async function(userId, deviceInfo) {
+DeviceSchema.statics.registerDevice = async function(this: IDeviceModel, userId: string, deviceInfo: {
+  deviceId: string;
+  deviceName: string;
+  deviceType: "mobile" | "tablet" | "web" | "tv" | "desktop";
+  deviceDetails: any;
+}) {
   const { deviceId, deviceName, deviceType, deviceDetails } = deviceInfo;
   
   // Check if device already exists for this user
@@ -138,16 +188,15 @@ DeviceSchema.statics.registerDevice = async function(userId, deviceInfo) {
   } else {
     // Create new device
     return await this.create({
-      userId,
+      userId: new mongoose.Types.ObjectId(userId) as any,
       deviceId,
       deviceName,
       deviceType,
       deviceInfo: deviceDetails,
       isActive: true,
       lastActiveAt: new Date(),
-      lastSeenAt: new Date(),
-      createdAt: new Date()
-    });
+      lastSeenAt: new Date()
+    } as any);
   }
 };
 
@@ -196,7 +245,7 @@ DeviceSchema.statics.updateSessionInfo = function(deviceId, sessionInfo) {
   );
 };
 
-DeviceSchema.methods.isOnline = function() {
+DeviceSchema.methods.isOnline = function(this: IDevice) {
   const lastPing = this.sessionInfo?.lastPing;
   if (!lastPing) return false;
   
@@ -205,13 +254,7 @@ DeviceSchema.methods.isOnline = function() {
   return lastPing > twoMinutesAgo;
 };
 
-DeviceSchema.methods.toJSON = function() {
-  const device = this.toObject();
-  
-  // Remove sensitive information
-  delete device.sessionInfo.socketId;
-  
-  return device;
-};
+const Device: IDeviceModel = (mongoose.models.Device as IDeviceModel) || 
+  mongoose.model<IDevice, IDeviceModel>("Device", DeviceSchema);
 
-export default mongoose.models.Device || mongoose.model("Device", DeviceSchema);
+export default Device;

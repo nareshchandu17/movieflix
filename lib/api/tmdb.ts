@@ -76,21 +76,21 @@ class TMDBAPI {
     }
   }
 
-  getProfileURL(profilePath: string | null): string {
+  getProfileURL(profilePath: string | null | undefined): string {
     if (!profilePath) {
       return 'https://i.imgur.com/wjVuAGb.png'; // Fallback image
     }
     return `${this.imageBaseURL}${profilePath}`;
   }
 
-  getPosterURL(posterPath: string | null): string {
+  getPosterURL(posterPath: string | null | undefined): string {
     if (!posterPath) {
       return 'https://i.imgur.com/wjVuAGb.png'; // Fallback image
     }
     return `${this.imageBaseURL}${posterPath}`;
   }
 
-  getBackdropURL(backdropPath: string | null): string {
+  getBackdropURL(backdropPath: string | null | undefined): string {
     if (!backdropPath) {
       return 'https://i.imgur.com/wjVuAGb.png'; // Fallback image
     }

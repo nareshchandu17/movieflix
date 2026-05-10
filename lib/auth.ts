@@ -1,19 +1,101 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { connectDB } from "./db";
 import User from "@/models/User";
 import type { AuthOptions } from "next-auth";
+import { PasswordSecurity, TokenSecurity, DataLeakPrevention, LoginSecurity } from "./auth-security";
+import { SecurityUtils } from "./security-v2";
 
 export const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code",
+        },
+      },
+    }),
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            return null;
+          }
+
+          const email = credentials.email as string;
+          const password = credentials.password as string;
+
+          // Check rate limiting
+          const rateLimitCheck = LoginSecurity.recordAttempt(email, false);
+          if (!rateLimitCheck.canAttempt) {
+            DataLeakPrevention.safeLog('warn', `Login rate limit exceeded`, { email });
+            throw new Error(`Account locked. Try again in ${Math.ceil((rateLimitCheck.lockoutRemaining || 0) / 60000)} minutes.`);
+          }
+
+          await connectDB();
+          const user = await User.findOne({ email }).select('+password +twoFactorEnabled +twoFactorSecret');
+
+          if (!user) {
+            throw new Error("Invalid email or password");
+          }
+
+          // For OAuth users without password
+          if (!user.password) {
+            throw new Error("This account uses Google sign-in. Please use Google to sign in.");
+          }
+
+          // Verify password
+          const isValidPassword = await PasswordSecurity.verifyPassword(password, user.password);
+          if (!isValidPassword) {
+            throw new Error("Invalid email or password");
+          }
+
+          // Check if 2FA is enabled
+          if (user.twoFactorEnabled) {
+            // Return user without session, requiring 2FA verification
+            return {
+              id: user._id.toString(),
+              email: user.email,
+              name: user.name,
+              requiresTwoFactor: true,
+              twoFactorSecret: user.twoFactorSecret,
+            };
+          }
+
+          // Record successful login
+          LoginSecurity.recordAttempt(email, true);
+
+          // Update last login
+          user.lastLogin = new Date();
+          await user.save();
+
+          // Return sanitized user data
+          return DataLeakPrevention.sanitizeUserData(user.toObject());
+
+        } catch (error) {
+          DataLeakPrevention.safeLog('error', 'Authentication error', {
+            email: credentials?.email,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+          throw error;
+        }
+      },
     }),
   ],
 
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
   callbacks: {

@@ -103,7 +103,7 @@ const MovieInfo = ({ id }: MovieInfoProps) => {
         vote_average: MovieDetail.vote_average,
         vote_count: MovieDetail.vote_count,
         popularity: MovieDetail.popularity,
-        genre_ids: MovieDetail.genres?.map((g) => g.id) || [],
+        genre_ids: (MovieDetail.genres?.map((g) => g.id).filter((id): id is number => typeof id === 'number')) || [],
         adult: MovieDetail.adult,
         original_language: MovieDetail.original_language,
         original_title: MovieDetail.original_title,
@@ -129,7 +129,7 @@ const MovieInfo = ({ id }: MovieInfoProps) => {
           {/* Poster */}
           <div className="lg:col-span-1">
             <MediaPoster
-              posterPath={MovieDetail.poster_path}
+              posterPath={movieData.data.poster_path}
               title={title}
               className="mx-auto lg:mx-0"
             />
@@ -141,11 +141,11 @@ const MovieInfo = ({ id }: MovieInfoProps) => {
               type="movie"
               title={title}
               year={releaseYear}
-              rating={MovieDetail.vote_average}
-              ratingCount={MovieDetail.vote_count}
-              runtime={MovieDetail.runtime}
+              rating={movieData.data.vote_average}
+              ratingCount={movieData.data.vote_count}
+              runtime={movieData.data.runtime}
               genres={movieData.genreArr}
-              overview={MovieDetail.overview}
+              overview={movieData.data.overview}
               media={mediaForWatchlist!}
             />
           </div>
@@ -157,7 +157,7 @@ const MovieInfo = ({ id }: MovieInfoProps) => {
         {/* Controls and Additional Info Grid */}
         <div className="max-w-6xl mx-auto">
           {/* Did You Know Section - Full Width */}
-          <DidYouKnowSection title={title} movieData={MovieDetail} />
+          <DidYouKnowSection title={title} movieData={movieData.data} />
         </div>
       </div>
     </MediaDetailLayout>

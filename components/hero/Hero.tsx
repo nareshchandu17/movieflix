@@ -123,49 +123,46 @@ export default function Hero() {
     ? `https://image.tmdb.org/t/p/original${currentSlide.backdrop_path}`
     : `https://image.tmdb.org/t/p/original${currentSlide.poster_path}`;
 
-  // Premium Flip Variants
-  const flipVariants = {
+  // OTT-grade Cinematic Variants
+  const cinematicVariants = {
     enter: (direction: number) => ({
-      rotateY: direction > 0 ? 90 : -90,
+      x: direction > 0 ? 40 : -40,
       opacity: 0,
-      scale: 0.8,
-      z: -500
+      scale: 0.98
     }),
     center: {
-      rotateY: 0,
+      x: 0,
       opacity: 1,
       scale: 1,
-      z: 0,
       transition: {
-        rotateY: { type: "spring", stiffness: 100, damping: 20 },
-        opacity: { duration: 0.4 },
-        scale: { duration: 0.8, ease: "easeOut" }
+        duration: 0.6,
+        ease: [0.22, 1, 0.36, 1],
+        opacity: { duration: 0.4 }
       }
     },
     exit: (direction: number) => ({
-      rotateY: direction < 0 ? 90 : -90,
+      x: direction < 0 ? 40 : -40,
       opacity: 0,
-      scale: 0.8,
-      z: -500,
+      scale: 0.98,
       transition: {
-        rotateY: { type: "spring", stiffness: 100, damping: 20 },
-        opacity: { duration: 0.3 },
-        scale: { duration: 0.6 }
+        duration: 0.6,
+        ease: [0.22, 1, 0.36, 1],
+        opacity: { duration: 0.4 }
       }
     })
   };
 
   return (
-    <section className="relative h-screen w-full overflow-hidden bg-[#0a0a0a] group perspective-1000">
+    <section className="relative h-screen w-full overflow-hidden bg-[#0a0a0a] group">
       <AnimatePresence initial={false} custom={direction} mode="wait">
         <motion.div
           key={currentIndex}
           custom={direction}
-          variants={flipVariants}
+          variants={cinematicVariants}
           initial="enter"
           animate="center"
           exit="exit"
-          className="absolute inset-0 w-full h-full preserve-3d"
+          className="absolute inset-0 w-full h-full"
         >
           {/* Hero Background Layer */}
           <div className="absolute inset-0 z-0">
@@ -177,10 +174,8 @@ export default function Hero() {
               className="object-cover object-top brightness-[0.6] transition-transform duration-[10000ms] ease-linear scale-100 group-hover:scale-110"
               sizes="100vw"
             />
-            {/* Multi-layered Vignette & Gradients */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/30 to-transparent" />
-            <div className="absolute inset-0 shadow-[inset_0_0_200px_rgba(0,0,0,0.8)]" />
+            {/* Top Vignette Layer */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent h-1/2" />
           </div>
 
           {/* Main Content Layer */}
@@ -228,7 +223,7 @@ export default function Hero() {
                 <motion.button
                   whileHover={{ scale: 1.05, boxShadow: "0 0-20px rgba(220,38,38,0.4)" }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => router.push(`/${isTV ? 'tv' : 'movie'}/${currentSlide.id}`)}
+                  onClick={() => router.push(`/watch/${currentSlide.id}?type=${isTV ? 'series' : 'movie'}`)}
                   className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg font-black text-sm transition-all shadow-2xl relative overflow-hidden group/btn"
                 >
                   <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-500" />
@@ -279,19 +274,8 @@ export default function Hero() {
 
       </div>
 
-      {/* Global Bottom Shadow for blending with categories */}
-      <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-[#000000] to-transparent z-20 pointer-events-none" />
 
-      {/* 3D Perspective CSS */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .perspective-1000 {
-          perspective: 1500px;
-        }
-        .preserve-3d {
-          transform-style: preserve-3d;
-        }
-      `}} />
+
     </section>
   );
 }

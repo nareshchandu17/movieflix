@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { TMDBMovie } from "@/lib/types";
+import { TMDBMovie, TMDBMovieResponse } from "@/lib/types";
 import { api } from "@/lib/api";
+import { usePrefetch } from "@/hooks/usePrefetch";
 import { ChevronLeft, ChevronRight, Play, Star, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,8 @@ const EnglishMoviesCarousel = () => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  const { prefetchMovie } = usePrefetch();
+
   const handleMovieClick = (movieId: number) => {
     router.push(`/movie/${movieId}`);
   };
@@ -28,7 +31,7 @@ const EnglishMoviesCarousel = () => {
         const allEnglishMovies: (TMDBMovie & { media_type: 'movie' })[] = [];
         
         // Fetch multiple pages to get 250+ movies
-        const pagePromises = [];
+        const pagePromises: Promise<TMDBMovieResponse>[] = [];
         for (let page = 1; page <= 5; page++) {
           pagePromises.push(
             api.getMedia("movie", { 
@@ -181,6 +184,7 @@ const EnglishMoviesCarousel = () => {
                   className="flex-shrink-0 snap-start cursor-pointer"
                   style={{ width: `${cardWidth}px` }}
                   onClick={() => handleMovieClick(movie.id)}
+                  onMouseEnter={() => prefetchMovie(movie.id)}
                 >
                   <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                     <Image

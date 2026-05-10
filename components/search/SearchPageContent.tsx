@@ -1,6 +1,6 @@
 "use client";
 import PremiumSearchDisplay from "@/components/search/PremiumSearchDisplay";
-import FilterWrapper from "@/components/filter/FilterWrapper";
+
 import EnhancedSearchBar from "@/components/search/EnhancedSearchBar";
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -85,10 +85,7 @@ const SearchPageContent = () => {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isFallback, setIsFallback] = useState(false);
 
-  // Filter-related state
-  const [filterResults, setFilterResults] = useState<SearchResult[]>([]);
-  const [isFiltering, setIsFiltering] = useState(false);
-  const [filterError, setFilterError] = useState<string | null>(null);
+
 
   // Display state - determines which results to show
   const [activeSource, setActiveSource] = useState<ContentSource>("none");
@@ -187,38 +184,10 @@ const SearchPageContent = () => {
     router.push(newURL, { scroll: false });
   };
 
-  /**
-   * Handle filter results from FilterWrapper
-   */
-  const handleFilterResults = (results: SearchResult[]) => {
-    setFilterResults(results);
-    setActiveSource("filter");
-    setDisplayResults(results);
-  };
 
-  /**
-   * Handle filter loading state
-   */
-  const handleFilterLoading = (isLoading: boolean) => {
-    setIsFiltering(isLoading);
-  };
 
-  /**
-   * Handle filter errors
-   */
-  const handleFilterError = (error: string | null) => {
-    setFilterError(error);
-  };
-
-  /**
-   * Determine loading state based on active source
-   */
-  const isLoading = activeSource === "search" ? isSearching : isFiltering;
-
-  /**
-   * Determine error message based on active source
-   */
-  const currentError = activeSource === "search" ? searchError : filterError;
+  const isLoading = isSearching;
+  const currentError = searchError;
 
   /**
    * Compute status message once in parent
@@ -233,9 +202,7 @@ const SearchPageContent = () => {
       return `Found ${searchResults.length} ranked result(s) for "${typedValue}"`;
     }
 
-    if (activeSource === "filter" && filterResults.length > 0) {
-      return `Discovered ${filterResults.length} content item(s)`;
-    }
+
 
     return null;
   })();
@@ -253,12 +220,7 @@ const SearchPageContent = () => {
         />
       </div>
 
-      {/* Filter Section - Static wrapper, async content inside */}
-      <FilterWrapper
-        onResultsChange={handleFilterResults}
-        onLoadingChange={handleFilterLoading}
-        onErrorChange={handleFilterError}
-      />
+
 
       {/* Async content section with its own Suspense boundary */}
       <Suspense fallback={<PageLoading>Loading content...</PageLoading>}>

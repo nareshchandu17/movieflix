@@ -29,8 +29,8 @@ export default function ReactionsPage({ params }: ReactionsPageProps) {
         const data = await res.json();
         setReactions(data.reactions || []);
         
-        // Fetch movie details for title
-        const movieRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`);
+        // Fetch movie details for title using secure API route
+        const movieRes = await fetch(`/api/tmdb/movie/${movieId}`);
         if (movieRes.ok) {
            const movieData = await movieRes.json();
            setMovieTitle(movieData.title);

@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     const currentPlan = PLANS.find(p => p.id === sub.planId);
     const newPlan = PLANS.find(p => p.id === newPlanId);
 
+    if (!currentPlan) return NextResponse.json({ error: "CURRENT_PLAN_NOT_FOUND" }, { status: 404 });
     if (!newPlan) return NextResponse.json({ error: "INVALID_PLAN" }, { status: 400 });
 
     const today = new Date();

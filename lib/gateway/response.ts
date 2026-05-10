@@ -1,0 +1,40 @@
+import { NextResponse } from "next/server";
+
+export interface GatewayResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  meta?: {
+    source: "cache" | "live";
+    latency: number;
+    cached_at?: string;
+  };
+}
+
+export function createGatewayResponse<T>(
+  data: T,
+  meta?: GatewayResponse<T>["meta"]
+): NextResponse<GatewayResponse<T>> {
+  return NextResponse.json({
+    success: true,
+    data,
+    meta: {
+      source: meta?.source || "live",
+      latency: meta?.latency || 0,
+      cached_at: meta?.cached_at,
+    },
+  });
+}
+
+export function createGatewayError(
+  message: string,
+  status: number = 400
+): NextResponse<GatewayResponse<never>> {
+  return NextResponse.json(
+    {
+      success: false,
+      error: message,
+    },
+    { status }
+  );
+}

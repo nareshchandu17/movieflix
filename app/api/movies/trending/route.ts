@@ -1,42 +1,65 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import connectDB from '@/lib/db';
-import { api } from '@/lib/api';
-import { withContentFilter } from '@/lib/contentFilterMiddleware';
+import { NextResponse } from "next/server";
+import { getCache, setCache } from "@/lib/cache";
+import { rateLimit } from "@/lib/rateLimit";
+import { logError, logInfo } from "@/lib/logger";
 
-// Original handler function
-async function getTrendingMovies(request: NextRequest) {
+/**
+ * Example Production API Route
+ * demonstrating Rate Limiting, Caching, and Error Fallbacks.
+ */
+export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    // 1. Identify Client (IP fallback for localhost)
+    const ip = req.headers.get("x-forwarded-for")?.split(',')[0] || "127.0.0.1";
+
+    // 2. Apply Rate Limiting (20 requests per minute)
+    const allowed = await rateLimit(ip, 20, 60);
+    if (!allowed) {
+      logInfo(`Rate limit exceeded for IP: ${ip}`);
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { error: "Too many requests. Please try again later." },
+        { status: 429 }
       );
     }
 
-    await connectDB();
+    const cacheKey = "movies:trending:v1";
 
-    const { page = '1' } = await request.json();
-    const response = await api.getTrending('movie', 'week');
+    // 3. Try Cache Retrieval
+    const cachedData = await getCache(cacheKey);
+
+    if (cachedData) {
+      logInfo("Serving trending movies from cache");
+      return NextResponse.json(cachedData);
+    }
+
+    // 4. Cache Miss - Fetch from Data Source (TMDB Mock or API)
+    logInfo("Cache miss - fetching trending movies from TMDB API");
     
-    return NextResponse.json({
-      success: true,
-      data: response.results,
-      page: response.page,
-      totalPages: response.total_pages
-    });
+    // Using existing TMDB Key from env
+    const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+    const tmdbRes = await fetch(
+      `https://api.themoviedb.org/3/trending/movie/day?api_key=${apiKey}`,
+      { next: { revalidate: 3600 } } // Next.js internal fetch cache as backup
+    );
 
-  } catch (error: unknown) {
-    console.error('Trending movies error:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
+    if (!tmdbRes.ok) {
+      throw new Error(`TMDB API returned status: ${tmdbRes.status}`);
+    }
+
+    const data = await tmdbRes.json();
+
+    // 5. Populate Cache (TTL: 1 hour)
+    await setCache(cacheKey, data, 3600);
+    logInfo("Trending movies cached successfully");
+
+    return NextResponse.json(data);
+
+  } catch (err: any) {
+    // 6. Global Error Fallback
+    logError("Trending Movies API Route Failure", err);
     return NextResponse.json(
-      { success: false, error: message },
+      { error: "Internal Server Error", details: err.message },
       { status: 500 }
     );
   }
 }
-
-// Export the handler wrapped with content filtering
-export const GET = withContentFilter(getTrendingMovies);

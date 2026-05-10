@@ -1,19 +1,20 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { X, Upload, Video, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: (newReaction: any) => void;
   defaultMovieId?: number;
 }
 
-export function UploadModal({ isOpen, onClose, defaultMovieId }: UploadModalProps) {
+export function UploadModal({ isOpen, onClose, onSuccess, defaultMovieId }: UploadModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
@@ -27,7 +28,7 @@ export function UploadModal({ isOpen, onClose, defaultMovieId }: UploadModalProp
     const selected = e.target.files?.[0];
     if (selected) {
       if (selected.size > 20 * 1024 * 1024) {
-        alert("Video must be less than 20MB");
+        toast.error("Video must be less than 20MB");
         return;
       }
       setFile(selected);
@@ -42,51 +43,40 @@ export function UploadModal({ isOpen, onClose, defaultMovieId }: UploadModalProp
     try {
       setIsUploading(true);
 
-      // 1. Get Signature
-      const sigRes = await fetch('/api/upload-signature', { method: 'POST' });
-      const { signature, timestamp, apiKey, cloudName } = await sigRes.json();
-
-      // 2. Upload to Cloudinary
+      // We use the unified /api/reactions/create endpoint to avoid client-side "upload_preset" issues
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('api_key', apiKey);
-      formData.append('timestamp', timestamp.toString());
-      formData.append('signature', signature);
-      formData.append('upload_preset', 'fan_reactions');
+      formData.append('video', file);
+      formData.append('movieId', movieId);
+      formData.append('movieTimestamp', "0"); // Manual uploads start from 0
+      formData.append('moodEmoji', "🍿"); // Default mood for manual uploads
+      formData.append('visibility', "public");
+      formData.append('caption', caption);
 
-      const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
-        { method: 'POST', body: formData }
-      );
-      
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok) throw new Error(uploadData.error?.message || 'Upload failed');
-
-      // 3. Save to our DB
-      // Duration from cloudinary upload response
-      const duration = uploadData.duration || (videoRef.current?.duration || 0);
-      const thumbnailUrl = uploadData.secure_url.replace(/\.[^/.]+$/, ".jpg").replace('/upload/', '/upload/so_2/');
-
-      const dbRes = await fetch('/api/reactions', {
+      const response = await fetch('/api/reactions/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          movieId,
-          videoUrl: uploadData.secure_url,
-          thumbnailUrl,
-          caption,
-          duration,
-        }),
+        body: formData,
       });
 
-      if (!dbRes.ok) throw new Error('Failed to save reaction');
+      const data = await response.json();
 
-      alert("Uploaded successfully!");
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Upload failed');
+      }
+
+      toast.success("Reaction posted to feed!");
+      
+      // Map for ReelsPlayer if needed
+      const result = {
+        ...data.reaction,
+        likes: data.reaction.likesCount || 0,
+        views: 0
+      };
+
+      if (onSuccess) onSuccess(result);
       onClose();
-      // Optional: trigger refresh
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Error uploading video. Please try again.");
+      toast.error(error.message || "Error uploading video. Please try again.");
     } finally {
       setIsUploading(false);
     }
@@ -114,7 +104,7 @@ export function UploadModal({ isOpen, onClose, defaultMovieId }: UploadModalProp
               <label htmlFor="video-upload" className="cursor-pointer flex flex-col items-center">
                 <Video className="w-10 h-10 text-zinc-500 mb-2" />
                 <span className="text-sm font-medium text-zinc-300">Select Video</span>
-                <span className="text-xs text-zinc-500 mt-1">Max 30s, up to 20MB</span>
+                <span className="text-xs text-zinc-500 mt-1">Max 20MB</span>
               </label>
             </div>
           ) : (

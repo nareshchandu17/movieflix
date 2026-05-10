@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getActiveProfile, clearActiveProfile } from '@/lib/active-profile-manager';

@@ -3,9 +3,9 @@ import EpisodeNotFound from "@/components/not-found/EpisodeNotFound";
 import EpisodeInfo from "@/components/series/EpisodeInfo";
 
 export const metadata: Metadata = {
-  title: "Episode | Cineworld",
+  title: "Episode | MovieFlix",
   description:
-    "Watch and explore episode details, cast, crew, and more on Cineworld.",
+    "Watch and explore episode details, cast, crew, and more on MovieFlix.",
 };
 
 interface EpisodeDetailsPageProps {

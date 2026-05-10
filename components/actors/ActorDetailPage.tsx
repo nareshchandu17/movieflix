@@ -31,10 +31,8 @@ const ActorDetailPage: React.FC<ActorDetailPageProps> = ({ actorName }) => {
         
         setActor(person);
         
-        // Fetch actor's movies using TMDB API
-        const response = await fetch(
-          `https://api.themoviedb.org/3/person/${person.id}/movie_credits?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`
-        );
+        // Fetch actor's movies using secure API route
+        const response = await fetch(`/api/tmdb/person/${person.id}/credits`);
         
         if (!response.ok) {
           throw new Error("Failed to fetch actor movies");
@@ -181,7 +179,7 @@ const ActorDetailPage: React.FC<ActorDetailPageProps> = ({ actorName }) => {
                       <div key={work.id} className="flex items-center gap-3">
                         <Image
                           src={tmdbAPI.getProfileURL(work.poster_path)}
-                          alt={work.title || work.name}
+                          alt={work.title || work.name || "Actor work"}
                           width={60}
                           height={90}
                           className="w-12 h-16 object-cover rounded-lg"

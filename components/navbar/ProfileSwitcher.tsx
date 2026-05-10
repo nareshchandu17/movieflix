@@ -94,7 +94,7 @@ export default function ProfileSwitcher() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute right-0 mt-3 w-60 bg-[#0a0a0a]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_24px_80px_-12px_rgba(0,0,0,0.9)] z-[1200] overflow-hidden"
+              className="absolute right-0 mt-3 w-64 bg-white/[0.03] backdrop-blur-[40px] border border-white/10 rounded-[28px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[1200] overflow-hidden"
             >
               {/* ── Current Profile Header ── */}
               <div className="p-4 pb-3">

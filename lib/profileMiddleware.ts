@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
-import Profile from '@/lib/models/Profile';
+import Profile, { IProfile } from '@/lib/models/Profile';
 import AccountSettings from '@/models/AccountSettings';
 import { createDefaultFilter, filterContentArray } from './contentFilter';
+
+export interface ProfileFilterResult {
+  filtered: any[];
+  blocked: any[];
+  profile?: IProfile | null;
+  filter?: any;
+}
 
 /**
  * Middleware to apply profile-based content filtering
@@ -12,7 +19,7 @@ import { createDefaultFilter, filterContentArray } from './contentFilter';
 export async function applyProfileFilter(
   request: NextRequest,
   content: any[]
-) {
+): Promise<ProfileFilterResult> {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -23,7 +30,7 @@ export async function applyProfileFilter(
 
     // Get active profile from cookie or default
     const activeProfileId = request.cookies.get('mf_active_profile')?.value;
-    let activeProfile = null;
+    let activeProfile: IProfile | null = null;
 
     if (activeProfileId) {
       activeProfile = await Profile.findOne({ 
@@ -90,7 +97,7 @@ export async function checkContentAccess(
 
     // Get active profile
     const activeProfileId = request.cookies.get('mf_active_profile')?.value;
-    let activeProfile = null;
+    let activeProfile: IProfile | null = null;
 
     if (activeProfileId) {
       activeProfile = await Profile.findOne({ 

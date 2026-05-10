@@ -186,11 +186,8 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-// GET /api/watchparty/[roomCode] - Get watch party details
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ roomCode: string }> }
-) {
+// GET /api/watchparty - Get watch party details
+export async function GET(request: NextRequest) {
   try {
     await connectDB();
     const session = await getServerSession(authOptions) as Session | null;
@@ -199,7 +196,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { roomCode } = await params;
+    const { searchParams } = new URL(request.url);
+    const roomCode = searchParams.get('roomCode');
+    
+    if (!roomCode) {
+      return NextResponse.json({ error: 'Room code is required' }, { status: 400 });
+    }
     
     const watchParty = await WatchParty.findOne({
       roomCode,
@@ -207,7 +209,7 @@ export async function GET(
     }).populate([
       { path: 'circleId' },
       { path: 'participants.userId', select: 'name email image' }
-    ]);
+    ]).lean();
 
     if (!watchParty) {
       return NextResponse.json({ error: 'Watch party not found' }, { status: 404 });
@@ -222,9 +224,25 @@ export async function GET(
       return NextResponse.json({ error: 'Not authorized to join this watch party' }, { status: 403 });
     }
 
+    // Fetch video URL from Movie or Series
+    const Movie = mongoose.models.Movie;
+    const Series = mongoose.models.Series;
+    
+    let videoUrl = "";
+    const movie = await Movie.findOne({ $or: [{ _id: watchParty.movieId }, { tmdbId: parseInt(watchParty.movieId) }] });
+    if (movie) {
+      videoUrl = movie.videoUrl;
+    } else {
+      const series = await Series.findOne({ $or: [{ _id: watchParty.movieId }, { tmdbId: parseInt(watchParty.movieId) }] });
+      if (series) videoUrl = series.videoUrl;
+    }
+
     return NextResponse.json({
       success: true,
-      watchParty
+      watchParty: {
+        ...watchParty,
+        videoUrl
+      }
     });
 
   } catch (error: any) {

@@ -1,6 +1,27 @@
 import mongoose from "mongoose";
 
-const WatchHistorySchema = new mongoose.Schema({
+export interface IWatchHistory extends mongoose.Document {
+  profileId: mongoose.Types.ObjectId;
+  contentId: string;
+  contentType: "movie" | "series" | "episode";
+  progress: number;
+  duration: number;
+  completed: boolean;
+  lastWatchedAt: Date;
+  watchTime: number;
+  sessionId?: string;
+  deviceId: string;
+  device: "web" | "mobile" | "tv" | "tablet";
+  quality: "auto" | "360p" | "480p" | "720p" | "1080p" | "4k";
+  updateProgress(progress: number, watchTime?: number): Promise<IWatchHistory>;
+}
+
+export interface IWatchHistoryModel extends mongoose.Model<IWatchHistory> {
+  getContinueWatching(profileId: string, limit?: number): Promise<IWatchHistory[]>;
+  getWatchHistory(profileId: string, limit?: number): Promise<IWatchHistory[]>;
+}
+
+const WatchHistorySchema = new mongoose.Schema<IWatchHistory, IWatchHistoryModel>({
   profileId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Profile",
@@ -44,6 +65,11 @@ const WatchHistorySchema = new mongoose.Schema({
     type: String, // for tracking individual viewing sessions
     required: false
   },
+  deviceId: {
+    type: String,
+    required: false,
+    index: true
+  },
   device: {
     type: String,
     enum: ["web", "mobile", "tv", "tablet"],
@@ -64,11 +90,10 @@ WatchHistorySchema.index({ profileId: 1, lastWatchedAt: -1 });
 WatchHistorySchema.index({ profileId: 1, completed: 1, lastWatchedAt: -1 });
 
 // Pre-save middleware to update completion status
-WatchHistorySchema.pre('save', function(next) {
+WatchHistorySchema.pre('save', async function(this: IWatchHistory) {
   if (this.duration > 0) {
     this.completed = this.progress >= this.duration * 0.9; // 90% rule
   }
-  next();
 });
 
 // Static method to get continue watching for a profile
@@ -92,7 +117,7 @@ WatchHistorySchema.statics.getWatchHistory = function(profileId: string, limit: 
 };
 
 // Instance method to update progress
-WatchHistorySchema.methods.updateProgress = function(progress: number, watchTime: number = 0) {
+WatchHistorySchema.methods.updateProgress = function(this: IWatchHistory, progress: number, watchTime: number = 0) {
   this.progress = progress;
   this.watchTime += watchTime;
   this.lastWatchedAt = new Date();
@@ -101,7 +126,10 @@ WatchHistorySchema.methods.updateProgress = function(progress: number, watchTime
     this.completed = progress >= this.duration * 0.9;
   }
   
-  return this.save({});
+  return this.save();
 };
 
-export default mongoose.models.WatchHistory || mongoose.model("WatchHistory", WatchHistorySchema);
+const WatchHistory: IWatchHistoryModel = (mongoose.models.WatchHistory as IWatchHistoryModel) || 
+  mongoose.model<IWatchHistory, IWatchHistoryModel>("WatchHistory", WatchHistorySchema);
+
+export default WatchHistory;

@@ -83,7 +83,9 @@ export const usePlayerState = create<PlayerState>((set, get) => ({
   setChapters: (chapters) => set({ chapters }),
   
   setReactionMode: (active) => set({ isReactionMode: active, playing: active ? false : get().playing, activeReaction: active ? get().activeReaction : null }),
-  setMovieReactions: (reactions) => set({ movieReactions: reactions }),
+  setMovieReactions: (reactions) => set((state) => ({ 
+    movieReactions: typeof reactions === 'function' ? reactions(state.movieReactions) : reactions 
+  })),
   setActiveReaction: (reaction) => set({ activeReaction: reaction, isReactionMode: !!reaction }),
   setReactionLayout: (layout) => set({ reactionLayout: layout }),
 }));

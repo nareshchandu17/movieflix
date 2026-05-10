@@ -1,6 +1,9 @@
+import "@/lib/dns-init";
 import "./globals.css";
 import { Inter } from "next/font/google";
 import { ReactNode } from "react";
+import { Toaster } from "sonner";
+import "@/lib/env-validation"; // Validate environment variables at startup
 import ClientLayout from "./ClientLayout";
 import { RoomProvider } from "@/contexts/RoomContext";
 import { SearchProvider } from "@/contexts/SearchContext";

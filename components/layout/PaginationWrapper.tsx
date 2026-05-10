@@ -19,13 +19,14 @@ const PaginationContent = ({
   maxPage = 500,
 }: PaginationWrapperProps) => {
   const searchParams = useSearchParams();
+  const queryParams = searchParams ? new URLSearchParams(searchParams.toString()) : undefined;
 
   return (
     <GenericPagination
-      currentPage={pageid}
+      currentPage={pageid ?? 1}
       baseUrl={baseUrl}
       maxPage={maxPage}
-      queryParams={searchParams}
+      queryParams={queryParams}
     />
   );
 };

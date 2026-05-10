@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import OnboardingCard from "@/components/OnboardingCard";
-import HeroSection from "@/components/hero/HeroSection";
+import HeroSection from "@/components/hero/Hero";
 import TimeBasedDiscovery from "@/components/discovery/TimeBasedDiscovery";
 import CategorySection from "@/components/info/CategorySection";
 import ContinueWatchingSection from "@/components/info/ContinueWatchingSection";

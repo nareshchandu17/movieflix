@@ -1,55 +1,63 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { smartSearch, normalizeQuery } from '@/lib/smartSearch';
-import { withContentFilter } from '@/lib/contentFilterMiddleware';
+import { NextRequest } from "next/server";
+import { SearchSchema } from "@/lib/gateway/schemas";
+import { createGatewayResponse, createGatewayError } from "@/lib/gateway/response";
+import { gatewayRateLimit, RATE_LIMIT_POLICIES } from "@/lib/gateway/rate-limiter";
+import { GatewayClients } from "@/lib/gateway/clients";
 
-/**
- * Keyword Search API
- */
-async function searchHandler(request: NextRequest) {
+export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  const { searchParams } = new URL(request.url);
+  
+  // 1. Validation
+  const validated = SearchSchema.safeParse({
+    query: searchParams.get("query"),
+    page: searchParams.get("page"),
+    type: searchParams.get("type"),
+  });
+
+  if (!validated.success) {
+    return createGatewayError("Invalid search parameters", 400);
+  }
+
+  const { query, page, type } = validated.data;
+
+  // 2. Rate Limiting
+  const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
+  const limit = await gatewayRateLimit(ip, RATE_LIMIT_POLICIES.SEARCH);
+  
+  if (!limit.allowed) {
+    return createGatewayError("Too many search requests. Please try again in a minute.", 429);
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
-    const rawQuery = searchParams.get('q') || "";
-    const query = normalizeQuery(rawQuery);
+    // 3. Execution (Parallel TMDB + Gemini for semantic intelligence)
+    const [tmdbResults, geminiResults] = await Promise.all([
+      GatewayClients.tmdb.search(query, type as any, page),
+      query.length > 10 ? GatewayClients.gemini.search(query) : Promise.resolve(null),
+    ]);
 
-    if (query.length === 0) {
-      return NextResponse.json({
-        success: true,
-        topMatch: null,
-        movies: [],
-        tv: [],
-        people: [],
-        results: [],
-        message: "Start typing to search"
-      });
-    }
+    const data = {
+      results: tmdbResults.results,
+      pagination: {
+        page: tmdbResults.page,
+        total_pages: tmdbResults.total_pages,
+        total_results: tmdbResults.total_results,
+      },
+      semantic_context: geminiResults,
+    };
 
-    const result = await smartSearch(query);
-
-    return NextResponse.json({
-      success: true,
-      ...result
-    }, {
-      headers: {
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600"
-      }
+    const response = createGatewayResponse(data, {
+      source: "live",
+      latency: Date.now() - startTime,
     });
 
-  } catch (error) {
-    console.error('Search API error:', error);
-    return NextResponse.json({ 
-      success: false,
-      topMatch: null, 
-      movies: [], 
-      tv: [], 
-      people: [], 
-      results: [],
-      error: "Something went wrong" 
-    }, { status: 500 });
+    // 4. Set Rate Limit Headers
+    response.headers.set("X-RateLimit-Limit", limit.limit.toString());
+    response.headers.set("X-RateLimit-Remaining", limit.remaining.toString());
+
+    return response;
+  } catch (error: any) {
+    console.error("[Gateway Search] Error:", error.message);
+    return createGatewayError("Search service currently unavailable", 500);
   }
-}
-
-export const GET = withContentFilter(searchHandler);
-
-export async function POST(request: NextRequest) {
-  return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
 }

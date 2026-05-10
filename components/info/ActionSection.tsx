@@ -179,12 +179,27 @@ const ActionSection = () => {
                         </div>
 
                         <div className="flex gap-2">
-                          <Button size="sm" className="flex-1 bg-white text-black text-xs">
+                          <Button 
+                            size="sm" 
+                            className="flex-1 bg-white text-black text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/watch/${movie.id}?type=movie`);
+                            }}
+                          >
                             <Play className="w-3 h-3 mr-1" />
                             Play
                           </Button>
 
-                          <Button size="sm" variant="outline" className="w-8 h-8 p-0">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="w-8 h-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Add to watchlist logic here if needed
+                            }}
+                          >
                             <Plus className="w-3 h-3" />
                           </Button>
                         </div>

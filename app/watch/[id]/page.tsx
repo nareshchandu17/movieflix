@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+export const dynamic = "force-dynamic";
 import { authOptions } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -9,6 +10,7 @@ import Series from "@/models/Series";
 import Profile from "@/lib/models/Profile";
 import { PlayerRoot } from "@/components/player/PlayerRoot";
 import RestrictedScreen from "@/components/player/RestrictedScreen";
+import { api } from "@/lib/api";
 
 async function getContentFromDB(id: string, type: string = 'movie') {
   try {
@@ -71,35 +73,116 @@ export default async function WatchPage({
   
   let { data: contentData, type: resolvedType } = await getContentFromDB(id, type);
   
-  if (!contentData) {
+  // Identify if the current URL is a placeholder/mock
+  const isMockUrl = contentData?.videoUrl && (
+    contentData.videoUrl.includes('commondatastorage') || 
+    contentData.videoUrl.includes('sample-videos') ||
+    contentData.videoUrl === 'https://example.com/video.mp4'
+  );
+
+  // If metadata is missing OR video URL is missing/mock (and we aren't looking for a specific episode), try TMDB fallback
+  if (!contentData || (!contentData.videoUrl && !season && !episode) || isMockUrl) {
+    const mType = (resolvedType === 'series' || type === 'tv' || type === 'series') ? 'tv' : 'movie';
+    
+    // Use tmdbId from contentData if available, otherwise use params.id
+    const effectiveTmdbId = contentData?.tmdbId || tmdbId;
+
     try {
-      const { api } = await import('@/lib/api');
-      if (type === 'tv' || type === 'series') {
-        const tv = await api.getDetails('tv', tmdbId);
-        contentData = { title: tv.name || tv.original_name, videoUrl: "" } as any;
-        resolvedType = 'series';
-      } else {
-        const movie = await api.getDetails('movie', tmdbId);
-        contentData = { title: movie.title || movie.original_title, videoUrl: "" } as any;
-        resolvedType = 'movie';
+      if (effectiveTmdbId) {
+        const [details, videoData] = await Promise.all([
+          api.getDetails(mType, effectiveTmdbId),
+          api.getVideos(mType, effectiveTmdbId).catch(() => ({ results: [] }))
+        ]);
+
+        const videos = videoData.results || [];
+        const trailer = videos.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube') 
+                     || videos.find((v: any) => v.site === 'YouTube');
+        
+        const trailerUrl = trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : "";
+
+        if (contentData) {
+          // Update existing DB record metadata with trailer
+          contentData.videoUrl = trailerUrl;
+          if (!contentData.certification) {
+            if (mType === 'tv') {
+              contentData.certification = (details as any).content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US')?.rating;
+            } else {
+              contentData.certification = (details as any).release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US')?.release_dates?.[0]?.certification;
+            }
+          }
+        } else {
+          // Create new content object from TMDB
+          if (mType === 'tv') {
+            contentData = { 
+              title: (details as any).name || (details as any).original_name, 
+              videoUrl: trailerUrl,
+              certification: (details as any).content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US')?.rating
+            } as any;
+            resolvedType = 'series';
+          } else {
+            contentData = { 
+              title: (details as any).title || (details as any).original_title, 
+              videoUrl: trailerUrl,
+              certification: (details as any).release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US')?.release_dates?.[0]?.certification
+            } as any;
+            resolvedType = 'movie';
+          }
+        }
       }
     } catch (e: any) {
-      console.error("[WatchPage] TMDB Fetch Error:", e.message);
-      
-      // If it's a 404 from TMDB, then definitely show 404
-      if (e.status === 404 || e.code === 'NOT_FOUND') {
-        notFound();
-      }
+      if (contentData) {
+        console.warn("[WatchPage] Optional TMDB Metadata Update Failed:", e.message);
+      } else {
+        console.error("[WatchPage] Critical TMDB Fetch Error:", e.message);
+        
+        if (e.status === 404 || e.code === 'NOT_FOUND') {
+          notFound();
+        }
 
-      // If it's a network error or any other API issue, DON'T show 404.
-      // Instead, show the player with a placeholder title so the user can still use it.
-      // This fixes the issue where the user is blocked by a temporary network failure.
-      contentData = { 
-        title: `Video ${id}`, 
-        videoUrl: "", 
-        description: "Metadata currently unavailable due to network error."
-      } as any;
-      resolvedType = (type === 'tv' || type === 'series') ? 'series' : 'movie';
+        // Return an error UI rather than an empty player
+        return (
+          <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-6">
+            <div className="max-w-md text-center space-y-6">
+              <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight">Content Unavailable</h1>
+              <p className="text-gray-400 text-lg">
+                We're having trouble reaching the movie database right now. Please check your connection or try again in a few moments.
+              </p>
+              <div className="flex flex-col gap-4">
+                <a 
+                  href={`/watch/${id}`}
+                  className="px-8 py-3 bg-white text-black font-semibold rounded-full hover:bg-gray-200 transition-all text-center"
+                >
+                  Refresh Page
+                </a>
+                <p className="text-xs text-gray-500 italic">
+                  Note: If this persists, the TMDB service may be temporarily down.
+                </p>
+                <a 
+                  href="/"
+                  className="px-8 py-3 bg-zinc-900 text-white font-semibold rounded-full hover:bg-zinc-800 transition-all border border-zinc-800"
+                >
+                  Return Home
+                </a>
+              </div>
+              <p className="text-zinc-600 text-sm">
+                Error Trace: {e.message || "Network Timeout"}
+              </p>
+            </div>
+          </div>
+        );
+        
+        contentData = { 
+          title: `Content ${id}`, 
+          videoUrl: "", 
+          description: "Metadata currently unavailable due to network issues."
+        } as any;
+        resolvedType = (type === 'tv' || type === 'series') ? 'series' : 'movie';
+      }
     }
   }
 
@@ -110,11 +193,11 @@ export default async function WatchPage({
 
   if (profile?.isKids) {
     const restrictedRatings = ["R", "TV-MA", "NC-17"];
-    if (restrictedRatings.includes(contentData.certification || '')) {
+    if (restrictedRatings.includes(contentData?.certification || '')) {
       return (
         <RestrictedScreen 
-          title={contentData.title} 
-          rating={contentData.certification} 
+          title={contentData?.title || "Restricted Content"} 
+          rating={contentData?.certification} 
         />
       );
     }

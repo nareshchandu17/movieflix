@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import { Reaction } from '@/models/Reaction';
+import ReactionClip from '@/models/ReactionClip';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await connectDB();
     
-    // Simplest MVP implementation: Just increment the likes counter.
-    // In a real production app, we'd check if the user already liked it in a separate ReactionLike collection
-    const reaction = await Reaction.findByIdAndUpdate(
-      params.id,
-      { $inc: { likes: 1 } },
+    // Unified to use ReactionClip and likesCount field
+    const reaction = await ReactionClip.findByIdAndUpdate(
+      id,
+      { $inc: { likesCount: 1 } },
       { new: true }
     );
 
@@ -21,7 +21,7 @@ export async function POST(
       return NextResponse.json({ error: 'Reaction not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ likes: reaction.likes });
+    return NextResponse.json({ likes: reaction.likesCount });
   } catch (error) {
     console.error('Failed to like reaction:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

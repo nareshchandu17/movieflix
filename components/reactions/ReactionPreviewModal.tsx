@@ -13,6 +13,7 @@ interface ReactionPreviewModalProps {
   movieTimestamp: number;
   onRetake: () => void;
   onClose: () => void;
+  onSuccess?: (newReaction: any) => void;
 }
 
 const MOODS = [
@@ -31,9 +32,11 @@ export function ReactionPreviewModal({
   movieTimestamp,
   onRetake,
   onClose,
+  onSuccess,
 }: ReactionPreviewModalProps) {
   const [selectedMood, setSelectedMood] = useState(MOODS[0].emoji);
-  const [visibility, setVisibility] = useState<"public" | "private">("public");
+  const [showInMoviePage, setShowInMoviePage] = useState(true);
+  const [showInFeed, setShowInFeed] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const router = useRouter();
@@ -54,7 +57,8 @@ export function ReactionPreviewModal({
       formData.set("movieId", movieId);
       formData.set("movieTimestamp", movieTimestamp.toString());
       formData.set("moodEmoji", selectedMood);
-      formData.set("visibility", visibility);
+      formData.set("showInFeed", showInFeed.toString());
+      formData.set("showInMoviePage", showInMoviePage.toString());
 
       console.log(`[Preview] Uploading blob of size: ${blob.size} bytes`);
       const response = await fetch("/api/reactions/create", {
@@ -66,6 +70,7 @@ export function ReactionPreviewModal({
 
       if (response.ok) {
         toast.success("Reaction posted to feed!");
+        if (onSuccess) onSuccess(data.reaction);
         onClose();
         router.refresh();
       } else {
@@ -135,28 +140,52 @@ export function ReactionPreviewModal({
               </div>
             </div>
 
-            <div className="space-y-4 mb-8">
-              <label className="text-sm font-semibold text-white/60 tracking-wide uppercase">Visibility</label>
-              <div className="flex bg-white/5 p-1 rounded-xl gap-1">
-                <button
-                  onClick={() => setVisibility("public")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    visibility === "public" ? "bg-white/10 text-white shadow-inner" : "text-white/40 hover:text-white"
+            <div className="space-y-6 mb-8">
+              <label className="text-sm font-semibold text-white/60 tracking-wide uppercase">Post Settings</label>
+              
+              <div className="space-y-4">
+                {/* Add to Fan Reactions (Movie Page) */}
+                <div 
+                  onClick={() => setShowInMoviePage(!showInMoviePage)}
+                  className={`flex items-center justify-between p-4 rounded-2xl cursor-pointer border transition-all ${
+                    showInMoviePage ? "bg-white/10 border-white/20 shadow-lg" : "bg-white/5 border-transparent opacity-60"
                   }`}
                 >
-                  <Globe className="w-4 h-4" />
-                  Public
-                </button>
-                <button
-                  onClick={() => setVisibility("private")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    visibility === "private" ? "bg-white/10 text-white shadow-inner" : "text-white/40 hover:text-white"
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-white">Add to Fan Reactions</span>
+                    <span className="text-[10px] text-white/40">Visible in {movieTitle} carousel</span>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full relative transition-colors ${showInMoviePage ? 'bg-red-600' : 'bg-zinc-700'}`}>
+                    <motion.div 
+                      animate={{ x: showInMoviePage ? 18 : 2 }}
+                      className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Add to Feed (Global) */}
+                <div 
+                  onClick={() => setShowInFeed(!showInFeed)}
+                  className={`flex items-center justify-between p-4 rounded-2xl cursor-pointer border transition-all ${
+                    showInFeed ? "bg-white/10 border-white/20 shadow-lg" : "bg-white/5 border-transparent opacity-60"
                   }`}
                 >
-                  <EyeOff className="w-4 h-4" />
-                  Private
-                </button>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-white">Add to Feed</span>
+                    <span className="text-[10px] text-white/40">Visible in global discovery feed</span>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full relative transition-colors ${showInFeed ? 'bg-red-600' : 'bg-zinc-700'}`}>
+                    <motion.div 
+                      animate={{ x: showInFeed ? 18 : 2 }}
+                      className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow-sm"
+                    />
+                  </div>
+                </div>
               </div>
+
+              <p className="text-[10px] text-white/30 italic px-2">
+                * Even if both are off, your reaction remains visible in your personal gallery.
+              </p>
             </div>
           </div>
 

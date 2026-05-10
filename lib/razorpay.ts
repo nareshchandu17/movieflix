@@ -13,7 +13,7 @@ let razorpayInstance: Razorpay | null = null;
 export function getRazorpay(): Razorpay | null {
   if (!razorpayInstance) {
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || process.env.NEXT_PUBLIC_RAZORPAY_KEY_SECRET;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!keyId || !keySecret) {
       if (process.env.NODE_ENV === "development") {
@@ -86,7 +86,7 @@ export function verifyRazorpaySignature({
   paymentId: string;
   signature: string;
 }): boolean {
-  const keySecret = process.env.RAZORPAY_KEY_SECRET || process.env.NEXT_PUBLIC_RAZORPAY_KEY_SECRET;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
   
   if (!keySecret) {
     console.error("❌ Razorpay Signature Error: Missing RAZORPAY_KEY_SECRET");

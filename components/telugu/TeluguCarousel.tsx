@@ -165,8 +165,8 @@ const TeluguCarousel = () => {
                 const mediaItem = {
                   id: movie.id,
                   title: movie.title,
-                  poster_path: movie.posterUrl?.replace('https://image.tmdb.org/t/p/w1280', ''),
-                  backdrop_path: movie.backdropUrl?.replace('https://image.tmdb.org/t/p/w1280', ''),
+                  poster_path: movie.posterUrl?.replace('https://image.tmdb.org/t/p/w1280', '') ?? null,
+                  backdrop_path: movie.backdropUrl?.replace('https://image.tmdb.org/t/p/w1280', '') ?? null,
                   vote_average: movie.rating,
                   vote_count: 100,
                   overview: movie.overview,

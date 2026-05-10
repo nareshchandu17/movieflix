@@ -22,6 +22,7 @@ interface ReactionRecorderProps {
   movieTimestamp: number;
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: (newReaction: any) => void;
   maxRecordingDuration?: number;
 }
 
@@ -36,6 +37,7 @@ export function ReactionRecorder({
   movieTimestamp,
   isOpen,
   onClose,
+  onSuccess,
   maxRecordingDuration = DEFAULT_MAX_DURATION,
 }: ReactionRecorderProps) {
   // --- State ---
@@ -48,9 +50,12 @@ export function ReactionRecorder({
   const [error, setError] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const movieVideoRef = useRef<HTMLVideoElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // --- Camera Initialization ---
   const startCamera = useCallback(async () => {
@@ -95,6 +100,12 @@ export function ReactionRecorder({
   const startRecording = useCallback(() => {
     if (recordingState !== 'ready') return;
 
+    // Find the movie video element in the player
+    const movieVideo = document.querySelector('.react-player video') as HTMLVideoElement;
+    if (movieVideo) {
+      movieVideoRef.current = movieVideo;
+    }
+
     // Start Countdown
     setRecordingState('countdown');
     setCountdown(COUNTDOWN_SECONDS);
@@ -113,18 +124,68 @@ export function ReactionRecorder({
   }, [recordingState]);
 
   const executeStartRecording = () => {
-    if (!stream) return;
+    if (!stream || !videoRef.current) return;
 
     try {
       chunksRef.current = [];
-      const options = { mimeType: 'video/webm;codecs=vp8,opus' };
       
-      // Fallback if vp8 isn't supported
-      const mimeType = MediaRecorder.isTypeSupported(options.mimeType) 
-        ? options.mimeType 
-        : 'video/webm';
+      // 1. Setup Compositing Canvas
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      // Vertical Split Layout: 720x1280 (Standard mobile-friendly aspect)
+      canvas.width = 720;
+      canvas.height = 1280;
+
+      const drawFrames = () => {
+        if (recordingState !== 'recording' && recordingState !== 'countdown') return;
+
+        // Clear canvas
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // A. Draw Movie (Top 45%)
+        if (movieVideoRef.current) {
+          const movieH = canvas.height * 0.45;
+          const movieW = canvas.width;
+          ctx.drawImage(movieVideoRef.current, 0, 0, movieW, movieH);
+        }
+
+        // B. Draw Webcam (Bottom 55%)
+        if (videoRef.current) {
+          const camH = canvas.height * 0.55;
+          const camW = canvas.width;
+          const camY = canvas.height * 0.45;
+          
+          // Mirror the webcam for natural feel
+          ctx.save();
+          ctx.translate(camW, 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(videoRef.current, 0, camY, camW, camH);
+          ctx.restore();
+        }
+
+        animationFrameRef.current = requestAnimationFrame(drawFrames);
+      };
+
+      // Start the drawing loop
+      drawFrames();
+
+      // 2. Capture Stream from Canvas
+      const canvasStream = canvas.captureStream(30); // 30 FPS
+      
+      // Add audio from webcam to the canvas stream
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        canvasStream.addTrack(audioTrack);
+      }
+
+      const options = { mimeType: 'video/webm;codecs=vp8,opus' };
+      const mimeType = MediaRecorder.isTypeSupported(options.mimeType) ? options.mimeType : 'video/webm';
+
+      const mediaRecorder = new MediaRecorder(canvasStream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (e) => {
@@ -132,15 +193,8 @@ export function ReactionRecorder({
       };
 
       mediaRecorder.onstop = () => {
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
         const blob = new Blob(chunksRef.current, { type: mimeType });
-        console.log(`[Recorder] Recording finished. Size: ${blob.size} bytes`);
-        
-        if (blob.size < 100) { // Safety check
-            toast.error("Recording failed to capture data. Please try again.");
-            setRecordingState('ready');
-            return;
-        }
-
         setRecordedBlob(blob);
         setShowPreview(true);
         setRecordingState('processing');
@@ -168,7 +222,6 @@ export function ReactionRecorder({
   };
 
   const stopRecording = useCallback(() => {
-    // Prevent accidental double-clicks or stopping too early
     if (recordingState !== 'recording' || recordingTime < MIN_RECORDING_DURATION) return;
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
@@ -217,6 +270,9 @@ export function ReactionRecorder({
           
           {/* Overlay Gradients */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
+          
+          {/* Hidden Canvas for Compositing */}
+          <canvas ref={canvasRef} className="hidden" />
         </div>
 
         {/* Header Information */}
@@ -332,6 +388,7 @@ export function ReactionRecorder({
               onClose();
               setShowPreview(false);
             }}
+            onSuccess={onSuccess}
           />
         )}
       </AnimatePresence>

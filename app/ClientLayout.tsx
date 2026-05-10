@@ -56,7 +56,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isDownloadsPage && !isProfilesPage && <Header />}
         
         {/* Sidebar for Desktop */}
-        <Sidebar />
+        {!isWatchPartyPage && !isWatchPage && <Sidebar />}
 
         <main className={cn(
           "transition-all duration-500",
@@ -69,7 +69,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         </main>
 
         {/* Mobile Bottom Navigation */}
-        <MobileNav />
+        {!isWatchPartyPage && !isWatchPage && <MobileNav />}
 
         {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isDownloadsPage && !isProfilesPage && <Footer />}
         <Toaster position="top-right" richColors />

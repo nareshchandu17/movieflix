@@ -1,6 +1,6 @@
 import { ReelsPlayer } from '@/components/fan-reactions/ReelsPlayer';
 import connectDB from '@/lib/db';
-import { Reaction } from '@/models/Reaction';
+import ReactionClip from '@/models/ReactionClip';
 
 export const metadata = {
   title: 'Fan Reactions | MovieFlix',
@@ -10,11 +10,17 @@ export const metadata = {
 async function getInitialReactions() {
   try {
     await connectDB();
-    const reactions = await Reaction.find({})
+    const reactions = await ReactionClip.find({ showInFeed: true })
       .sort({ createdAt: -1 })
       .limit(10)
       .lean();
-    return JSON.parse(JSON.stringify(reactions));
+    
+    return JSON.parse(JSON.stringify(reactions)).map((r: any) => ({
+      ...r,
+      _id: r._id.toString(),
+      likes: r.likesCount || 0,
+      views: r.viewsCount || 0
+    }));
   } catch {
     return [];
   }

@@ -63,7 +63,8 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
       const response = await fetch(`/api/reactions?movieId=${movieId}`);
       if (response.ok) {
         const data = await response.json();
-        setFanReactions(data.reactions || []);
+        // The API returns an array of reactions directly
+        setFanReactions(Array.isArray(data) ? data : data.reactions || []);
       }
     } catch (error) {
       console.error('Failed to fetch fan reactions:', error);

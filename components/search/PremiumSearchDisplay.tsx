@@ -258,7 +258,7 @@ const PremiumSearchDisplay: React.FC<PremiumSearchDisplayProps> = ({
 
               <div className="flex flex-wrap items-center gap-4">
                 <Link
-                  href={topResult._source === 'movie' ? `/movie/${topResult.id}` : `/series/${topResult.id}`}
+                  href={`/watch/${topResult.id}?type=${topResult._source === 'movie' ? 'movie' : 'series'}`}
                   className="bg-red-600 hover:bg-red-700 text-white px-10 py-4 rounded-xl font-black tracking-widest uppercase transition-all hover:scale-105 shadow-[0_0_20px_rgba(229,9,20,0.4)] flex items-center gap-3"
                 >
                   <Play className="w-5 h-5 fill-white" />

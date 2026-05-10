@@ -90,7 +90,7 @@ export interface PlayerState {
   
   // Reaction Actions
   setReactionMode: (active: boolean) => void;
-  setMovieReactions: (reactions: any[]) => void;
+  setMovieReactions: (reactions: any[] | ((prev: any[]) => any[])) => void;
   setActiveReaction: (reaction: any | null) => void;
   setReactionLayout: (layout: 'pip' | 'split') => void;
 }

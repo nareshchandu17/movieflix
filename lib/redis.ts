@@ -1,393 +1,202 @@
-import Redis from 'ioredis';
+import { Redis } from "@upstash/redis";
 
-// Parse REDIS_URL if available
-const redisUrl = process.env.REDIS_URL;
-let connectionOptions: any = {};
+const url = process.env.UPSTASH_REDIS_REST_URL;
+const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-if (redisUrl) {
-  try {
-    const parsed = new URL(redisUrl);
-    connectionOptions = {
-      host: parsed.hostname,
-      port: parseInt(parsed.port) || 6379,
-      password: parsed.password || process.env.REDIS_PASSWORD || undefined,
-      username: parsed.username || undefined,
-    };
-  } catch (e) {
-    console.warn('⚠️ Failed to parse REDIS_URL, falling back to individual variables');
-  }
+// Fail-safe initialization for production builds/CI
+export const redis = url && token 
+  ? new Redis({ url, token })
+  : null;
+
+if (!redis) {
+  console.warn("⚠️ Upstash Redis: Credentials missing. Redis features (Cache/RateLimit) will be disabled.");
 }
 
-// Redis configuration
-export const redisConfig = {
-  port: connectionOptions.port || (process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379),
-  host: connectionOptions.host || process.env.REDIS_HOST || 'localhost',
-  password: connectionOptions.password || process.env.REDIS_PASSWORD || undefined,
-  username: connectionOptions.username || process.env.REDIS_USERNAME || undefined,
-  db: process.env.REDIS_DB ? parseInt(process.env.REDIS_DB) : 0,
-  maxRetriesPerRequest: null, 
-  lazyConnect: true,
-  retryStrategy(times: number) {
-    if (times > 10) {
-      console.warn('❌ Redis: Max retries reached. Stopping reconnection attempts.');
-      return null; // Stop retrying
-    }
-    const delay = Math.min(times * 1000, 5000);
-    return delay;
-  },
-  keepAlive: 30000,
-  family: 4,
-  keyPrefix: 'MovieFlix:',
-  connectTimeout: 10000,
-};
-
-export const redis = new Redis(redisConfig);
-
-// Redis connection status
-let isConnected = false;
-let lastErrorTime = 0;
-
-redis.on('connect', () => {
-  isConnected = true;
-  console.log('✅ Connected to Redis');
-});
-
-redis.on('error', (err) => {
-  const now = Date.now();
-  // Only log error once every 5 seconds to prevent spam
-  if (now - lastErrorTime > 5000) {
-    console.error('❌ Redis connection error:', err.message || err);
-    lastErrorTime = now;
-  }
-  isConnected = false;
-});
-
-redis.on('close', () => {
-  isConnected = false;
-  console.log('🔌 Disconnected from Redis');
-});
-
-// Redis utility functions
+/**
+ * RedisManager Class
+ * Migrated to Upstash Redis (HTTP-based Serverless)
+ * Provides full backward compatibility for MovieFlix systems using ONLY Upstash REST.
+ */
 export class RedisManager {
-  static async connect(): Promise<void> {
+  static async set(key: string, value: any, ttl?: number) {
+    if (!redis) return;
     try {
-      if (!isConnected) {
-        await redis.connect();
-      }
-    } catch (error) {
-      // If max retries reached, ioredis emits error and retryStrategy returns null.
-      // We log but don't throw to allow API routes to fall back to DB.
-      if (Date.now() - lastErrorTime > 30000) {
-        console.warn('⚠️ Redis: Connection unavailable. Operating in DB-only mode.');
-        lastErrorTime = Date.now();
-      }
-    }
-  }
-
-  static async disconnect(): Promise<void> {
-    try {
-      if (isConnected) {
-        await redis.quit();
-      }
-    } catch (error) {
-      console.warn('⚠️ Redis: Graceful disconnect failed:', error);
-      isConnected = false;
-    }
-  }
-
-  static async set(key: string, value: any, ttl?: number): Promise<void> {
-    try {
-      await this.connect();
-      
-      const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
-      
       if (ttl) {
-        await redis.setex(key, ttl, stringValue);
+        await redis.set(key, value, { ex: ttl });
       } else {
-        await redis.set(key, stringValue);
+        await redis.set(key, value);
       }
-    } catch (error) {
-      console.error(`❌ Redis: set failed for key ${key}:`, error);
+    } catch (err) {
+      console.error(`❌ Upstash: set failed for ${key}:`, err);
     }
   }
 
-  static async get(key: string): Promise<any> {
+  static async get<T = any>(key: string): Promise<T | null> {
+    if (!redis) return null;
     try {
-      await this.connect();
-      
-      const value = await redis.get(key);
-      if (!value) return null;
-      
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value;
-      }
-    } catch (error) {
-      console.error(`❌ Redis: get failed for key ${key}:`, error);
+      return await redis.get<T>(key);
+    } catch (err) {
+      console.error(`❌ Upstash: get failed for ${key}:`, err);
       return null;
     }
   }
 
-  static async del(key: string): Promise<void> {
+  static async del(key: string) {
+    if (!redis) return;
     try {
-      await this.connect();
       await redis.del(key);
-    } catch (error) {
-      console.error(`❌ Redis: del failed for key ${key}:`, error);
+    } catch (err) {
+      console.error(`❌ Upstash: del failed for ${key}:`, err);
     }
-  }
-
-  static async exists(key: string): Promise<boolean> {
-    await this.connect();
-    const result = await redis.exists(key);
-    return result === 1;
-  }
-
-  static async expire(key: string, ttl: number): Promise<void> {
-    await this.connect();
-    await redis.expire(key, ttl);
-  }
-
-  static async ttl(key: string): Promise<number> {
-    await this.connect();
-    return await redis.ttl(key);
-  }
-
-  static async increment(key: string, amount: number = 1): Promise<number> {
-    await this.connect();
-    return await redis.incrby(key, amount);
-  }
-
-  static async hset(key: string, field: string, value: any): Promise<void> {
-    await this.connect();
-    await redis.hset(key, field, value);
-  }
-
-  static async hget(key: string, field: string): Promise<any> {
-    await this.connect();
-    return await redis.hget(key, field);
-  }
-
-  static async hgetall(key: string): Promise<any> {
-    await this.connect();
-    return redis.hgetall(key);
-  }
-
-  static async hdel(key: string, field: string): Promise<void> {
-    await this.connect();
-    await redis.hdel(key, field);
   }
 
   static async keys(pattern: string): Promise<string[]> {
-    await this.connect();
-    return redis.keys(pattern);
-  }
-
-  static async flushdb(): Promise<void> {
-    await this.connect();
-    await redis.flushdb();
-  }
-
-  // Watch history specific Redis operations
-  static async setProgress(profileId: string, contentId: string, progress: number, duration: number): Promise<void> {
-    const key = `progress:${profileId}:${contentId}`;
-    const data = {
-      progress,
-      duration,
-      updatedAt: Date.now(),
-      deviceId: 'current' // Will be updated by actual device
-    };
-    
-    await this.set(key, data, 7 * 24 * 60 * 60); // 7 days TTL
-  }
-
-  static async getProgress(profileId: string, contentId: string): Promise<any> {
-    const key = `progress:${profileId}:${contentId}`;
-    return await this.get(key);
-  }
-
-  static async deleteProgress(profileId: string, contentId: string): Promise<void> {
-    const key = `progress:${profileId}:${contentId}`;
-    await this.del(key);
-  }
-
-  static async getProfileProgress(profileId: string): Promise<any[]> {
-    const pattern = `progress:${profileId}:*`;
-    const keys = await this.keys(pattern);
-    
-    if (keys.length === 0) return [];
-    
-    const pipeline = redis.pipeline();
-    
-    keys.forEach(key => {
-      pipeline.get(key);
-    });
-    
-    const results = await pipeline.exec();
-    
-    if (!results) return [];
-    
-    return results.map(([err, value], index) => {
-      if (err || !value) return null;
-      
-      try {
-        const data = JSON.parse(value as string);
-        const keyStr = keys[index];
-        const [, , , contentId] = keyStr.split(':');
-        return { contentId, ...data };
-      } catch {
-        return null;
-      }
-    }).filter(Boolean);
-  }
-
-  // Session management
-  static async setSession(userId: string, deviceId: string, sessionData: any): Promise<void> {
-    const key = `session:${userId}:${deviceId}`;
-    await this.set(key, sessionData, 24 * 60 * 60); // 24 hours TTL
-  }
-
-  static async getSession(userId: string, deviceId: string): Promise<any> {
-    const key = `session:${userId}:${deviceId}`;
-    return await this.get(key);
-  }
-
-  static async deleteSession(userId: string, deviceId: string): Promise<void> {
-    const key = `session:${userId}:${deviceId}`;
-    await this.del(key);
-  }
-
-  // Device tracking
-  static async updateDeviceStatus(deviceId: string, status: 'online' | 'offline'): Promise<void> {
-    const key = `device:${deviceId}`;
-    const data = {
-      status,
-      lastSeen: Date.now()
-    };
-    
-    await this.set(key, data, 5 * 60); // 5 minutes TTL
-  }
-
-  static async getDeviceStatus(deviceId: string): Promise<any> {
-    const key = `device:${deviceId}`;
-    return await this.get(key);
-  }
-
-  // Real-time sync events
-  static async emitSyncEvent(profileId: string, event: string, data: any): Promise<void> {
-    const key = `sync:${profileId}:${event}`;
-    const eventData = {
-      event,
-      data,
-      timestamp: Date.now(),
-      source: 'server'
-    };
-    
-    await this.set(key, eventData, 30); // 30 seconds TTL
-  }
-
-  static async getSyncEvents(profileId: string, event?: string): Promise<any[]> {
-    const pattern = event 
-      ? `sync:${profileId}:${event}`
-      : `sync:${profileId}:*`;
-    
-    const keys = await this.keys(pattern);
-    
-    if (keys.length === 0) return [];
-    
-    const pipeline = redis.pipeline();
-    
-    keys.forEach(key => {
-      pipeline.get(key);
-    });
-    
-    const results = await pipeline.exec();
-    
-    if (!results) return [];
-    
-    return results.map(([err, value], index) => {
-      if (err || !value) return null;
-      
-      try {
-        const data = JSON.parse(value as string);
-        const keyStr = keys[index];
-        const [, , , , eventName] = keyStr.split(':');
-        return { event: eventName, ...data };
-      } catch {
-        return null;
-      }
-    }).filter(Boolean);
-  }
-
-  // Cache management
-  static async invalidateProfileCache(profileId: string): Promise<void> {
-    const patterns = [
-      `progress:${profileId}:*`,
-      `sync:${profileId}:*`,
-      `session:${profileId}:*`
-    ];
-    
-    const pipeline = redis.pipeline();
-    
-    patterns.forEach(pattern => {
-      pipeline.del(pattern);
-    });
-    
-    await pipeline.exec();
-  }
-
-  // Cleanup old data
-  static async cleanup(): Promise<void> {
-    const patterns = [
-      'progress:*:*',
-      'sync:*:*',
-      'session:*:*',
-      'device:*'
-    ];
-    
-    const pipeline = redis.pipeline();
-    
-    patterns.forEach(pattern => {
-      pipeline.del(pattern);
-    });
-    
-    await pipeline.exec();
-  }
-
-  // Health check
-  static async healthCheck(): Promise<{ status: string; redis: boolean; error?: string }> {
+    if (!redis) return [];
     try {
-      await this.connect();
-      await redis.ping();
-      
-      return {
-        status: 'connected',
-        redis: true
-      };
-    } catch (error) {
-      return {
-        status: 'disconnected',
-        redis: false,
-        error: error.message
-      };
+      return await redis.keys(pattern);
+    } catch (err) {
+      console.error(`❌ Upstash: keys failed for ${pattern}:`, err);
+      return [];
     }
   }
 
-  // Analytics
-  static async getStats(): Promise<any> {
-    await this.connect();
-    
-    const info = await redis.info();
-    const keys = await redis.dbsize();
-    
-    return {
-      status: isConnected ? 'connected' : 'disconnected',
-      memory: info,
-      keys: keys,
-      uptime: info,
-      version: info
-    };
+  static async increment(key: string, amount: number = 1): Promise<number> {
+    if (!redis) return 0;
+    try {
+      return await redis.incrby(key, amount);
+    } catch (err) {
+      console.error(`❌ Upstash: incr failed for ${key}:`, err);
+      return 0;
+    }
+  }
+
+  static async expire(key: string, seconds: number) {
+    if (!redis) return;
+    try {
+      await redis.expire(key, seconds);
+    } catch (err) {
+      console.error(`❌ Upstash: expire failed for ${key}:`, err);
+    }
+  }
+
+  static async publish(channel: string, message: string) {
+    if (!redis) return;
+    try {
+      await redis.publish(channel, message);
+    } catch (err) {
+      console.error(`❌ Upstash: publish failed for ${channel}:`, err);
+    }
+  }
+
+  // --- Synchronization Methods ---
+
+  static async setProgress(profileId: string, contentId: string, progress: number, duration: number) {
+    const key = `progress:${profileId}:${contentId}`;
+    await this.set(key, { progress, duration, updatedAt: Date.now(), deviceId: 'current' }, 7 * 24 * 60 * 60);
+  }
+
+  static async getProgress(profileId: string, contentId: string) {
+    return await this.get(`progress:${profileId}:${contentId}`);
+  }
+
+  static async getProfileProgress(profileId: string): Promise<any[]> {
+    if (!redis) return [];
+    try {
+      const keys = await this.keys(`progress:${profileId}:*`);
+      if (keys.length === 0) return [];
+      
+      const r = redis!;
+      const p = r.pipeline();
+      keys.forEach(key => p.get(key));
+      const results = await p.exec();
+      
+      return results.map((value, index) => {
+        if (!value) return null;
+        const parts = keys[index].split(':');
+        return { contentId: parts[parts.length - 1], ...(value as object) };
+      }).filter(Boolean);
+    } catch (err) {
+      console.error("❌ Upstash: getProfileProgress error:", err);
+      return [];
+    }
+  }
+
+  static async emitSyncEvent(profileId: string, event: string, data: any) {
+    const key = `sync:${profileId}:${event}`;
+    await this.set(key, { event, data, timestamp: Date.now(), source: 'server' }, 30);
+  }
+
+  static async getSyncEvents(profileId: string, event?: string): Promise<any[]> {
+    if (!redis) return [];
+    try {
+      const pattern = event ? `sync:${profileId}:${event}` : `sync:${profileId}:*`;
+      const keys = await this.keys(pattern);
+      if (keys.length === 0) return [];
+      
+      const r = redis!;
+      const p = r.pipeline();
+      keys.forEach(key => p.get(key));
+      const results = await p.exec();
+      
+      return results.map((value, index) => {
+        if (!value) return null;
+        const parts = keys[index].split(':');
+        return { event: parts[parts.length - 1], ...(value as object) };
+      }).filter(Boolean);
+    } catch (err) {
+      console.error("❌ Upstash: getSyncEvents error:", err);
+      return [];
+    }
+  }
+
+  // --- Session & Device Tracking ---
+
+  static async setSession(userId: string, deviceId: string, sessionData: any) {
+    await this.set(`session:${userId}:${deviceId}`, sessionData, 24 * 60 * 60);
+  }
+
+  static async updateDeviceStatus(deviceId: string, status: 'online' | 'offline') {
+    await this.set(`device:${deviceId}`, { status, lastSeen: Date.now() }, 5 * 60);
+  }
+
+  // --- Cache Management ---
+
+  static async invalidateProfileCache(profileId: string) {
+    if (!redis) return;
+    try {
+      const patterns = [`progress:${profileId}:*`, `sync:${profileId}:*`, `session:${profileId}:*`];
+      const r = redis!;
+      for (const pattern of patterns) {
+        const keys = await this.keys(pattern);
+        if (keys.length > 0) {
+          const p = r.pipeline();
+          keys.forEach(k => p.del(k));
+          await p.exec();
+        }
+      }
+    } catch (err) {
+      console.error("❌ Upstash: invalidateProfileCache error:", err);
+    }
+  }
+
+  static async healthCheck() {
+    if (!redis) return { status: 'disabled', redis: false };
+    try {
+      await redis.ping();
+      return { status: 'connected', redis: true };
+    } catch (err: any) {
+      return { status: 'error', redis: false, error: err.message };
+    }
+  }
+
+  static async getStats() {
+    if (!redis) return { status: 'disabled', provider: 'upstash' };
+    try {
+      const keys = await redis.dbsize();
+      return { status: 'connected', keys, provider: 'upstash' };
+    } catch (err) {
+      return { status: 'error', error: 'Failed to fetch stats' };
+    }
   }
 }
 

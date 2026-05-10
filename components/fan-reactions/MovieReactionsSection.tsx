@@ -99,6 +99,10 @@ export function MovieReactionsSection({ movieId }: { movieId: number }) {
       <UploadModal 
         isOpen={isUploadOpen} 
         onClose={() => setIsUploadOpen(false)} 
+        onSuccess={(newReaction) => {
+          setReactions(prev => [newReaction, ...prev]);
+          setActiveIndex(0);
+        }}
         defaultMovieId={movieId}
       />
     </div>

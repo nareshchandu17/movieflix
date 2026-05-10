@@ -69,7 +69,7 @@ const Header = () => {
             {[
               { href: "/movie", label: "Movies" },
               { href: "/series", label: "Series" },
-              { href: "/mood-engine", label: "AI Mood" },
+              { href: "/ai-mood", label: "AI Mood" },
               { href: "/new-popular", label: "New & Popular" },
               { href: "/my-list", label: "My List" },
               { href: "/scenes", label: "Scenes" },
@@ -87,9 +87,9 @@ const Header = () => {
         )}
 
         {/* Right Section */}
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-8 ml-auto">
           {/* Search */}
-          {isClient && <SmartSearchNew />}
+
 
           {/* Bell Icon */}
           {isSignedIn && isClient && <NotificationBell />}

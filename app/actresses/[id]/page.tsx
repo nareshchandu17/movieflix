@@ -8,10 +8,10 @@ interface PageProps {
 }
 
 export const metadata: Metadata = {
-  title: "Actress Details | Cineworld",
+  title: "Actress Details | MovieFlix",
   description: "Explore detailed information about your favorite actresses, including their filmography, biography, and career highlights.",
   openGraph: {
-    title: "Actress Details | Cineworld",
+    title: "Actress Details | MovieFlix",
     description: "Discover comprehensive details about talented actresses from around the world.",
     type: "website",
   },

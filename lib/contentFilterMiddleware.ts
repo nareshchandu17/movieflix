@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { applyProfileFilter } from './profileMiddleware';
+import { applyProfileFilter, ProfileFilterResult } from './profileMiddleware';
 
 /**
  * Higher-order function to wrap API handlers with profile-based content filtering

@@ -53,14 +53,23 @@ export function PlayerRoot({ contentId, url, title, roomId, isWatchParty }: Play
     playing, 
     togglePlay, 
     activeReaction, 
+    movieReactions,
     reactionLayout,
     setActiveReaction,
     setMovieReactions,
     activePanel, 
     togglePanel, 
     setIsFullscreen,
-    currentTime
+    currentTime,
+    setPlaying
   } = usePlayerState();
+  
+  // Auto-play on mount
+  useEffect(() => {
+    if (url) {
+      setPlaying(true);
+    }
+  }, [url, setPlaying]);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const clickTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -218,6 +227,9 @@ export function PlayerRoot({ contentId, url, title, roomId, isWatchParty }: Play
           movieTimestamp={recorderTimestamp}
           isOpen={isRecorderOpen}
           onClose={() => setIsRecorderOpen(false)}
+          onSuccess={(newReaction) => {
+            setMovieReactions((prev: any[]) => [...prev, newReaction]);
+          }}
         />
 
         {/* Room Settings */}

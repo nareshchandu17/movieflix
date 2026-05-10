@@ -3,9 +3,9 @@ import InfoNotFound from "@/components/not-found/InfoNotFound";
 import EnhancedMovieInfo from "@/components/movie/EnhancedMovieInfo";
 
 export const metadata: Metadata = {
-  title: "Movie | Cineworld",
+  title: "Movie | MovieFlix",
   description:
-    "Browse all movies available on Cineworld. Find trending, top-rated, and new releases.",
+    "Browse all movies available on MovieFlix. Find trending, top-rated, and new releases.",
 };
 
 interface MovieDetailPageProps {

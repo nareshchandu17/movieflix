@@ -6,6 +6,16 @@ import gsap from "gsap";
 
 import SceneSearch from "./SceneSearch";
 
+interface Particle {
+  id: number;
+  width: number;
+  height: number;
+  left: number;
+  top: number;
+  color: string;
+  opacity: number;
+}
+
 interface SceneHeroProps {
   onSearch: (query: string) => void;
 }

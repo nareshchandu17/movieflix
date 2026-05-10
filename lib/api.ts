@@ -12,10 +12,64 @@ import {
   TMDBCredits,
 } from "./types";
 
-// Support both legacy API_KEY and new ACCESS_TOKEN for backward compatibility
+// --- MEMORY CACHE LAYER (LRU-lite) ---
+class MemoryCache {
+  private cache = new Map<string, { data: any; expiry: number }>();
+  private maxSize = 100;
+
+  set(key: string, data: any, ttlMs: number) {
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
+    this.cache.set(key, { data, expiry: Date.now() + ttlMs });
+  }
+
+  get(key: string) {
+    const item = this.cache.get(key);
+    if (!item) return null;
+    if (Date.now() > item.expiry) {
+      this.cache.delete(key);
+      return null;
+    }
+    return item.data;
+  }
+
+  getStale(key: string) {
+    const item = this.cache.get(key);
+    return item ? item.data : null;
+  }
+
+  clear() {
+    this.cache.clear();
+  }
+}
+
+const localCache = new MemoryCache();
+
+// --- CONFIGURATION ---
 const ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN;
-const API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+const API_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
+
+// --- CACHE STRATEGY HELPERS ---
+const getCacheConfig = (url: string) => {
+  // TMDB Lists (trending, popular, etc.)
+  if (url.includes('/trending/') || url.includes('/popular') || url.includes('/top_rated') || url.includes('/discover')) {
+    return { revalidate: 900, tags: ['tmdb:lists', 'tmdb:trending'] }; // 15 min
+  }
+  // TMDB Details
+  if (url.match(/\/(movie|tv)\/\d+$/)) {
+    const id = url.split('/').pop();
+    return { revalidate: 3600, tags: [`tmdb:detail:${id}`] }; // 60 min
+  }
+  // TMDB Videos/Credits
+  if (url.includes('/videos') || url.includes('/credits')) {
+    return { revalidate: 86400, tags: ['tmdb:media'] }; // 24 hrs
+  }
+  // Default
+  return { revalidate: 1800, tags: ['tmdb:general'] }; // 30 min
+};
 
 // Validate environment configuration
 const validateEnvironment = () => {
@@ -43,8 +97,10 @@ const checkAccessToken = () => {
 };
 
 const getHeaders = () => ({
-  ...(ACCESS_TOKEN ? { Authorization: `Bearer ${ACCESS_TOKEN}` } : {}),
-  accept: "application/json",
+  ...(ACCESS_TOKEN ? { 'Authorization': `Bearer ${ACCESS_TOKEN}` } : {}),
+  'Accept': 'application/json',
+  'Connection': 'keep-alive',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
 });
 
 // Request deduplication cache to prevent duplicate simultaneous requests
@@ -53,7 +109,8 @@ const pendingRequests = new Map<string, Promise<unknown>>();
 // Simple fetch wrapper with single call and proper error handling
 export async function fetchAPI<T = unknown>(
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retries = 2
 ): Promise<T> {
   // Modify URL to include API key if using legacy authentication
   let requestUrl = url;
@@ -61,84 +118,107 @@ export async function fetchAPI<T = unknown>(
     requestUrl += `${requestUrl.includes('?') ? '&' : '?'}api_key=${API_KEY}`;
   }
 
-  // Request deduplication - if same request is in flight, return the pending promise
+  // 1. IN-MEMORY CACHE (Level 1)
+  if (typeof window === 'undefined') {
+    const memCached = localCache.get(requestUrl);
+    if (memCached) return memCached as T;
+  }
+
+  // 2. REQUEST DEDUPLICATION (Level 2)
   const cacheKey = `${requestUrl}:${JSON.stringify(options)}`;
   if (pendingRequests.has(cacheKey)) {
     return pendingRequests.get(cacheKey)! as Promise<T>;
   }
 
   const requestPromise = (async () => {
-    try {
-      // Add Next.js revalidation for server-side calls
-      const fetchOptions: RequestInit = {
-        ...options,
-        headers: {
-          ...getHeaders(), // Always include auth headers
-          ...options.headers,
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'application/json',
-          'Connection': 'keep-alive',
-        },
-      };
+    let lastError: any;
+    
+    for (let i = 0; i <= retries; i++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-      // Add revalidation for server-side calls (Next.js SSR/SSG)
-      if (typeof window === 'undefined') {
-        fetchOptions.next = { revalidate: 1800 }; // 30 minutes revalidation for server-side calls
-      }
+      try {
+        const cacheConfig = getCacheConfig(requestUrl);
 
-      const response = await fetch(requestUrl, fetchOptions);
-      
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error');
-        const error = new Error(`HTTP ${response.status} ${response.statusText}: ${errorText}`) as Error & { 
-          status: number;
-          code: string;
+        const fetchOptions: RequestInit = {
+          ...options,
+          signal: controller.signal,
+          headers: {
+            ...getHeaders(),
+            ...options.headers,
+          },
+          next: {
+            revalidate: cacheConfig.revalidate,
+            tags: cacheConfig.tags,
+          }
         };
-        error.status = response.status;
+
+        const response = await fetch(requestUrl, fetchOptions);
+        clearTimeout(timeoutId);
         
-        // Set appropriate error codes
-        switch (response.status) {
-          case 404:
-            error.code = 'NOT_FOUND';
-            break;
-          case 401:
-            error.code = 'UNAUTHORIZED';
-            break;
-          case 403:
-            error.code = 'FORBIDDEN';
-            break;
-          case 429:
-            error.code = 'RATE_LIMITED';
-            break;
-          case 500:
-            error.code = 'SERVER_ERROR';
-            break;
-          default:
-            error.code = 'API_ERROR';
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          const error = new Error(`HTTP ${response.status} ${response.statusText}: ${errorText}`) as Error & { 
+            status: number;
+            code: string;
+          };
+          error.status = response.status;
+          
+          switch (response.status) {
+            case 404: error.code = 'NOT_FOUND'; break;
+            case 401: error.code = 'UNAUTHORIZED'; break;
+            case 429: error.code = 'RATE_LIMITED'; break;
+            default: error.code = 'API_ERROR';
+          }
+          throw error;
+        }
+        
+        const data = await response.json();
+
+        // Save to memory cache for hot reuse
+        if (typeof window === 'undefined') {
+          localCache.set(requestUrl, data, 60000); 
+        }
+
+        return data;
+      } catch (error: any) {
+        lastError = error;
+        const isNetworkError = error.name === 'TypeError' || error.code === 'ECONNRESET' || error.name === 'AbortError';
+        
+        if (isNetworkError && i < retries) {
+          console.warn(`[API] Retry ${i+1}/${retries} for: ${requestUrl} - ${error.message}`);
+          await new Promise(r => setTimeout(r, 1000 * (i + 1))); // Exponential backoff
+          continue;
+        }
+        
+        // 4. STALE-ON-ERROR FALLBACK (Level 4)
+        if (typeof window === 'undefined') {
+          const staleData = localCache.getStale(requestUrl);
+          if (staleData) {
+            console.warn(`[Cache] STALE FALLBACK on error for: ${requestUrl}`);
+            return staleData as T;
+          }
+        }
+        
+        if (error.name === 'AbortError') {
+          const timeoutError = new Error('Request timed out after 12 seconds') as any;
+          timeoutError.code = 'TIMEOUT';
+          timeoutError.status = 408;
+          throw timeoutError;
+        }
+
+        if (!error.status && !error.code) {
+          console.error(`[API] Network error details: ${error.message}`, error);
+          const networkError = new Error(`Network error or API unavailable: ${error.message}`) as any;
+          networkError.status = 503;
+          networkError.code = 'NETWORK_ERROR';
+          throw networkError;
         }
         
         throw error;
       }
-      
-      return response.json();
-    } catch (error) {
-      const error_ = error as Error & { code?: string; status?: number };
-      
-      // Handle network errors (fetch failed, timeout, etc.)
-      if (!error_.status && !error_.code) {
-        console.error(`[API] Network error details: ${error_.message}`, error_);
-        const networkError = new Error(`Network error or API unavailable: ${error_.message}`) as Error & { 
-          status: number;
-          code: string;
-        };
-        networkError.status = 0;
-        networkError.code = 'NETWORK_ERROR';
-        throw networkError;
-      }
-      
-      // Re-throw API errors as-is
-      throw error;
     }
+    throw lastError;
   })();
 
   // Store the pending request
@@ -156,6 +236,7 @@ export async function fetchAPI<T = unknown>(
 // Function overloads for getDetails
 function getDetails(mediaType: "movie", id: number): Promise<TMDBMovieDetail>;
 function getDetails(mediaType: "tv", id: number): Promise<TMDBTVDetail>;
+function getDetails(mediaType: "movie" | "tv", id: number): Promise<TMDBMovieDetail | TMDBTVDetail>;
 
 async function getDetails(
   mediaType: "movie" | "tv",
@@ -189,6 +270,21 @@ async function getDetails(
     // Re-throw other errors as-is
     throw error;
   }
+}
+
+// Get videos (trailers, clips, etc.)
+function getVideos(mediaType: "movie", id: number): Promise<any>;
+function getVideos(mediaType: "tv", id: number): Promise<any>;
+function getVideos(mediaType: "movie" | "tv", id: number): Promise<any>;
+
+async function getVideos(
+  mediaType: "movie" | "tv",
+  id: number
+): Promise<any> {
+  checkAccessToken();
+  return await fetchAPI<any>(`${BASE_URL}/${mediaType}/${id}/videos`, {
+    headers: getHeaders(),
+  });
 }
 
 export const api = {
@@ -637,15 +733,7 @@ export const api = {
   },
 
   // Get videos (trailers, clips, etc.)
-  async getVideos(
-    mediaType: "movie" | "tv",
-    id: number
-  ): Promise<any> {
-    checkAccessToken();
-    return await fetchAPI<any>(`${BASE_URL}/${mediaType}/${id}/videos`, {
-      headers: getHeaders(),
-    });
-  },
+  getVideos,
 
   // Health check utility
   async healthCheck(): Promise<{ healthy: boolean; latency?: number; error?: string }> {

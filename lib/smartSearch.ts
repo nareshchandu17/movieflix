@@ -45,7 +45,7 @@ export interface SearchResponse {
 }
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
-const API_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY || "9abb949e34b5c04e7f1b0ad95ece7212";
+const API_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY;
 
 /**
  * Robust Fetch with Retry and Timeout
@@ -245,17 +245,17 @@ export async function smartSearch(
   try {
     // ⚙️ API Strategy - Increased depth to 3 pages for movie search to find blockbusters
     const endpoints = [
-      `${TMDB_BASE}/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(q)}&page=1&include_adult=false`,
-      `${TMDB_BASE}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(q)}&page=1&include_adult=false`,
-      `${TMDB_BASE}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(q)}&page=2&include_adult=false`,
-      `${TMDB_BASE}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(q)}&page=3&include_adult=false`,
-      `${TMDB_BASE}/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(q)}&page=1&include_adult=false`
+      `${TMDB_BASE}/search/multi?api_key=${API_KEY || ""}&query=${encodeURIComponent(q)}&page=1&include_adult=false`,
+      `${TMDB_BASE}/search/movie?api_key=${API_KEY || ""}&query=${encodeURIComponent(q)}&page=1&include_adult=false`,
+      `${TMDB_BASE}/search/movie?api_key=${API_KEY || ""}&query=${encodeURIComponent(q)}&page=2&include_adult=false`,
+      `${TMDB_BASE}/search/movie?api_key=${API_KEY || ""}&query=${encodeURIComponent(q)}&page=3&include_adult=false`,
+      `${TMDB_BASE}/search/tv?api_key=${API_KEY || ""}&query=${encodeURIComponent(q)}&page=1&include_adult=false`
     ];
 
     // Add Discovery call for Genre Intent
     if (detectedGenreId) {
       const type = detectedMediaType || "movie";
-      endpoints.push(`${TMDB_BASE}/discover/${type}?api_key=${API_KEY}&with_genres=${detectedGenreId}&sort_by=popularity.desc&vote_count.gte=100&page=1`);
+      endpoints.push(`${TMDB_BASE}/discover/${type}?api_key=${API_KEY || ""}&with_genres=${detectedGenreId}&sort_by=popularity.desc&vote_count.gte=100&page=1`);
     }
 
     // Add Discovery call for Collection Intent (Marvel, Oscars, etc.)
@@ -263,7 +263,7 @@ export async function smartSearch(
     if (hasCollectionIntent) {
       const type = detectedMediaType || "movie";
       const params = new URLSearchParams({
-        api_key: API_KEY,
+        api_key: API_KEY || "",
         sort_by: "popularity.desc",
         "vote_count.gte": "100",
         page: "1",

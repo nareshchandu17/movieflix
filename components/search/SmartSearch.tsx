@@ -363,7 +363,7 @@ const SmartSearch = () => {
         verbalSummary = `Finding content matching ${intent.labels.join(', ')}.` + (intent.remainingQuery ? ` related to ${intent.remainingQuery}` : "");
         
         const searchParams = new URLSearchParams({ ...intent.filter, 'sort_by': 'popularity.desc' } as any);
-        const discoverRes = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || ""}&${searchParams}`).then(r => r.json());
+        const discoverRes = await fetch(`/api/tmdb/discover/movie?${searchParams}`).then(r => r.json());
         let discoverResults = (discoverRes.results || []).map((r: any) => ({ ...r, media_type: 'movie' }));
 
         if (intent.remainingQuery.trim().length > 0) {
@@ -406,8 +406,8 @@ const SmartSearch = () => {
         verbalSummary = `Searching for ${searchQuery}.`;
         const [searchResponse, collectionResponse, personResponse] = await Promise.all([
           api.search(searchQuery),
-          fetch(`https://api.themoviedb.org/3/search/collection?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || ""}&query=${encodeURIComponent(searchQuery)}`).then(r => r.json()),
-          fetch(`https://api.themoviedb.org/3/search/person?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY || ""}&query=${encodeURIComponent(searchQuery)}`).then(r => r.json())
+          fetch(`/api/tmdb/search/collection?query=${encodeURIComponent(searchQuery)}`).then(r => r.json()),
+          fetch(`/api/tmdb/search/person?query=${encodeURIComponent(searchQuery)}`).then(r => r.json())
         ]);
         rawResults = searchResponse.results;
         

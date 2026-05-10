@@ -15,7 +15,8 @@ import {
   Smartphone, 
   User, 
   Settings, 
-  LogOut 
+  LogOut,
+  Search 
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ const sections = [
     title: "MAIN",
     items: [
       { id: "home", label: "Home", icon: Home, href: "/" },
+      { id: "search", label: "Search", icon: Search, href: "/search" },
       { id: "movies", label: "Movies", icon: Film, href: "/movie" },
       { id: "series", label: "Series", icon: Tv, href: "/series" },
     ]
@@ -32,7 +34,7 @@ const sections = [
   {
     title: "DISCOVERY",
     items: [
-      { id: "mood", label: "AI Mood", icon: Brain, href: "/mood-engine" },
+      { id: "mood", label: "AI Mood", icon: Brain, href: "/ai-mood" },
       { id: "popular", label: "New & Popular", icon: Flame, href: "/new-popular" },
       { id: "mylist", label: "My List", icon: Star, href: "/my-list" },
       { id: "scenes", label: "Scenes", icon: Clapperboard, href: "/scenes" },
@@ -41,13 +43,7 @@ const sections = [
   }
 ];
 
-const accountSection = {
-  title: "ACCOUNT",
-  items: [
-    { id: "profile", label: "Profile", icon: User, href: "/account" },
-    { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
-  ]
-};
+
 
 const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -126,43 +122,7 @@ const Sidebar = () => {
         ))}
       </div>
 
-      {/* Account Section at bottom */}
-      <div className="px-3 pb-8 pt-4 border-t border-white/5 space-y-4">
-        <div className="space-y-2">
-          <AnimatePresence>
-            {isExpanded && (
-              <motion.h3
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.5 }}
-                exit={{ opacity: 0 }}
-                className="px-4 text-[10px] font-bold tracking-[0.2em] text-white/50"
-              >
-                — ACCOUNT
-              </motion.h3>
-            )}
-          </AnimatePresence>
-          
-          <div className="space-y-1">
-            {accountSection.items.map((item) => (
-              <SidebarItem key={item.id} item={item} isExpanded={isExpanded} pathname={pathname ?? ""} />
-            ))}
-            
-            {/* Logout Button */}
-            <button
-              onClick={() => signOut()}
-              className={cn(
-                "w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-200 group/item",
-                "text-white/40 hover:text-red-500 hover:bg-red-500/10 hover:translate-x-1"
-              )}
-            >
-              <LogOut className="w-6 h-6 shrink-0 transition-transform duration-300 group-hover/item:scale-110" />
-              {isExpanded && (
-                <span className="text-sm font-medium whitespace-nowrap">Logout</span>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+
     </motion.aside>
   );
 };

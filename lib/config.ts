@@ -72,7 +72,7 @@ export const config = {
 
   // Redis (for production rate limiting)
   redis: {
-    url: process.env.REDIS_URL || "redis://localhost:6379",
+    url: process.env.UPSTASH_REDIS_REST_URL || "",
     password: process.env.REDIS_PASSWORD,
   },
 

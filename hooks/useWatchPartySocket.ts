@@ -80,13 +80,12 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
       isInitializing.current = true;
       
       try {
-        await fetch('/api/socket/io');
-        
-        const socket = io('/', {
-          path: '/api/socket/io',
-          addTrailingSlash: false,
-          transports: ['polling', 'websocket'],
-          upgrade: true
+        const URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://127.0.0.1:3001";
+        const socket = io(URL, {
+          transports: ['websocket', 'polling'],
+          upgrade: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
         });
 
         socketRef.current = socket;
@@ -102,7 +101,7 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
           }));
 
           // Join watch party room with name
-          socket.emit('join-watch-party', { roomCode, userId, userName });
+          socket.emit('join-room', { roomId: roomCode, userId, userName });
         });
 
         socket.on('disconnect', () => {
@@ -124,10 +123,9 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
 
         // Room events
         socket.on('room-state', (data: { 
-          roomCode: string; 
+          roomId: string; 
           hostId: string; 
           participants: any[]; 
-          isHost: boolean;
           currentPlayState?: string;
           currentTime?: number;
           chatHistory?: any[];
@@ -136,7 +134,7 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
             ...prev,
             participants: data.participants,
             hostId: data.hostId,
-            isHost: data.isHost
+            isHost: socket.id === data.hostId
           }));
 
           if (data.currentPlayState || data.currentTime !== undefined) {
@@ -250,8 +248,16 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
           }));
         });
 
-        socket.on('chat-message', (data: ChatMessage) => {
-          setChatMessages(prev => [...prev, { ...data, id: Date.now().toString() }]);
+        socket.on('chat-message', (data: any) => {
+          console.log('💬 Received chat message:', data);
+          const formattedMessage: ChatMessage = {
+            id: data.id || Date.now().toString(),
+            userId: data.userId,
+            userName: data.userName,
+            message: data.message,
+            timestamp: typeof data.timestamp === 'string' ? new Date(data.timestamp).getTime() : data.timestamp
+          };
+          setChatMessages(prev => [...prev, formattedMessage]);
         });
 
         socket.on('reaction', (data: Reaction) => {
@@ -283,7 +289,7 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
   const play = (timestamp: number) => {
     if (socketRef.current && roomCode) {
       socketRef.current.emit('play', {
-        roomCode,
+        roomId: roomCode,
         timestamp,
         userId
       });
@@ -293,7 +299,7 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
   const pause = (timestamp: number) => {
     if (socketRef.current && roomCode) {
       socketRef.current.emit('pause', {
-        roomCode,
+        roomId: roomCode,
         timestamp,
         userId
       });
@@ -303,7 +309,7 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
   const seek = (timestamp: number) => {
     if (socketRef.current && roomCode) {
       socketRef.current.emit('seek', {
-        roomCode,
+        roomId: roomCode,
         timestamp,
         userId
       });
@@ -313,7 +319,7 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
   const setVolume = (volume: number) => {
     if (socketRef.current && roomCode) {
       socketRef.current.emit('volume-change', {
-        roomCode,
+        roomId: roomCode,
         volume,
         userId
       });
@@ -324,8 +330,8 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
     if (socketRef.current && roomCode) {
       // If host, emit progress sync to everyone
       if (socketState.isHost) {
-        socketRef.current.emit('host-progress-sync', {
-          roomCode,
+        socketRef.current.emit('sync-progress', {
+          roomId: roomCode,
           currentTime,
           userId
         });
@@ -336,7 +342,7 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
   const setStatus = (status: 'watching' | 'buffering' | 'lagging') => {
     if (socketRef.current && roomCode) {
       socketRef.current.emit('participant-status', {
-        roomCode,
+        roomId: roomCode,
         status,
         userId
       });
@@ -346,7 +352,7 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
   const setQuality = (quality: string) => {
     if (socketRef.current && roomCode) {
       socketRef.current.emit('quality-change', {
-        roomCode,
+        roomId: roomCode,
         quality,
         userId
       });
@@ -357,7 +363,7 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
   const sendMessage = (message: string, userName: string) => {
     if (socketRef.current && roomCode) {
       socketRef.current.emit('chat-message', {
-        roomCode,
+        roomId: roomCode,
         message,
         userId,
         userName
@@ -369,7 +375,7 @@ export const useWatchPartySocket = (roomCode: string | null, userId: string | nu
   const sendReaction = (reaction: string, userName: string, movieTimestamp: number) => {
     if (socketRef.current && roomCode) {
       socketRef.current.emit('reaction', {
-        roomCode,
+        roomId: roomCode,
         reaction,
         userId,
         userName,

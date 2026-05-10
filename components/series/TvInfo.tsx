@@ -84,37 +84,6 @@ const TvInfo = ({ id }: TvInfoProps) => {
     };
   }, [id]);
 
-  const tvDetail = seriesData?.data;
-  // Defensive extraction with safe defaults
-  const seasons = tvDetail?.seasons ?? [];
-  const seasonCount = tvDetail?.number_of_seasons ?? 0;
-  const episodeCount = tvDetail?.number_of_episodes ?? 0;
-
-  const title = tvDetail?.name || tvDetail?.original_name || "Unknown Title";
-  const firstAirYear = tvDetail?.first_air_date
-    ? tvDetail.first_air_date.slice(0, 4)
-    : undefined;
-
-  // Convert tvDetail to TMDBTVShow format for WatchlistButton
-  const mediaForWatchlist = tvDetail
-    ? {
-        id: tvDetail.id,
-        name: tvDetail.name,
-        overview: tvDetail.overview,
-        poster_path: tvDetail.poster_path,
-        backdrop_path: tvDetail.backdrop_path,
-        first_air_date: tvDetail.first_air_date,
-        vote_average: tvDetail.vote_average,
-        vote_count: tvDetail.vote_count,
-        popularity: tvDetail.popularity,
-        genre_ids: tvDetail.genres?.map((g) => g.id) || [],
-        origin_country: tvDetail.origin_country,
-        original_language: tvDetail.original_language,
-        original_name: tvDetail.original_name,
-        adult: false,
-      }
-    : null;
-
   // Not Found State
   if (notFound) {
     return <InfoNotFound type="tv" />;
@@ -124,6 +93,38 @@ const TvInfo = ({ id }: TvInfoProps) => {
   if (isLoading || !seriesData?.data) {
     return <InfoLoading>Loading Series Details</InfoLoading>;
   }
+
+  // Guaranteed non-null data after this point
+  const tvDetail = seriesData.data;
+  const genreArr = seriesData.genreArr;
+  
+  // Defensive extraction with safe defaults
+  const seasons = tvDetail.seasons ?? [];
+  const seasonCount = tvDetail.number_of_seasons ?? 0;
+  const episodeCount = tvDetail.number_of_episodes ?? 0;
+
+  const title = tvDetail.name || tvDetail.original_name || "Unknown Title";
+  const firstAirYear = tvDetail.first_air_date
+    ? tvDetail.first_air_date.slice(0, 4)
+    : undefined;
+
+  // Convert tvDetail to TMDBTVShow format for WatchlistButton
+  const mediaForWatchlist = {
+    id: tvDetail.id,
+    name: tvDetail.name,
+    overview: tvDetail.overview,
+    poster_path: tvDetail.poster_path,
+    backdrop_path: tvDetail.backdrop_path,
+    first_air_date: tvDetail.first_air_date || "",
+    vote_average: tvDetail.vote_average,
+    vote_count: tvDetail.vote_count,
+    popularity: tvDetail.popularity,
+    genre_ids: tvDetail.genres?.map((g) => g.id).filter((id): id is number => id !== undefined) || [],
+    origin_country: tvDetail.origin_country,
+    original_language: tvDetail.original_language,
+    original_name: tvDetail.original_name,
+    adult: false,
+  };
 
   return (
     <MediaDetailLayout className="pt-16">
@@ -149,9 +150,9 @@ const TvInfo = ({ id }: TvInfoProps) => {
               ratingCount={tvDetail.vote_count}
               seasons={seasonCount}
               episodes={episodeCount}
-              genres={seriesData.genreArr}
+              genres={genreArr}
               overview={tvDetail.overview}
-              media={mediaForWatchlist!}
+              media={mediaForWatchlist}
             />
           </div>
         </div>
@@ -168,7 +169,7 @@ const TvInfo = ({ id }: TvInfoProps) => {
               </>
 
               <SeasonDisplay
-                key={tvDetail?.id}
+                key={tvDetail.id}
                 SeasonCards={seasons}
                 TvDetails={tvDetail}
               />

@@ -3,13 +3,7 @@ export async function register() {
     const { spawn } = require('child_process');
     console.log("🚀 Initializing MovieFlix Background Services...");
     
-    // 1. Start Notification Worker
-    try {
-      await import('@/lib/queue/workers/notificationWorker');
-      console.log("✅ Notification Worker activated.");
-    } catch (error) {
-      console.error("❌ Failed to initialize background workers:", error);
-    }
+    // Background workers removed in favor of direct Upstash execution
 
     if (process.env.NODE_ENV === 'development') {
       try {

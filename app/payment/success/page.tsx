@@ -7,11 +7,13 @@ import { CheckCircle2, ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { getPlanById, formatCurrency } from "@/types/payment";
 
+import { Suspense } from "react";
+
 // ============================================================
 // MovieFlix Payment Success Page
 // ============================================================
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [countdown, setCountdown] = useState(5);
@@ -131,5 +133,17 @@ export default function PaymentSuccessPage() {
         </p>
       </motion.div>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-red-600 animate-spin" />
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }
