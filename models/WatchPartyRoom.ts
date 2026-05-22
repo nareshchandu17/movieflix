@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const ParticipantSchema = new mongoose.Schema({
   userId: { type: String, required: true },
   userName: { type: String },
+  /** @deprecated socketId is no longer used with Pusher presence channels */
   socketId: { type: String },
   joinedAt: { type: Date, default: Date.now },
   isHost: { type: Boolean, default: false },

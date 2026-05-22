@@ -212,7 +212,43 @@ export async function GET(request: NextRequest) {
     ]).lean();
 
     if (!watchParty) {
-      return NextResponse.json({ error: 'Watch party not found' }, { status: 404 });
+      const WatchPartyRoom = mongoose.models.WatchPartyRoom || (await import("@/models/WatchPartyRoom")).default;
+      const room = await WatchPartyRoom.findOne({ roomId: roomCode }).lean();
+
+      if (!room) {
+        return NextResponse.json({ error: 'Watch party not found' }, { status: 404 });
+      }
+
+      // Fetch the movie/series details
+      const Movie = mongoose.models.Movie || (await import("@/models/Movie")).default;
+      const Series = mongoose.models.Series || (await import("@/models/Series")).default;
+      let movie = await Movie.findOne({ $or: [{ _id: room.movieId }, { tmdbId: parseInt(room.movieId) || 0 }] });
+      if (!movie) {
+        movie = await Series.findOne({ $or: [{ _id: room.movieId }, { tmdbId: parseInt(room.movieId) || 0 }] });
+      }
+
+      const videoUrl = movie?.videoUrl || "";
+      const movieTitle = movie?.title || room.name || "Watch Party";
+      const moviePoster = movie?.posterUrl || "";
+
+      return NextResponse.json({
+        success: true,
+        watchParty: {
+          _id: room._id.toString(),
+          movieId: room.movieId,
+          movieTitle,
+          moviePoster,
+          roomCode: room.roomId,
+          circleId: null,
+          hostId: room.hostId.toString(),
+          participants: room.participants.map((p: any) => ({
+            userId: p.userId,
+            userName: p.userName,
+            userImage: ""
+          })),
+          videoUrl
+        }
+      });
     }
 
     // Check if user is member of the circle
