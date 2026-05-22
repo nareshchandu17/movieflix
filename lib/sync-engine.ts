@@ -1,5 +1,5 @@
 import RedisManager from './redis';
-import WebSocketManager from './websocket';
+import { triggerUserEvent } from './pusher/server';
 import WatchHistory from './models/WatchHistory';
 import Device from './models/Device';
 
@@ -31,12 +31,11 @@ export interface DeviceInfo {
 
 export class SyncEngine {
   private static instance: SyncEngine;
-  private wsManager: WebSocketManager;
   private syncQueue: Map<string, SyncEvent[]> = new Map();
   private processingQueue: Set<string> = new Set();
 
   private constructor() {
-    this.wsManager = new WebSocketManager();
+    // Pusher migration - wsManager removed
   }
 
   static getInstance(): SyncEngine {
@@ -47,8 +46,7 @@ export class SyncEngine {
   }
 
   async initialize(): Promise<void> {
-    await this.wsManager.initialize();
-    console.log('🔄 Sync Engine initialized');
+    console.log('🔄 Sync Engine initialized (Pusher fallback mode)');
   }
 
   /**
@@ -99,8 +97,10 @@ export class SyncEngine {
       // Queue for WebSocket emission
       this.queueSyncEvent(profileId, syncEvent);
 
-      // Emit real-time update to all devices
-      await this.wsManager.emitToProfile(profileId, 'progress:update', syncEvent.data);
+      // Emit real-time update to all devices via Pusher
+      await triggerUserEvent(profileId, 'progress:update', syncEvent.data).catch(e =>
+        console.error('Failed to trigger Pusher sync event:', e)
+      );
 
       console.log(`🔄 Progress synced: ${contentId} - ${Math.round((progress / duration) * 100)}%`);
 
@@ -216,8 +216,10 @@ export class SyncEngine {
         profileId
       };
 
-      // Emit to other devices
-      await this.wsManager.emitToProfile(profileId, 'seek', syncEvent.data);
+      // Emit to other devices via Pusher
+      await triggerUserEvent(profileId, 'seek', syncEvent.data).catch(e =>
+        console.error('Failed to trigger Pusher sync event:', e)
+      );
 
       console.log(`🔄 Seek synced: ${contentId} - ${newTime}s`);
 
@@ -246,8 +248,10 @@ export class SyncEngine {
         profileId
       };
 
-      // Emit to other devices
-      await this.wsManager.emitToProfile(profileId, 'playback', syncEvent.data);
+      // Emit to other devices via Pusher
+      await triggerUserEvent(profileId, 'playback', syncEvent.data).catch(e =>
+        console.error('Failed to trigger Pusher sync event:', e)
+      );
 
       console.log(`🔄 Playback synced: ${contentId} - ${state}`);
 
@@ -262,16 +266,8 @@ export class SyncEngine {
    */
   async getConnectedDevices(profileId: string): Promise<DeviceInfo[]> {
     try {
-      const connectedClients = this.wsManager.getConnectedDevices(profileId);
-      
-      return connectedClients.map(client => ({
-        deviceId: client.deviceId,
-        deviceName: client.deviceName,
-        deviceType: client.deviceType,
-        isOnline: true,
-        lastActiveAt: new Date()
-      }));
-
+      // Pusher is stateless from Next.js server perspective; return empty
+      return [];
     } catch (error) {
       console.error('❌ Failed to get connected devices:', error);
       return [];
@@ -349,7 +345,9 @@ export class SyncEngine {
         profileId
       };
 
-      await this.wsManager.emitToProfile(profileId, 'device:disconnected', syncEvent.data);
+      await triggerUserEvent(profileId, 'device:disconnected', syncEvent.data).catch(e =>
+        console.error('Failed to trigger Pusher sync event:', e)
+      );
 
       console.log(`📱 Device disconnected: ${deviceId}`);
 
@@ -382,7 +380,9 @@ export class SyncEngine {
         profileId
       };
 
-      await this.wsManager.emitToProfile(profileId, 'device:connected', syncEvent.data);
+      await triggerUserEvent(profileId, 'device:connected', syncEvent.data).catch(e =>
+        console.error('Failed to trigger Pusher sync event:', e)
+      );
 
       console.log(`📱 Device reconnected: ${deviceId}`);
 
@@ -417,15 +417,14 @@ export class SyncEngine {
    */
   async getStats(): Promise<any> {
     try {
-      const wsStats = this.wsManager.getStats();
       const redisStats = await RedisManager.getStats();
       
       return {
-        websocket: wsStats,
+        pusher: { status: 'active' },
         redis: redisStats,
         queueSize: Array.from(this.syncQueue.values()).reduce((sum, queue) => sum + queue.length, 0),
         processingQueues: this.processingQueue.size,
-        connectedProfiles: this.wsManager.profileRoomsCount
+        connectedProfiles: 0
       };
 
     } catch (error) {
@@ -466,7 +465,6 @@ export class SyncEngine {
   async shutdown(): Promise<void> {
     try {
       await this.cleanup();
-      await this.wsManager.shutdown();
       console.log('🔌 Sync engine shutdown');
     } catch (error) {
       console.error('❌ Failed to shutdown sync engine:', error);

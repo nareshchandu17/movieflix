@@ -40,25 +40,21 @@ export async function addNotificationToQueue(data: NotificationJobData) {
     if (redis) {
       const unreadCountKey = `notifications:unread:${userId}`;
       await redis.del(unreadCountKey);
+    }
 
-      // 3. Publish to Upstash REST for Socket Server
-      const socketPayload = {
-        userId,
-        notification: {
-          id: notification._id,
-          type,
-          title,
-          message,
-          link,
-          createdAt: notification.createdAt,
-        },
-      };
-
-      await redis.publish("NOTIFICATIONS_CHANNEL", JSON.stringify(socketPayload));
-
-      // 4. Set Sync Key for Polling-based Socket Servers (Bridge fallback)
-      const syncKey = `sync:${userId}:notification`;
-      await redis.set(syncKey, socketPayload, { ex: 60 }); // Expire in 60s
+    // 3. Push real-time notification via Pusher
+    try {
+      const { pushNotificationToUser } = await import("@/lib/pusher/notifications");
+      await pushNotificationToUser(userId, {
+        id: notification._id.toString(),
+        type,
+        title,
+        message,
+        link,
+        createdAt: notification.createdAt.toISOString(),
+      });
+    } catch (pushError) {
+      console.error("[Queue] Failed to push real-time notification via Pusher:", pushError);
     }
 
     console.log(`[Queue] Notification processed and published for user: ${userId}`);
