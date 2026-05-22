@@ -1,3 +1,12 @@
+/**
+ * @file ActressesCarousel.tsx
+ * @description Premium React user interface component for the MovieFlix OTT client application.
+ * Provides enterprise-grade reliability, streaming controls, and robust type safety.
+ * 
+ * @author CHANDU NARESH <nareshchandu27@gmail.com>
+ * @copyright (c) 2026 MovieFlix. All rights reserved.
+ */
+
 "use client";
 
 import { useEffect, useState, useRef } from "react";
