@@ -30,8 +30,8 @@ class TMDBAPI {
 
   constructor() {
     this.apiKey = process.env.TMDB_API_KEY || '';
-    if (!this.apiKey) {
-      throw new Error('TMDB API key is required');
+    if (!this.apiKey && typeof window === 'undefined') {
+      console.warn('Warning: TMDB_API_KEY is not defined on the server.');
     }
   }
 
@@ -48,7 +48,21 @@ class TMDBAPI {
       }
     }
 
-    const response = await fetch(url);
+    let fetchUrl = url;
+    if (typeof window !== 'undefined') {
+      // Rewrite TMDB direct API URLs to use our local proxy to avoid exposing API key and CORS issues
+      if (url.startsWith('https://api.themoviedb.org/3/search/person')) {
+        try {
+          const searchParams = new URL(url).searchParams;
+          const query = searchParams.get('query') || '';
+          fetchUrl = `/api/tmdb/search/person?query=${encodeURIComponent(query)}`;
+        } catch (e) {
+          console.error('Failed to parse TMDB URL for proxy rewrite:', e);
+        }
+      }
+    }
+
+    const response = await fetch(fetchUrl);
     if (!response.ok) {
       throw new Error(`TMDB API Error: ${response.statusText}`);
     }
