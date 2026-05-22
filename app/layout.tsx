@@ -11,6 +11,7 @@ import { ProfileProvider } from "@/contexts/ProfileContext";
 import { ProfileLoadingProvider } from "@/contexts/ProfileLoadingContext";
 import ProfileLoadingBlocker from "@/components/ProfileLoadingBlocker";
 import { Providers } from "./providers";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
   title: "MovieFlix",
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             </ProfileProvider>
           </ProfileLoadingProvider>
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
