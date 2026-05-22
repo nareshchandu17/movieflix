@@ -107,8 +107,8 @@ movieflix-nextjs/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/movieflix-nextjs.git
-cd movieflix-nextjs
+git clone https://github.com/nareshchandu17/movieflix.git
+cd movieflix
 ```
 
 ### 2. Install Dependencies
@@ -286,20 +286,8 @@ copies or substantial portions of the Software.
 
 ---
 
-## 👨‍💻 Author & Credits
-
 ### Lead Developer
-**[Nareshchandu](https://github.com/nareshchandu17)** - Full-stack developer passionate about creating exceptional streaming experiences.
-
-### Special Thanks
-- **TMDB** - For providing the movie database API
-- **Google AI** - For powering intelligent recommendations
-- **Next.js Team** - For the amazing React framework
-- **Tailwind CSS** - For the utility-first CSS framework
-- **Framer Motion** - For beautiful animations
-
-### Community Contributors
-- Thanks to all [contributors](https://github.com/nareshchandu17/movieflix-nextjs/graphs/contributors) who have helped make this project better!
+**[CHANDU NARESH](https://github.com/nareshchandu17)** - Full-stack developer passionate about creating premium cinematic streaming experiences.
 
 ---
 
@@ -307,11 +295,11 @@ copies or substantial portions of the Software.
 
 If you find this project helpful, please consider giving it a ⭐ on GitHub!
 
-[![GitHub stars](https://img.shields.io/github/stars/your-username/movieflix-nextjs.svg?style=social&label=Star)](https://github.com/your-username/movieflix-nextjs)
-[![GitHub forks](https://img.shields.io/github/forks/your-username/movieflix-nextjs.svg?style=social&label=Fork)](https://github.com/your-username/movieflix-nextjs)
-[![GitHub issues](https://img.shields.io/github/issues/your-username/movieflix-nextjs.svg)](https://github.com/your-username/movieflix-nextjs/issues)
+[![GitHub stars](https://img.shields.io/github/stars/nareshchandu17/movieflix.svg?style=social&label=Star)](https://github.com/nareshchandu17/movieflix)
+[![GitHub forks](https://img.shields.io/github/forks/nareshchandu17/movieflix.svg?style=social&label=Fork)](https://github.com/nareshchandu17/movieflix)
+[![GitHub issues](https://img.shields.io/github/issues/nareshchandu17/movieflix.svg)](https://github.com/nareshchandu17/movieflix/issues)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-**Made with ❤️ by the MovieFlix Team**
+**Made with ❤️ by CHANDU NARESH**
