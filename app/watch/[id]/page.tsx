@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 export const dynamic = "force-dynamic";
 import { authOptions } from "@/lib/auth";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import mongoose from "mongoose";
 import connectDB from "@/lib/db";
@@ -162,12 +163,12 @@ export default async function WatchPage({
                 <p className="text-xs text-gray-500 italic">
                   Note: If this persists, the TMDB service may be temporarily down.
                 </p>
-                <a 
+                <Link
                   href="/"
                   className="px-8 py-3 bg-zinc-900 text-white font-semibold rounded-full hover:bg-zinc-800 transition-all border border-zinc-800"
                 >
                   Return Home
-                </a>
+                </Link>
               </div>
               <p className="text-zinc-600 text-sm">
                 Error Trace: {e.message || "Network Timeout"}

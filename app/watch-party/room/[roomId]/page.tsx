@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useWatchPartySocket } from "@/hooks/useWatchPartySocket";
+import { useWatchPartyPusher } from "@/hooks/useWatchPartyPusher";
 import { WatchPartyHeader } from "@/components/watch/WatchPartyHeader";
 import { WatchPartyPlayer } from "@/components/watch/WatchPartyPlayer";
 import { WatchPartyDashboard } from "@/components/watch/WatchPartyDashboard";
@@ -46,7 +46,7 @@ export default function WatchPartyPage() {
     }
   }, []);
 
-  // Socket Hook
+  // Pusher Hook
   const {
     socketState,
     playbackState,
@@ -59,7 +59,7 @@ export default function WatchPartyPage() {
     pause,
     seek,
     updateProgress
-  } = useWatchPartySocket(roomId || null, isAskingName ? null : userId, userName);
+  } = useWatchPartyPusher(roomId || null, isAskingName ? null : userId, userName);
 
   // Fetch Movie Context
   useEffect(() => {
