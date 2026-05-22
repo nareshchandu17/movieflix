@@ -59,22 +59,12 @@ export function validateEnvironmentVariables(): void {
     }
   }
 
-  // Check for at least one TMDB key
-  const tmdbKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-  if (!tmdbKey) {
-    missing.push('NEXT_PUBLIC_TMDB_API_KEY');
-  }
 
   // Report issues
   if (missing.length > 0) {
     console.error('❌ Missing required environment variables:');
     missing.forEach(name => console.error(`   - ${name}`));
-    
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-    } else {
-      console.warn('⚠️ Running in development mode with missing environment variables');
-    }
+    console.warn('⚠️ Running with missing environment variables. Request-level validation will handle missing keys at runtime.');
   }
 
   if (warnings.length > 0) {
