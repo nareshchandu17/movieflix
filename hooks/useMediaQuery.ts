@@ -1,4 +1,13 @@
 /**
+ * @file useMediaQuery.ts
+ * @description Custom React state hook for managing reactive client-side workflows and events.
+ * Provides enterprise-grade reliability, streaming controls, and robust type safety.
+ * 
+ * @author CHANDU NARESH <nareshchandu27@gmail.com>
+ * @copyright (c) 2026 MovieFlix. All rights reserved.
+ */
+
+/**
  * Custom hook for responsive media queries
  */
 
