@@ -121,6 +121,9 @@ export const hindiApi = {
   },
 
   async fetchHindiMoviesByYear(year: number, page: number = 1): Promise<{ results: TMDBMovie[], total_pages: number }> {
+    if (!process.env.NEXT_PUBLIC_TMDB_API_KEY) {
+      throw new Error("TMDB API key is missing");
+    }
     const baseUrl = "https://api.themoviedb.org/3/discover/movie";
     const params = new URLSearchParams({
       with_original_language: "hi",
@@ -129,7 +132,7 @@ export const hindiApi = {
       include_video: "false",
       primary_release_year: year.toString(),
       page: page.toString(),
-      api_key: process.env.TMDB_API_KEY || ""
+      api_key: process.env.NEXT_PUBLIC_TMDB_API_KEY
     });
 
     const response = await fetchAPI(`${baseUrl}?${params}`) as any;

@@ -58,7 +58,7 @@ const localCache = new MemoryCache();
 
 // --- CONFIGURATION ---
 const ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN;
-const API_KEY = process.env.TMDB_API_KEY;
+const API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 
 // --- CACHE STRATEGY HELPERS ---
@@ -82,10 +82,8 @@ const getCacheConfig = (url: string) => {
 
 // Validate environment configuration
 const validateEnvironment = () => {
-  if (!ACCESS_TOKEN && !API_KEY) {
-    throw new Error(
-      "TMDB credentials not configured. Please set either TMDB_ACCESS_TOKEN or API_KEY environment variable."
-    );
+  if (!API_KEY) {
+    throw new Error("TMDB API key is missing");
   }
 
   if (ACCESS_TOKEN && ACCESS_TOKEN.length < 10) {
@@ -94,7 +92,7 @@ const validateEnvironment = () => {
     );
   }
 
-  if (API_KEY && API_KEY.length < 10) {
+  if (API_KEY.length < 10) {
     throw new Error(
       "TMDB API Key appears to be invalid (too short). Please check your API_KEY environment variable."
     );

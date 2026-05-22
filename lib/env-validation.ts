@@ -26,8 +26,8 @@ const requiredEnvVars: EnvVarConfig[] = [
   { name: 'GOOGLE_CLIENT_ID', required: true },
   { name: 'GOOGLE_CLIENT_SECRET', required: true },
   
-  // API Keys (Server-side only)
-  { name: 'TMDB_API_KEY', required: true },
+  // API Keys
+  { name: 'NEXT_PUBLIC_TMDB_API_KEY', required: true, clientSafe: true },
   { name: 'GEMINI_API_KEY', required: false }, // Optional - has simulation mode
   { name: 'YOUTUBE_API_KEY', required: false }, // Optional
   { name: 'CLOUDINARY_API_KEY', required: false }, // Optional
@@ -60,9 +60,9 @@ export function validateEnvironmentVariables(): void {
   }
 
   // Check for at least one TMDB key
-  const tmdbKey = process.env.TMDB_API_KEY;
+  const tmdbKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
   if (!tmdbKey) {
-    missing.push('TMDB_API_KEY');
+    missing.push('NEXT_PUBLIC_TMDB_API_KEY');
   }
 
   // Report issues

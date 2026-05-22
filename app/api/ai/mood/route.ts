@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { RedisManager } from "@/lib/redis";
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
+const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
 interface MoodMapping {
@@ -115,6 +115,9 @@ async function fetchMoviesFromTMDB(language: string, genres: string, count: numb
 }
 
 export async function GET(req: NextRequest) {
+  if (!TMDB_API_KEY) {
+    return NextResponse.json({ error: "TMDB API key is missing" }, { status: 500 });
+  }
   try {
     const { searchParams } = new URL(req.url);
     const rawMood = searchParams.get("mood") || "";

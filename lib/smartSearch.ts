@@ -54,7 +54,7 @@ export interface SearchResponse {
 }
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
-const API_KEY = process.env.TMDB_API_KEY;
+const API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 
 /**
  * Robust Fetch with Retry and Timeout
@@ -232,6 +232,9 @@ const MEDIA_TYPE_MAP: Record<string, "movie" | "tv"> = {
 export async function smartSearch(
   query: string
 ): Promise<SearchResponse> {
+  if (!API_KEY) {
+    throw new Error("TMDB API key is missing");
+  }
   const q = normalizeQuery(query);
   const words = q.split(" ");
   const emptyResponse: SearchResponse = { topMatch: null, movies: [], tv: [], people: [], results: [] };
@@ -476,6 +479,9 @@ export async function smartSearch(
  * Suggestions
  */
 export async function getSearchSuggestions(query: string): Promise<string[]> {
+  if (!API_KEY) {
+    throw new Error("TMDB API key is missing");
+  }
   const q = normalizeQuery(query);
   if (q.length < 2) return [];
 

@@ -106,9 +106,9 @@ async function fetchFromTMDB(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "10");
   
-  if (!process.env.TMDB_API_KEY) {
+  if (!process.env.NEXT_PUBLIC_TMDB_API_KEY) {
     console.error("❌ TMDB API key not found");
-    throw new Error("TMDB API key not configured");
+    throw new Error("TMDB API key is missing");
   }
   
   const baseUrl = 'https://api.themoviedb.org/3/discover/movie';
@@ -119,7 +119,7 @@ async function fetchFromTMDB(request: NextRequest) {
     include_video: 'false',
     page: page.toString(),
     limit: limit.toString(),
-    api_key: process.env.TMDB_API_KEY || ''
+    api_key: process.env.NEXT_PUBLIC_TMDB_API_KEY || ''
   });
 
   console.log("🎬 Fetching from TMDB...");
