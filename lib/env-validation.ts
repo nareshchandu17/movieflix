@@ -18,7 +18,7 @@ const requiredEnvVars: EnvVarConfig[] = [
   { name: 'GOOGLE_CLIENT_SECRET', required: true },
   
   // API Keys (Server-side only)
-  { name: 'TMDB_API_KEY', required: false }, // Optional if NEXT_PUBLIC_TMDB_API_KEY is set
+  { name: 'TMDB_API_KEY', required: true },
   { name: 'GEMINI_API_KEY', required: false }, // Optional - has simulation mode
   { name: 'YOUTUBE_API_KEY', required: false }, // Optional
   { name: 'CLOUDINARY_API_KEY', required: false }, // Optional
@@ -32,8 +32,6 @@ const requiredEnvVars: EnvVarConfig[] = [
   { name: 'RAZORPAY_WEBHOOK_SECRET', required: false }, // Optional
   
   // Client-safe variables (exposed to browser)
-  { name: 'NEXT_PUBLIC_TMDB_API_KEY', required: false, clientSafe: true },
-  { name: 'NEXT_PUBLIC_RAZORPAY_KEY_ID', required: false, clientSafe: true },
   { name: 'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME', required: false, clientSafe: true },
   { name: 'NEXT_PUBLIC_SOCKET_URL', required: false, clientSafe: true },
 ];
@@ -53,9 +51,9 @@ export function validateEnvironmentVariables(): void {
   }
 
   // Check for at least one TMDB key
-  const tmdbKey = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY;
+  const tmdbKey = process.env.TMDB_API_KEY;
   if (!tmdbKey) {
-    missing.push('TMDB_API_KEY or NEXT_PUBLIC_TMDB_API_KEY');
+    missing.push('TMDB_API_KEY');
   }
 
   // Report issues

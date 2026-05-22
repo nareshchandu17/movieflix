@@ -49,7 +49,7 @@ const localCache = new MemoryCache();
 
 // --- CONFIGURATION ---
 const ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN;
-const API_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY;
+const API_KEY = process.env.TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 
 // --- CACHE STRATEGY HELPERS ---

@@ -20,7 +20,7 @@ class TMDBAPI {
   private readonly apiKey: string;
 
   constructor() {
-    this.apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY || '';
+    this.apiKey = process.env.TMDB_API_KEY || '';
     if (!this.apiKey) {
       throw new Error('TMDB API key is required');
     }
