@@ -72,11 +72,11 @@ const AIInsights = ({ seriesId, seriesTitle, onShowMap }: { seriesId: number, se
         if (data.insights && Array.isArray(data.insights)) {
           // Map incoming data to include icons and maintain consistency
           const icons = [
-            <Brain className="w-4 h-4" />,
-            <Eye className="w-4 h-4" />,
-            <Zap className="w-4 h-4" />,
-            <Globe className="w-4 h-4" />,
-            <Stars className="w-4 h-4" />
+            <Brain key="brain" className="w-4 h-4" />,
+            <Eye key="eye" className="w-4 h-4" />,
+            <Zap key="zap" className="w-4 h-4" />,
+            <Globe key="globe" className="w-4 h-4" />,
+            <Stars key="stars" className="w-4 h-4" />
           ];
 
           const mappedInsights = data.insights.map((insight: any, index: number) => ({

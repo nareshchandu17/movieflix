@@ -29,7 +29,7 @@ export default function ApiTest() {
   return (
     <div className="p-4 bg-black/50 text-white rounded-lg">
       <h3 className="text-lg font-bold mb-2">TMDB API Test</h3>
-      <p>API Key: {apiKey?.substring(0, 10)}...</p>
+      <p>API Key: {apiKey}</p>
       <p>Result: {testResult}</p>
     </div>
   );

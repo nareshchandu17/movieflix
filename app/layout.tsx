@@ -1,6 +1,5 @@
 import "@/lib/dns-init";
 import "./globals.css";
-import { Inter } from "next/font/google";
 import { ReactNode } from "react";
 import { Toaster } from "sonner";
 import "@/lib/env-validation"; // Validate environment variables at startup
@@ -12,8 +11,6 @@ import { ProfileProvider } from "@/contexts/ProfileContext";
 import { ProfileLoadingProvider } from "@/contexts/ProfileLoadingContext";
 import ProfileLoadingBlocker from "@/components/ProfileLoadingBlocker";
 import { Providers } from "./providers";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "MovieFlix",
@@ -27,7 +24,7 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
-      <body className={inter.className + " app-bg-enhanced"}>
+      <body className="app-bg-enhanced">
         <Providers>
           <ProfileLoadingProvider>
             <ProfileProvider>
