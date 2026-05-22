@@ -35,5 +35,3 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# public folder - prevent exposing assets to GitHub
-/public/
