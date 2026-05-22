@@ -36,7 +36,7 @@ export async function GET(req: Request) {
     logInfo("Cache miss - fetching trending movies from TMDB API");
     
     // Using existing TMDB Key from env
-    const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+    const apiKey = process.env.TMDB_API_KEY;
     const tmdbRes = await fetch(
       `https://api.themoviedb.org/3/trending/movie/day?api_key=${apiKey}`,
       { next: { revalidate: 3600 } } // Next.js internal fetch cache as backup

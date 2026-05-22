@@ -5,10 +5,13 @@ import connectDB from '@/lib/db';
 import ProfileAnalytics from '@/models/ProfileAnalytics';
 import WatchHistory from '@/models/WatchHistory';
 
-// GET /api/profiles/analytics/:profileId - get analytics for a specific profile
+interface RouteContext {
+  params: Promise<{ profileId: string }>;
+}
+
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ profileId: string }> }
+  { params }: RouteContext
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -23,18 +26,15 @@ export async function GET(
 
     const { profileId } = await params;
 
-    // Get or create analytics for this profile
-    let analytics = await ProfileAnalytics.findOne({ 
-      userId: session.user.id, 
-      profileId 
+    let analytics = await ProfileAnalytics.findOne({
+      userId: session.user.id,
+      profileId,
     });
 
     if (!analytics) {
-      // Create initial analytics from watch history
       analytics = await initializeAnalytics(session.user.id, profileId);
     }
 
-    // Calculate weekly and monthly stats
     const now = new Date();
     const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -42,22 +42,21 @@ export async function GET(
     const recentHistory = await WatchHistory.find({
       userId: session.user.id,
       profileId,
-      createdAt: { $gte: monthStart }
+      createdAt: { $gte: monthStart },
     }).lean();
 
-    const weeklyHistory = recentHistory.filter(item => 
+    const weeklyHistory = recentHistory.filter((item) =>
       new Date(item.createdAt) >= weekStart
     );
 
-    const weeklyWatchTime = weeklyHistory.reduce((sum, item) => 
+    const weeklyWatchTime = weeklyHistory.reduce((sum, item) =>
       sum + (item.duration || 0), 0
-    ) / 60; // Convert to minutes
+    ) / 60;
 
-    const monthlyWatchTime = recentHistory.reduce((sum, item) => 
+    const monthlyWatchTime = recentHistory.reduce((sum, item) =>
       sum + (item.duration || 0), 0
-    ) / 60; // Convert to minutes
+    ) / 60;
 
-    // Update analytics with current period data
     analytics.weeklyWatchTime = weeklyWatchTime;
     analytics.monthlyWatchTime = monthlyWatchTime;
     analytics.lastActiveAt = new Date();
@@ -70,12 +69,11 @@ export async function GET(
         ...analytics.toObject(),
         weeklyWatchTime,
         monthlyWatchTime,
-        insights: generateInsights(analytics.toObject())
-      }
+        insights: generateInsights(analytics.toObject()),
+      },
     });
-
   } catch (error: unknown) {
-    console.error('GET /api/profiles/analytics error:', error);
+    console.error('GET /api/profiles/analytics/[profileId] error:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
       { success: false, error: message },
@@ -84,10 +82,9 @@ export async function GET(
   }
 }
 
-// POST /api/profiles/analytics/:profileId - update analytics
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ profileId: string }> }
+  { params }: RouteContext
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -105,21 +102,20 @@ export async function POST(
 
     const analytics = await ProfileAnalytics.findOneAndUpdate(
       { userId: session.user.id, profileId },
-      { 
+      {
         ...body,
         lastActiveAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       { upsert: true, new: true }
     );
 
     return NextResponse.json({
       success: true,
-      data: analytics
+      data: analytics,
     });
-
   } catch (error: unknown) {
-    console.error('POST /api/profiles/analytics error:', error);
+    console.error('POST /api/profiles/analytics/[profileId] error:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
       { success: false, error: message },
@@ -128,29 +124,27 @@ export async function POST(
   }
 }
 
-// Helper function to initialize analytics from watch history
 async function initializeAnalytics(userId: string, profileId: string) {
   const history = await WatchHistory.find({ userId, profileId }).lean();
-  
+
   const totalWatchTime = history.reduce((sum, item) => sum + (item.duration || 0), 0) / 60;
-  const moviesWatched = history.filter(item => item.contentType === 'movie').length;
-  const seriesWatched = history.filter(item => item.contentType === 'series').length;
-  const episodesWatched = history.filter(item => item.contentType === 'episode').length;
-  
-  const averageSessionDuration = history.length > 0 
-    ? totalWatchTime / history.length 
+  const moviesWatched = history.filter((item) => item.contentType === 'movie').length;
+  const seriesWatched = history.filter((item) => item.contentType === 'series').length;
+  const episodesWatched = history.filter((item) => item.contentType === 'episode').length;
+
+  const averageSessionDuration = history.length > 0
+    ? totalWatchTime / history.length
     : 0;
 
-  // Analyze watch patterns
   const hourCounts: { [key: string]: number } = {};
-  history.forEach(item => {
+  history.forEach((item) => {
     const hour = new Date(item.lastWatchedAt).getHours();
     const timeOfDay = getTimeOfDay(hour);
     hourCounts[timeOfDay] = (hourCounts[timeOfDay] || 0) + 1;
   });
 
   const mostWatchedTimeOfDay = Object.entries(hourCounts)
-    .sort(([,a], [,b]) => b - a)[0]?.[0] || 'evening';
+    .sort(([, a], [, b]) => b - a)[0]?.[0] || 'evening';
 
   return await ProfileAnalytics.create({
     profileId,
@@ -169,12 +163,11 @@ async function initializeAnalytics(userId: string, profileId: string) {
     contentPreferences: {
       genres: {},
       ratings: {},
-      decades: {}
-    }
+      decades: {},
+    },
   });
 }
 
-// Helper function to get time of day
 function getTimeOfDay(hour: number): string {
   if (hour >= 5 && hour < 12) return 'morning';
   if (hour >= 12 && hour < 17) return 'afternoon';
@@ -182,24 +175,23 @@ function getTimeOfDay(hour: number): string {
   return 'night';
 }
 
-// Helper function to generate insights
 function generateInsights(analytics: any) {
   const insights: string[] = [];
 
   if (analytics.totalWatchTime > 10000) {
-    insights.push('🎬 Power Viewer - Watched over 160 hours of content!');
+    insights.push('Power Viewer - Watched over 160 hours of content');
   }
 
   if (analytics.averageSessionDuration > 90) {
-    insights.push('🍿 Binge Watcher - Average session over 90 minutes');
+    insights.push('Binge Watcher - Average session over 90 minutes');
   }
 
   if (analytics.seriesWatched > analytics.moviesWatched * 2) {
-    insights.push('📺 Series Fan - Prefers series over movies');
+    insights.push('Series Fan - Prefers series over movies');
   }
 
   if (analytics.mostWatchedTimeOfDay === 'night') {
-    insights.push('🌙 Night Owl - Most active during late hours');
+    insights.push('Night Owl - Most active during late hours');
   }
 
   return insights;

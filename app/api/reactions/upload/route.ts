@@ -1,106 +1,73 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { v4 as uuidv4 } from "uuid";
 
-// Check if Cloudinary is available
-let useCloudinary = false;
-let cloudinaryConfigured = false;
+export const runtime = 'nodejs';
 
-try {
-  const cloudinary = require('cloudinary').v2;
-  
-  // Check if all required Cloudinary environment variables are set
+async function getConfiguredCloudinary() {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
-  
-  if (cloudName && apiKey && apiSecret) {
-    cloudinary.config({
-      cloud_name: cloudName,
-      api_key: apiKey,
-      api_secret: apiSecret,
-    });
-    useCloudinary = true;
-    cloudinaryConfigured = true;
-    console.log('✅ Cloudinary configured successfully for video uploads');
-  } else {
-    console.log('⚠️ Cloudinary credentials not found. Missing:', {
-      cloudName: !!cloudName,
-      apiKey: !!apiKey,
-      apiSecret: !!apiSecret
-    });
-    console.log('📁 Falling back to local storage');
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    return null;
   }
-} catch (error) {
-  console.log('❌ Cloudinary not available, using local storage:', error.message);
+
+  const cloudinary = (await import('cloudinary')).v2;
+  cloudinary.config({
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
+  });
+
+  return cloudinary;
 }
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get('video') as File | null;
-    
+
     if (!file) {
       return NextResponse.json({ error: 'No video file provided' }, { status: 400 });
     }
 
-    // Validate size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json({ error: 'File size exceeds 10MB limit' }, { status: 400 });
     }
 
-    let videoUrl: string;
-
-    if (useCloudinary) {
-      // Use Cloudinary if available
-      console.log('🚀 Uploading video to Cloudinary...');
-      const cloudinary = require('cloudinary').v2;
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const uploadResult = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          { 
-            resource_type: 'video', 
-            folder: 'MovieFlix/reactions',
-            format: 'mp4',
-            quality: 'auto',
-            fetch_format: 'auto'
-          },
-          (error, result) => {
-            if (error) {
-              console.error('❌ Cloudinary upload failed:', error);
-              reject(error);
-            } else {
-              console.log('✅ Cloudinary upload successful:', result?.public_id);
-              resolve(result);
-            }
-          }
-        );
-        uploadStream.end(buffer);
-      });
-
-      videoUrl = (uploadResult as any).secure_url;
-      console.log('📹 Video uploaded to Cloudinary:', videoUrl);
-    } else {
-      // Fallback to local storage
-      console.log('📁 Using local storage fallback...');
-      const uploadsDir = join(process.cwd(), 'public', 'uploads', 'reactions');
-      await mkdir(uploadsDir, { recursive: true });
-
-      const fileExtension = file.name.split('.').pop() || 'webm';
-      const uniqueFilename = `${uuidv4()}.${fileExtension}`;
-      const filePath = join(uploadsDir, uniqueFilename);
-
-      const bytes = await file.arrayBuffer();
-      await writeFile(filePath, Buffer.from(bytes));
-
-      videoUrl = `/uploads/reactions/${uniqueFilename}`;
-      console.log('📹 Video saved locally:', videoUrl);
+    const cloudinary = await getConfiguredCloudinary();
+    if (!cloudinary) {
+      return NextResponse.json(
+        { error: 'Video uploads require Cloudinary configuration' },
+        { status: 503 }
+      );
     }
 
-    return NextResponse.json({ url: videoUrl });
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'video',
+          folder: 'MovieFlix/reactions',
+          format: 'mp4',
+          quality: 'auto',
+          fetch_format: 'auto',
+        },
+        (error, result) => {
+          if (error || !result?.secure_url) {
+            reject(error || new Error('Cloudinary upload did not return a URL'));
+            return;
+          }
+
+          resolve({ secure_url: result.secure_url });
+        }
+      );
+
+      uploadStream.end(buffer);
+    });
+
+    return NextResponse.json({ url: uploadResult.secure_url });
   } catch (error: any) {
     console.error('[API /reactions/upload] Error:', error.message || error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

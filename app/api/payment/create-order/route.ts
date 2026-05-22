@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
       subscriptionId: subscription._id.toString(),
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      key: process.env.RAZORPAY_KEY_ID,
       prefill: {
         name: session.user.name ?? "",
         email: session.user.email ?? "",

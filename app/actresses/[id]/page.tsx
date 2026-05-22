@@ -2,9 +2,7 @@ import { Metadata } from "next";
 import ActressDetailPage from "@/components/actresses/ActressDetailPage";
 
 interface PageProps {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 }
 
 export const metadata: Metadata = {
@@ -17,8 +15,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ActressDetailPageRoute({ params }: PageProps) {
+export default async function ActressDetailPageRoute({ params }: PageProps) {
+  const { id } = await params;
   // In a real app, you'd fetch the actress name by ID
   // For now, we'll pass the ID as the name
-  return <ActressDetailPage actressName={params.id} />;
+  return <ActressDetailPage actressName={id} />;
 }
