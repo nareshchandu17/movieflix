@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 import { useSearch } from "@/contexts/SearchContext";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import NotificationListener from "@/components/notifications/NotificationListener";
 
 interface ClientLayoutProps {
   children: ReactNode;
@@ -72,6 +73,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         {!isWatchPartyPage && !isWatchPage && <MobileNav />}
 
         {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isDownloadsPage && !isProfilesPage && <Footer />}
+        <NotificationListener />
         <Toaster position="top-right" richColors />
       </div>
     </>

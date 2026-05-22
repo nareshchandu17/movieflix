@@ -2,6 +2,7 @@
 
 import { motion, useAnimation } from "motion/react";
 import type { Variants } from "motion/react";
+import { useEffect } from "react";
 
 interface BellRingProps extends React.SVGAttributes<SVGSVGElement> {
   width?: number;
@@ -9,6 +10,7 @@ interface BellRingProps extends React.SVGAttributes<SVGSVGElement> {
   strokeWidth?: number;
   stroke?: string;
   className?: string;
+  isAnimating?: boolean;
 }
 
 const bellVariants: Variants = {
@@ -41,9 +43,18 @@ const BellRing = ({
   strokeWidth = 2,
   stroke = "currentColor",
   className = "",
+  isAnimating = false,
   ...props
 }: BellRingProps) => {
   const controls = useAnimation();
+
+  useEffect(() => {
+    if (isAnimating) {
+      controls.start("animate");
+    } else {
+      controls.start("normal");
+    }
+  }, [isAnimating, controls]);
 
   return (
     <div

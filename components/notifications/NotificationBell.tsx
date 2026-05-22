@@ -1,22 +1,19 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
-import { socket } from "@/lib/socket/client";
 import NotificationDropdown from "./NotificationDropdown";
 import { AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { BellRing } from "../navbar/BellRing";
 
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isRinging, setIsRinging] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
   const { data: session } = useSession();
 
-  // 1. Fetch unread count
   const { data: unreadData } = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: async () => {
@@ -27,68 +24,23 @@ export default function NotificationBell() {
     enabled: !!session?.user,
   });
 
-  // 2. Real-time socket listener
   useEffect(() => {
-    if (!session?.user) return;
-
-    // Connect and Authenticate
-    const connectSocket = async () => {
-      try {
-        const res = await fetch("/api/auth/socket-token");
-        if (!res.ok) throw new Error("Failed to get socket token");
-        const { token } = await res.json();
-
-        // Pass token in auth object during connection
-        socket.auth = { token };
-        
-        if (!socket.connected) {
-          socket.connect();
-          console.log("🔌 Connecting to socket server...");
-          
-          // Emit authenticate event with token
-          socket.emit("authenticate", { token });
-        } else {
-          // If already connected, still authenticate
-          socket.emit("authenticate", { token });
-        }
-      } catch (err) {
-        console.error("❌ Socket auth failed:", err);
-      }
+    let timer: NodeJS.Timeout;
+    const handleAlert = () => {
+      setIsRinging(true);
+      // Reset ringing state after 1.5 seconds (the duration of 3 reverse shakes)
+      timer = setTimeout(() => {
+        setIsRinging(false);
+      }, 1500);
     };
 
-    connectSocket();
-
-    // Listen for new notifications
-    const handleNewNotification = (notification: any) => {
-      console.log("🔔 New real-time notification receiver:", notification);
-      
-      // Invalidate queries to update UI
-      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications", "latest"] });
-
-      // Show toast
-      toast(notification.title, {
-        description: notification.message,
-        icon: <Bell className="w-4 h-4 text-red-600" />,
-        action: {
-          label: "View",
-          onClick: () => (window.location.href = notification.link),
-        },
-      });
-    };
-
-    socket.on("new-notification", handleNewNotification);
-    socket.on("connect", () => console.log("✅ Socket connected successfully"));
-    socket.on("connect_error", (err) => console.error("❌ Socket connection error:", err.message));
-
+    window.addEventListener("new-notification-received", handleAlert);
     return () => {
-      socket.off("new-notification", handleNewNotification);
-      socket.off("connect");
-      socket.off("connect_error");
+      window.removeEventListener("new-notification-received", handleAlert);
+      if (timer) clearTimeout(timer);
     };
-  }, [session, queryClient]);
+  }, []);
 
-  // 3. Click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -110,12 +62,13 @@ export default function NotificationBell() {
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 rounded-full hover:bg-white/10 transition-colors group"
       >
-        <BellRing 
-          className={`transition-colors ${isOpen ? "text-white" : "text-zinc-400 group-hover:text-white"}`} 
+        <BellRing
+          className={`transition-colors ${isOpen ? "text-white" : "text-zinc-400 group-hover:text-white"}`}
           width={22}
           height={22}
+          isAnimating={isRinging}
         />
-        
+
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 flex h-4 w-4">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
