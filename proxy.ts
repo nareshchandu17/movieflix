@@ -30,7 +30,7 @@ function getSecurityHeaders(): Record<string, string> {
     "X-Frame-Options": "DENY",
     "X-XSS-Protection": "1; mode=block",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:;",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; form-action 'self' https://accounts.google.com;",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   };
@@ -139,7 +139,8 @@ export async function proxy(req: NextRequest) {
     }
 
     if (isApiRoute) {
-      if (!isAllowedApiOrigin(req)) {
+      const isNextAuthRoute = pathname.startsWith("/api/auth");
+      if (!isNextAuthRoute && !isAllowedApiOrigin(req)) {
         return applySecurityHeaders(
           NextResponse.json({ error: "Origin not allowed" }, { status: 403 })
         );
