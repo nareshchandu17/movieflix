@@ -85,6 +85,23 @@ function isAllowedApiOrigin(req: NextRequest) {
   const origin = req.headers.get("origin");
   if (!origin) return true;
 
+  try {
+    const originUrl = new URL(origin);
+    const originHost = originUrl.host;
+    
+    // 1. Dynamic Same-Origin Validation
+    // Extract the host the request was made to (Vercel uses x-forwarded-host)
+    const requestHost = req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.host;
+    
+    if (requestHost && originHost === requestHost) {
+      return true; // Inherently trust same-origin requests
+    }
+  } catch (error) {
+    console.warn("Invalid origin URL", { origin });
+    return false; // Reject malformed origin headers
+  }
+
+  // 2. Explicit Allowed Origins (for cross-origin requests)
   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map((value) => value.trim()).filter(Boolean) || [
     "http://localhost:3000",
   ];
