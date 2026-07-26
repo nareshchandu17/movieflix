@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/features/authentication/services/auth';
 import connectDB from '@/lib/db';
-import Profile from '@/lib/models/Profile';
-import User from '@/models/User';
-import { AVATAR_MAP } from '@/lib/avatars';
+import Profile from '@/features/profile/models/Profile';
+import User from '@/features/authentication/models/User';
+import { AVATAR_MAP } from '@/features/profile/utils/avatars';
 import { v4 as uuidv4 } from 'uuid';
 
 // POST /api/profiles/create — create a new profile

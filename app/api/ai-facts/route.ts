@@ -2,32 +2,15 @@
  * AI Facts API Route - Clean Gemini API integration
  */
 
+import { rateLimit } from "@/lib/rateLimit";
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
-import { getGeminiService, type MovieData } from "@/lib/geminiService";
+import { getGeminiService, type MovieData } from "@/features/ai/services/geminiService";
 import { securityLogger } from "@/lib/logger";
 
 // Rate limiting configuration
 const RATE_LIMIT_REQUESTS = 30; // Increased for production use
 const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-
-// Allowed origins (from env or defaults)
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map(origin => origin.trim())
-  : ["http://localhost:3000"];
-
-/**
- * Cleanup expired rate limit entries
- */
-function cleanupRateLimitStore() {
-  const now = Date.now();
-  for (const [key, value] of rateLimitStore.entries()) {
-    if (now > value.resetTime) {
-      rateLimitStore.delete(key);
-    }
-  }
-}
 
 /**
  * Get client IP for logging (supports various production environments)
@@ -74,33 +57,10 @@ function getClientIdentifier(request: NextRequest): string {
   return `fingerprint:${fingerprint}`;
 }
 
-/**
- * Check rate limit for client
- */
-function checkRateLimit(clientId: string): { allowed: boolean; remaining?: number } {
-  // Cleanup old entries periodically (on-demand in serverless)
-  if (rateLimitStore.size > 1000) {
-    cleanupRateLimitStore();
-  }
-
-  const now = Date.now();
-  const userLimit = rateLimitStore.get(clientId);
-
-  if (!userLimit || now > userLimit.resetTime) {
-    rateLimitStore.set(clientId, {
-      count: 1,
-      resetTime: now + RATE_LIMIT_WINDOW,
-    });
-    return { allowed: true, remaining: RATE_LIMIT_REQUESTS - 1 };
-  }
-
-  if (userLimit.count >= RATE_LIMIT_REQUESTS) {
-    return { allowed: false };
-  }
-
-  userLimit.count += 1;
-  return { allowed: true, remaining: RATE_LIMIT_REQUESTS - userLimit.count };
-}
+// Allowed origins (from env or defaults)
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map(origin => origin.trim())
+  : ["http://localhost:3000"];
 
 /**
  * Get CORS headers based on request origin
@@ -167,9 +127,9 @@ export async function POST(request: NextRequest) {
 
     // Rate limiting
     const clientId = getClientIdentifier(request);
-    const rateLimitResult = checkRateLimit(clientId);
+    const allowed = await rateLimit(clientId, RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW / 1000);
 
-    if (!rateLimitResult.allowed) {
+    if (!allowed) {
       securityLogger.warn("Rate limit exceeded", {
         clientId: clientId.replace(/^(ip:|fingerprint:)/, ""),
         clientIp: getClientIP(request),
@@ -181,9 +141,10 @@ export async function POST(request: NextRequest) {
           status: 429,
           headers: {
             ...corsHeaders,
-            "Retry-After": "3600",
+            "Retry-After": Math.ceil(RATE_LIMIT_WINDOW / 1000).toString(),
             "X-RateLimit-Limit": RATE_LIMIT_REQUESTS.toString(),
             "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": (Math.floor(Date.now() / 1000) + Math.ceil(RATE_LIMIT_WINDOW / 1000)).toString()
           },
         }
       );
@@ -229,7 +190,6 @@ export async function POST(request: NextRequest) {
     const responseHeaders: Record<string, string> = {
       ...corsHeaders,
       "X-RateLimit-Limit": RATE_LIMIT_REQUESTS.toString(),
-      "X-RateLimit-Remaining": (rateLimitResult.remaining || 0).toString(),
       "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
     };
 

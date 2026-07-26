@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import connectDB from "@/lib/db";
-import WatchHistory from "@/models/WatchHistory";
+import WatchHistory from "@/features/history/models/WatchHistory";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import { cookies } from "next/headers";
 
 // GET user's watch history for the active profile
@@ -26,7 +26,11 @@ export async function GET(req: NextRequest) {
     const history = await WatchHistory.find({
       userId: session.user.id,
       profileId
-    }).sort({ lastWatched: -1 }).limit(20);
+    })
+      .select('contentId contentType episodeId timestamp lastWatched')
+      .sort({ lastWatched: -1 })
+      .limit(20)
+      .lean();
 
     return NextResponse.json({
       history,

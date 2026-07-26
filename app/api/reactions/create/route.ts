@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import connectDB from "@/lib/db";
-import ReactionClip from "@/models/ReactionClip";
+import ReactionClip from "@/features/social/models/ReactionClip";
 import { uploadReactionVideo } from "@/lib/cloudinary";
 
 export const maxDuration = 60;
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("[Reaction] POST request received");
+
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -35,8 +35,8 @@ export async function POST(req: NextRequest) {
 
     const movieTimestamp = parseFloat(movieTimestampStr);
 
-    console.log(`[Reaction] Metadata: user=${currentUserId}, movie=${movieId}, time=${movieTimestamp}, mood=${moodEmoji}, feed=${showInFeed}, moviePage=${showInMoviePage}`);
-    console.log(`[Reaction] Video file present: ${!!reactionVideoFile}, size: ${reactionVideoFile?.size} bytes`);
+
+
 
     if (!reactionVideoFile || reactionVideoFile.size === 0 || !movieId || isNaN(movieTimestamp) || !moodEmoji) {
       console.error("[Reaction] Missing or invalid fields", { 
@@ -65,11 +65,11 @@ export async function POST(req: NextRequest) {
     const base64String = buffer.toString("base64");
     const cleanDataUri = `data:video/webm;base64,${base64String}`;
 
-    console.log(`[Reaction] Uploading to Cloudinary (${buffer.length} bytes)...`);
+
     const cloudinaryResponse = await uploadReactionVideo(cleanDataUri);
 
     // 4. Save to MongoDB
-    console.log("[Reaction] Saving to MongoDB...");
+
     try {
       const reaction = await ReactionClip.create({
         userId: currentUserId,
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
         sharesCount: 0,
       });
 
-      console.log("[Reaction] Successfully created:", reaction._id);
+
 
       return NextResponse.json({ 
         success: true, 

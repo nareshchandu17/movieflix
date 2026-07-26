@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { getActiveProfile, clearActiveProfile } from '@/lib/active-profile-manager';
+import { authOptions } from '@/features/authentication/services/auth';
+import { getActiveProfile, clearActiveProfile } from '@/features/profile/services/active-profile-manager';
 import { cookies } from 'next/headers';
 
 // GET /api/profiles/active - get user's active profile from backend

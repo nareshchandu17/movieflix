@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { UserDevice } from "@/models/UserDevice";
+import { authOptions } from "@/features/authentication/services/auth";
+import { UserDevice } from "@/features/authentication/models/UserDevice";
 import connectDB from "@/lib/db";
 
 export async function POST(req: NextRequest) {

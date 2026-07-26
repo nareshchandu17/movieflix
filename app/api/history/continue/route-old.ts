@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import WatchHistory from '@/lib/models/WatchHistory';
+import WatchHistory from '@/features/history/models/WatchHistory';
 import jwt from 'jsonwebtoken';
 
 // Helper function to get user from token

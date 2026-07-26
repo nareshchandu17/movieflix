@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import connectDB from "@/lib/db";
-import WatchPartyRoom from "@/models/WatchPartyRoom";
-import User from "@/models/User";
+import WatchPartyRoom from "@/features/watch-party/models/WatchPartyRoom";
+import User from "@/features/authentication/models/User";
 
 function generateRoomId(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

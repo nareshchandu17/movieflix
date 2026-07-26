@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import { WatchParty, CircleStreak, WatchSession } from '@/models/WatchCircle';
+import { WatchParty, CircleStreak, WatchSession } from '@/features/social/models/WatchCircle';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/features/authentication/services/auth';
 import mongoose from 'mongoose';
 import type { Session } from 'next-auth';
 
@@ -212,7 +212,7 @@ export async function GET(request: NextRequest) {
     ]).lean();
 
     if (!watchParty) {
-      const WatchPartyRoom = mongoose.models.WatchPartyRoom || (await import("@/models/WatchPartyRoom")).default;
+      const WatchPartyRoom = mongoose.models.WatchPartyRoom || (await import("@/features/watch-party/models/WatchPartyRoom")).default;
       const room = await WatchPartyRoom.findOne({ roomId: roomCode }).lean();
 
       if (!room) {
@@ -220,8 +220,8 @@ export async function GET(request: NextRequest) {
       }
 
       // Fetch the movie/series details
-      const Movie = mongoose.models.Movie || (await import("@/models/Movie")).default;
-      const Series = mongoose.models.Series || (await import("@/models/Series")).default;
+      const Movie = mongoose.models.Movie || (await import("@/features/movie/models/Movie")).default;
+      const Series = mongoose.models.Series || (await import("@/features/series/models/Series")).default;
       let movie = await Movie.findOne({ $or: [{ _id: room.movieId }, { tmdbId: parseInt(room.movieId) || 0 }] });
       if (!movie) {
         movie = await Series.findOne({ $or: [{ _id: room.movieId }, { tmdbId: parseInt(room.movieId) || 0 }] });

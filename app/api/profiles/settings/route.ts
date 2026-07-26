@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/features/authentication/services/auth';
 import connectDB from '@/lib/db';
-import AccountSettings from '@/models/AccountSettings';
-import Profile from '@/lib/models/Profile';
+import AccountSettings from '@/features/authentication/models/AccountSettings';
+import Profile from '@/features/profile/models/Profile';
 import { hash } from 'bcryptjs';
 
 // GET /api/profiles/settings - get account settings

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import { connectDB } from "@/lib/db";
-import Subscription from "@/models/Subscription";
-import Payment from "@/models/Payment";
-import { PLANS } from "@/types/payment";
+import Subscription from "@/features/payments/models/Subscription";
+import Payment from "@/features/payments/models/Payment";
+import { PLANS } from "@/features/payments/types/payment";
 
 // ============================================================
 // GET /api/payment/subscription

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/features/authentication/services/auth';
 import connectDB from '@/lib/db';
-import Profile from '@/lib/models/Profile';
-import { setActiveProfile } from '@/lib/active-profile-manager';
+import Profile from '@/features/profile/models/Profile';
+import { setActiveProfile } from '@/features/profile/services/active-profile-manager';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 

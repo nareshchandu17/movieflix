@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import MomentRegistry from "@/models/MomentRegistry";
-import Movie from "@/models/Movie";
+import MomentRegistry from "@/features/ai/models/MomentRegistry";
+import Movie from "@/features/movie/models/Movie";
 import connectDB from "@/lib/db";
 
 export async function GET(request: NextRequest) {

@@ -1,0 +1,769 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import HeroSpotlight from "./HeroSpotlight";
+import FilterBar from "./FilterBar";
+import Top10Row from "./Top10Row";
+import NewReleasesGrid from "./NewReleasesGrid";
+import EnhancedNewReleasesGrid from "./EnhancedNewReleasesGrid";
+import TrendingCarousel from "./TrendingCarousel";
+import ContentEngine from "@/services/content-engine";
+import MovieCarousel from "@/features/shared/components/display/MovieCarousel";
+
+import { TMDBMovie, TMDBTVShow } from "@/lib/types";
+import { api } from "@/lib/api";
+import { PageLoading } from "@/features/shared/components/loading/PageLoading";
+import {
+  TrendingUp,
+  Clock,
+  Star,
+  Play,
+  ChevronRight,
+  Sparkles,
+  Flame,
+  Crown,
+  Zap
+} from "lucide-react";
+
+interface Filters {
+  format: string;
+  genre: string;
+  sort: string;
+  smartMode: boolean;
+}
+
+const HERO_MOVIE_IDS = [
+  693134, // Dune: Part Two
+  533535, // Deadpool & Wolverine
+  801688, // Kalki 2898 AD
+  857598, // Pushpa 2: The Rule
+  786892, // Furiosa: A Mad Max Saga
+  823464, // Godzilla x Kong: The New Empire
+];
+
+const NewAndPopularClient = () => {
+  const [allMedia, setAllMedia] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
+  const [trendingMedia, setTrendingMedia] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
+  const [newReleases, setNewReleases] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
+  const [top10Media, setTop10Media] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
+  const [personalizedMedia, setPersonalizedMedia] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
+  const [heroMedia, setHeroMedia] = useState<(TMDBMovie | TMDBTVShow)[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filters, setFilters] = useState<Filters>({
+    format: "all",
+    genre: "",
+    sort: "trending",
+    smartMode: false
+  });
+  const [activeSection, setActiveSection] = useState<string>("trending");
+
+  // Load filters from localStorage on mount
+  useEffect(() => {
+    ContentEngine.deduplication.reset("new-popular");
+    const savedFilters = localStorage.getItem('newAndPopularFilters');
+    if (savedFilters) {
+      try {
+        const parsedFilters = JSON.parse(savedFilters);
+        setFilters(parsedFilters);
+      } catch (error) {
+        console.error('Error loading filters:', error);
+      }
+    }
+  }, []);
+
+  // Save filters to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('newAndPopularFilters', JSON.stringify(filters));
+  }, [filters]);
+
+  // Enhanced sorting with AI mode
+  const sortMedia = useCallback((media: (TMDBMovie | TMDBTVShow)[]) => {
+    let sorted = [...media];
+
+    if (filters.smartMode) {
+      // AI-based sorting (simulate with enhanced algorithm)
+      sorted = sorted.sort((a, b) => {
+        const scoreA = calculateAIScore(a);
+        const scoreB = calculateAIScore(b);
+        return scoreB - scoreA;
+      });
+    } else {
+      // Traditional sorting
+      switch (filters.sort) {
+        case "newest":
+          sorted = sorted.sort((a, b) => {
+            const dateA = 'release_date' in a ? a.release_date : a.first_air_date;
+            const dateB = 'release_date' in b ? b.release_date : b.first_air_date;
+            return new Date(dateB || '').getTime() - new Date(dateA || '').getTime();
+          });
+          break;
+        case "rating":
+          sorted = sorted.sort((a, b) => b.vote_average - a.vote_average);
+          break;
+        default: // trending
+          sorted = sorted.sort((a, b) => b.popularity - a.popularity);
+      }
+    }
+
+    return sorted;
+  }, [filters]);
+
+  // AI score calculation
+  const calculateAIScore = (media: TMDBMovie | TMDBTVShow) => {
+    const ratingScore = media.vote_average * 10;
+    const popularityScore = Math.min(media.popularity / 50, 20);
+    const recencyScore = getRecencyScore(media);
+    const matchScore = calculateMatchPercentage(media) / 2;
+    return ratingScore + popularityScore + recencyScore + matchScore;
+  };
+
+  const getRecencyScore = (media: TMDBMovie | TMDBTVShow) => {
+    const releaseDate = 'release_date' in media ? media.release_date : media.first_air_date;
+    if (!releaseDate) return 0;
+    const daysSinceRelease = Math.floor((Date.now() - new Date(releaseDate).getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, 30 - daysSinceRelease / 30); // Higher score for newer content
+  };
+
+  const calculateMatchPercentage = (media: TMDBMovie | TMDBTVShow) => {
+    const baseScore = media.vote_average * 10;
+    const popularityBoost = Math.min(media.popularity / 100, 20);
+    const randomFactor = Math.random() * 10;
+    return Math.min(Math.floor(baseScore + popularityBoost + randomFactor), 99);
+  };
+
+  const fetchMediaData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+
+
+      // Fetch curated hero movies safely
+      const heroSettled = await Promise.allSettled(
+        HERO_MOVIE_IDS.map(id => api.getDetails("movie", id))
+      );
+      const heroMoviesData = heroSettled
+        .filter((result): result is PromiseFulfilledResult<any> => result.status === "fulfilled")
+        .map(result => result.value);
+
+      // Map Details to simple results format for compatibility with the media carousels
+      const mappedHeroMedia = heroMoviesData
+        .filter((m): m is any => m !== null)
+        .map(item => ({
+          ...item,
+          genre_ids: item.genres?.map((g: any) => g.id).filter((id: any) => id !== undefined) || []
+        }));
+
+      setHeroMedia(mappedHeroMedia);
+
+      // Fetch diverse data sets for different carousels
+      const [
+        trendingMovies,
+        popularMovies,
+        topRatedMovies,
+        upcomingMovies,
+        nowPlayingMovies,
+        trendingTV,
+        popularTV,
+        topRatedTV,
+        onAirTV,
+        airingTodayTV
+      ] = await Promise.allSettled([
+        api.getTrending("movie", "week"),
+        api.getPopular("movie", 1),
+        api.getTopRated("movie", 1),
+        api.getMedia("movie", { category: "upcoming" }),
+        api.getMedia("movie", { category: "now_playing" }),
+        api.getTrending("tv", "week"),
+        api.getPopular("tv", 1),
+        api.getTopRated("tv", 1),
+        api.getMedia("tv", { category: "on_the_air" }),
+        api.getMedia("tv", { category: "airing_today" })
+      ]);
+
+      // Extract data with fallbacks
+      const trendingMoviesData = trendingMovies.status === "fulfilled" ? trendingMovies.value.results : [];
+      const popularMoviesData = popularMovies.status === "fulfilled" ? popularMovies.value.results : [];
+      const topRatedMoviesData = topRatedMovies.status === "fulfilled" ? topRatedMovies.value.results : [];
+      const upcomingMoviesData = upcomingMovies.status === "fulfilled" ? upcomingMovies.value.results : [];
+      const nowPlayingMoviesData = nowPlayingMovies.status === "fulfilled" ? nowPlayingMovies.value.results : [];
+
+      const trendingTVData = trendingTV.status === "fulfilled" ? trendingTV.value.results : [];
+      const popularTVData = popularTV.status === "fulfilled" ? popularTV.value.results : [];
+      const topRatedTVData = topRatedTV.status === "fulfilled" ? topRatedTV.value.results : [];
+      const onAirTVData = onAirTV.status === "fulfilled" ? onAirTV.value.results : [];
+      const airingTodayTVData = airingTodayTV.status === "fulfilled" ? airingTodayTV.value.results : [];
+
+      // Create unique datasets for different carousel types
+      const allMovies = [...trendingMoviesData, ...popularMoviesData, ...topRatedMoviesData, ...upcomingMoviesData, ...nowPlayingMoviesData];
+      const allTV = [...trendingTVData, ...popularTVData, ...topRatedTVData, ...onAirTVData, ...airingTodayTVData];
+
+      // Remove duplicates within each category
+      const uniqueMovies = allMovies.filter((media, index, self) =>
+        index === self.findIndex((m) => m.id === media.id)
+      );
+      const uniqueTV = allTV.filter((media, index, self) =>
+        index === self.findIndex((m) => m.id === media.id)
+      );
+
+      const allCombinedMedia = [...uniqueMovies, ...uniqueTV];
+      const uniqueCombinedMedia = allCombinedMedia.filter((media, index, self) =>
+        index === self.findIndex((m) => m.id === media.id)
+      );
+
+      const normalizedCombined = ContentEngine.normalizer.normalizePool(uniqueCombinedMedia);
+      const qualityChecked = ContentEngine.qualityFilter.filterPool(normalizedCombined, { minRating: 6.0 });
+      const rankedCombined = ContentEngine.rankingEngine.rankPool(qualityChecked, { sortStrategy: "score" })
+        .map(i => i.raw || i) as (TMDBMovie | TMDBTVShow)[];
+
+      const normalizedTrending = ContentEngine.normalizer.normalizePool(trendingMoviesData);
+      const checkedTrending = ContentEngine.qualityFilter.filterPool(normalizedTrending, { minRating: 6.0 })
+        .map(i => i.raw || i) as (TMDBMovie | TMDBTVShow)[];
+
+      // Sort and prepare different datasets for carousels
+      const sortedByPopularity = [...rankedCombined].sort((a, b) => b.popularity - a.popularity);
+      const sortedByRating = [...rankedCombined].sort((a, b) => b.vote_average - a.vote_average);
+      const sortedByDate = [...rankedCombined].sort((a, b) => {
+        const dateA = 'release_date' in a ? a.release_date : a.first_air_date;
+        const dateB = 'release_date' in b ? b.release_date : b.first_air_date;
+        return new Date(dateB || '').getTime() - new Date(dateA || '').getTime();
+      });
+
+      // Set base datasets
+      setAllMedia(sortedByPopularity.slice(0, 100));
+      setTrendingMedia(checkedTrending.slice(0, 20));
+      setNewReleases(sortedByDate.slice(0, 30));
+      setTop10Media(sortedByRating.slice(0, 10));
+      setPersonalizedMedia(sortedByPopularity.slice(0, 40));
+
+
+    } catch (error: any) {
+      console.error("[NewAndPopular] Error fetching media:", error);
+      alert(`[NewAndPopular] Error: ${error?.message || String(error)}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMediaData();
+  }, [fetchMediaData]);
+
+  // Specialized data fetching for each carousel type
+  const getNewThisWeek = useCallback(() => {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    return allMedia.filter(item => {
+      const releaseDate = 'release_date' in item ? item.release_date : item.first_air_date;
+      return releaseDate && new Date(releaseDate) > sevenDaysAgo;
+    }).slice(0, 15);
+  }, [allMedia]);
+
+  const getRecentlyAdded = useCallback(() => {
+    // Use different data source for recently added
+    return [...trendingMedia, ...newReleases].slice(0, 15);
+  }, [trendingMedia, newReleases]);
+
+  const getNewSeasons = useCallback(() => {
+    // Focus on TV shows with recent activity
+    return allMedia.filter(item => 'first_air_date' in item).slice(0, 15);
+  }, [allMedia]);
+
+  const getBecauseYouWatched = useCallback((genreId: number) => {
+    return allMedia.filter(item => item.genre_ids?.includes(genreId)).slice(0, 15);
+  }, [allMedia]);
+
+  const getHiddenGems = useCallback(() => {
+    return allMedia.filter(item => item.popularity < 500 && item.vote_average > 7.5).slice(0, 15);
+  }, [allMedia]);
+
+  const getGenreSpecific = useCallback((genreIds: number[]) => {
+    return allMedia.filter(item => genreIds.some(id => item.genre_ids?.includes(id))).slice(0, 15);
+  }, [allMedia]);
+
+  const getMostDiscussed = useCallback(() => {
+    return allMedia.filter(item => item.popularity > 1000).slice(0, 15);
+  }, [allMedia]);
+
+  const getAwardWinners = useCallback(() => {
+    return allMedia.filter(item => item.vote_average > 8.0 && item.vote_count > 1000).slice(0, 15);
+  }, [allMedia]);
+
+  const getGloballyTrending = useCallback(() => {
+    return allMedia.filter(item => item.popularity > 2000).slice(0, 15);
+  }, [allMedia]);
+
+  const getBingeWorthy = useCallback(() => {
+    return allMedia.filter(item => 'first_air_date' in item && item.vote_average > 8.0).slice(0, 15);
+  }, [allMedia]);
+
+  const getShortContent = useCallback(() => {
+    return allMedia.filter(item => 'runtime' in item && item.runtime && (item as any).runtime < 120).slice(0, 15);
+  }, [allMedia]);
+
+  const getFamilyContent = useCallback(() => {
+    return allMedia.filter(item => !item.adult && item.vote_average > 7.0).slice(0, 15);
+  }, [allMedia]);
+
+  const getFilteredMedia = useCallback((media: (TMDBMovie | TMDBTVShow)[]) => {
+    let filtered = media.filter(item => {
+      if (filters.format !== "all") {
+        if (filters.format === "movie" && 'first_air_date' in item) return false;
+        if (filters.format === "tv" && 'release_date' in item) return false;
+      }
+      return true;
+    });
+
+    if (filters.smartMode) {
+      // AI-powered sorting
+      filtered = filtered
+        .map(item => ({
+          ...item,
+          aiScore: calculateAIScore(item)
+        }))
+        .sort((a, b) => (b as any).aiScore - (a as any).aiScore);
+    } else {
+      // Random shuffle for variety
+      filtered = filtered.sort(() => Math.random() - 0.5);
+    }
+
+    return filtered;
+  }, [filters.smartMode, filters.format, calculateAIScore]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="flex flex-col items-center gap-6">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="w-16 h-16 border-4 border-red-500 border-t-transparent border-r-transparent border-b-transparent rounded-full"
+            />
+            <motion.p
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="text-xl text-gray-300"
+            >
+              Loading premium content...
+            </motion.p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const sections = [
+    { id: 'hero', title: 'Featured', icon: Sparkles },
+    { id: 'top10', title: 'Top 10', icon: Crown },
+    { id: 'new', title: 'New Releases', icon: Clock },
+    { id: 'trending', title: 'Trending Now', icon: Flame }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white relative">
+      {/* Subtle Background Pattern */}
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/10 via-transparent to-transparent pointer-events-none" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-blue-900/10 via-transparent to-transparent pointer-events-none" />
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+      >
+
+
+        {/* Hero Spotlight */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+          className="relative"
+        >
+          <HeroSpotlight media={heroMedia.length >= 6 ? heroMedia : getFilteredMedia(allMedia).slice(0, 6)} />
+
+
+        </motion.div>
+
+        {/* Content Sections - Enhanced Carousels */}
+        <div className="relative z-10 space-y-12 pb-20">
+          {/* 🎬 Continue Watching */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="mb-8"
+          >
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full"></div>
+              <h2 className="text-3xl font-bold text-white">Continue Watching</h2>
+
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {allMedia.slice(0, 3).map((show, index) => {
+                const title = 'title' in show ? show.title : show.name;
+                const progress = [70, 45, 85];
+                const timeRemaining = [32, 15, 8];
+
+                return (
+                  <motion.div
+                    key={show.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    className="relative group cursor-pointer"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    {/* Thumbnail */}
+                    <div className="relative aspect-[16/9] rounded-lg overflow-hidden bg-gray-900">
+                      {show.poster_path ? (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w500${show.poster_path}`}
+                          alt={title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                          <span className="text-gray-400 text-lg font-semibold">{title.charAt(0)}</span>
+                        </div>
+                      )}
+
+                      {/* Progress Bar */}
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-700/80 backdrop-blur-sm">
+                        <div
+                          className="h-0.5 bg-red-600 transition-all duration-300"
+                          style={{ width: progress[index] + '%' }}
+                        />
+                        <div className="absolute inset-0 left-0 top-0 w-full h-0.5 bg-white/20 backdrop-blur-sm rounded-full"></div>
+                        <div
+                          className="h-full bg-red-600 transition-all duration-300"
+                          style={{ width: progress[index] + '%' }}
+                        />
+                      </div>
+
+                      {/* Hotstar Badge */}
+                      {index === 0 && (
+                        <div className="absolute top-2 left-2 bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
+                          <span className="text-lg">⭐</span>
+                          <span>HOTSTAR</span>
+                        </div>
+                      )}
+
+                      {/* Time Remaining Badge */}
+                      <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm text-white text-xs px-2 py-1 rounded">
+                        {timeRemaining[index] + 'm left'}
+                      </div>
+
+                      {/* Title Overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/70 to-transparent">
+                        <h4 className="text-white font-semibold text-sm">{title}</h4>
+                        <p className="text-gray-300 text-xs mt-1">Episode {index + 1} • {timeRemaining[index] + 'm left'}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+
+          {/* ⚡ Quick Picks for You */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 1.0 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(personalizedMedia)}
+              title="Quick Picks for You"
+            />
+          </motion.div>
+
+          {/* 🏆 Top 10 in Your Country */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 1.2 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(top10Media)}
+              title="Top 10 in Your Country"
+            />
+          </motion.div>
+
+          <div className="space-y-12 my-12">
+            <MovieCarousel
+              strategy="trending"
+              title="Trending Engine Spotlight"
+              subtitle="Algorithmic Top Daily & Weekly Momentum"
+              seeAllHref="/see-all?strategy=trending&title=Trending+Spotlight"
+              pageKey="new-popular"
+            />
+            <MovieCarousel
+              strategy="recommended"
+              title="Personalized Discovery"
+              subtitle="Curated For Your Taste Profile"
+              seeAllHref="/see-all?strategy=recommended&title=Personalized+Discovery"
+              pageKey="new-popular"
+            />
+            <MovieCarousel
+              strategy="weekend-binge"
+              title="High-Retention Binge Picks"
+              subtitle="Most Addicting Series Right Now"
+              seeAllHref="/see-all?strategy=weekend-binge&title=Binge+Picks"
+              pageKey="new-popular"
+            />
+          </div>
+
+          {/* 🔥 Trending Right Now */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 1.4 }}
+            className="mb-12"
+          >
+            <TrendingCarousel
+              media={getFilteredMedia(trendingMedia)}
+            />
+          </motion.div>
+
+
+          {/* 💬 Most Discussed This Week */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 1.8 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => item.popularity > 300).slice(0, 10))}
+              title="Most Discussed This Week"
+            />
+          </motion.div>
+
+          {/* 🆕 New Seasons Just Dropped */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 2.2 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => 'first_air_date' in item).slice(0, 10))}
+              title="New Seasons Just Dropped"
+            />
+          </motion.div>
+
+          {/* 📅 Recently Added */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 2.4 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(newReleases)}
+              title="Recently Added"
+            />
+          </motion.div>
+
+          {/* 🎯 New For You */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 2.6 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(personalizedMedia)}
+              title="New For You"
+            />
+          </motion.div>
+
+          {/* 🎬 Because You Watched Action */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 2.8 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(28)).slice(0, 10))}
+              title="Because You Watched Action"
+            />
+          </motion.div>
+
+          {/* 🎭 If You Liked {Last Watched Title} */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 3.0 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => item.vote_average > 7.5).slice(0, 10))}
+              title="If You Liked Last Watched Title"
+            />
+          </motion.div>
+
+          {/* 💎 Hidden Gems For You */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 3.4 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => item.popularity < 500 && item.vote_average > 7.5).slice(0, 10))}
+              title="Hidden Gems For You"
+            />
+          </motion.div>
+
+          {/* 🌙 Tonight's Picks */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 3.6 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.slice(0, 10))}
+              title="Tonight's Picks"
+            />
+          </motion.div>
+
+          {/* 🏆 Critics' Picks */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 3.8 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => item.vote_average > 8.5).slice(0, 10))}
+              title="Critics' Picks"
+            />
+          </motion.div>
+          {/* 🎖️ Award Winners & Nominees */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 4.0 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => item.vote_average > 8.0 && item.vote_count > 1000).slice(0, 10))}
+              title="Award Winners & Nominees"
+            />
+          </motion.div>
+
+          {/* 🚀 Sci-Fi Spotlight */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 4.2 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(878)).slice(0, 10))}
+              title="Sci-Fi Spotlight"
+            />
+          </motion.div>
+
+          {/* ⚔️ Action & Adventure */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 4.4 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(28) || item.genre_ids?.includes(12)).slice(0, 10))}
+              title="Action & Adventure"
+            />
+          </motion.div>
+
+          {/* 🔍 Thrillers & Crime */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 4.6 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(53) || item.genre_ids?.includes(80)).slice(0, 10))}
+              title="Thrillers & Crime"
+            />
+          </motion.div>
+
+          {/* 😄 Comedy Hits */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 4.8 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(35)).slice(0, 10))}
+              title="Comedy Hits"
+            />
+          </motion.div>
+
+          {/* 💕 Romance & Drama */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 5.0 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(10749) || item.genre_ids?.includes(18)).slice(0, 10))}
+              title="Romance & Drama"
+            />
+          </motion.div>
+
+          {/* 🌌 Sci-Fi & Fantasy */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 5.2 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.filter(item => item.genre_ids?.includes(878) || item.genre_ids?.includes(14)).slice(0, 10))}
+              title="Sci-Fi & Fantasy"
+            />
+          </motion.div>
+
+
+
+
+          {/* ⏱️ Short & Sweet (Under 2 Hours) */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 5.8 }}
+            className="mb-12"
+          >
+            <EnhancedNewReleasesGrid
+              media={getFilteredMedia(allMedia.slice(0, 15))}
+              title="Short & Sweet (Under 2 Hours)"
+            />
+          </motion.div>
+
+        </div>
+
+        {/* Premium Footer */}
+        <motion.footer
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 1.8 }}
+          className="mt-20 py-12 border-t border-gray-800"
+        >
+
+        </motion.footer>
+      </motion.div>
+    </div>
+  );
+};
+
+export default NewAndPopularClient;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import MoodProfile from "@/models/MoodProfile";
-import Movie from "@/models/Movie";
+import MoodProfile from "@/features/ai/models/MoodProfile";
+import Movie from "@/features/movie/models/Movie";
 import connectDB from "@/lib/db";
 
 const sampleMoodData = [
@@ -77,13 +77,13 @@ const sampleMoodData = [
 ];
 
 export async function GET(request: NextRequest) {
-  console.log('🎬 Seeding Mood Profiles via API\n');
+
   
   try {
     await connectDB();
-    console.log('✅ Connected to MongoDB');
 
-    const results: any[] = [];
+
+    const results: unknown[] = [];
 
     for (const data of sampleMoodData) {
       const movie = await Movie.findOne({ title: data.title });

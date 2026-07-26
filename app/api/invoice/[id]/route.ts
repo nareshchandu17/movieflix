@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { Invoice } from "@/models/Invoice";
+import { authOptions } from "@/features/authentication/services/auth";
+import { Invoice } from "@/features/payments/models/Invoice";
 import connectDB from "@/lib/db";
 
 export async function GET(

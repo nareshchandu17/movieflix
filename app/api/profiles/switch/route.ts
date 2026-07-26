@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { clearActiveProfile } from '@/lib/active-profile-manager';
+import { authOptions } from '@/features/authentication/services/auth';
+import { clearActiveProfile } from '@/features/profile/services/active-profile-manager';
 import { cookies } from 'next/headers';
 
 // POST /api/profiles/switch - clear active profile and redirect to selection

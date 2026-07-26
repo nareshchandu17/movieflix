@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import connectDB from "@/lib/db";
-import Collection from "@/models/Collection";
-import CollectionItem from "@/models/CollectionItem";
+import Collection from "@/features/history/models/Collection";
+import CollectionItem from "@/features/history/models/CollectionItem";
 
 export async function POST(req: NextRequest) {
   try {

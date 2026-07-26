@@ -29,18 +29,18 @@ const fallbackGenres = {
 
 async function genresHandler(request: NextRequest) {
   try {
-    console.log("Fetching genres from TMDB API...");
+
     
     // Test API connectivity first
     const healthCheck = await api.healthCheck();
     if (!healthCheck.healthy) {
       console.error("TMDB API health check failed:", healthCheck.error);
-      console.log("Using fallback genres instead");
+
       return NextResponse.json(fallbackGenres);
     }
     
     const data = await api.getGenres();
-    console.log("Successfully fetched genres:", data);
+
     
     return NextResponse.json({
       success: true,
@@ -50,7 +50,7 @@ async function genresHandler(request: NextRequest) {
     console.error("Error fetching genres:", error);
     
     // Return fallback genres instead of error
-    console.log("Using fallback genres due to API error");
+
     return NextResponse.json({
       success: true,
       data: fallbackGenres

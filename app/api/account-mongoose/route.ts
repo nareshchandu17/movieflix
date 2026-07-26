@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB, User, Subscription, PaymentMethod, Profile, Device, NotificationPreference } from '@/lib/mongoose';
+import connectDB from '@/lib/db';
+import User from '@/features/authentication/models/User';
+import Subscription from '@/features/payments/models/Subscription';
+import PaymentMethod from '@/features/payments/models/PaymentMethod';
+import Profile from '@/features/profile/models/Profile';
+import Device from '@/features/authentication/models/Device';
+import NotificationPreference from '@/features/settings/models/NotificationPreference';
 
 // Mock authentication - in a real app, this would come from next-auth
 const mockUser = {

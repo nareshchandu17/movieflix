@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/features/authentication/services/auth';
 import connectDB from '@/lib/db';
-import ProfileAnalytics from '@/models/ProfileAnalytics';
-import WatchHistory from '@/models/WatchHistory';
+import ProfileAnalytics from '@/features/profile/models/ProfileAnalytics';
+import WatchHistory from '@/features/history/models/WatchHistory';
 
 interface RouteContext {
   params: Promise<{ profileId: string }>;
@@ -45,7 +45,7 @@ export async function GET(
       createdAt: { $gte: monthStart },
     }).lean();
 
-    const weeklyHistory = recentHistory.filter((item) =>
+    const weeklyHistory = recentHistory.filter((item: any) =>
       new Date(item.createdAt) >= weekStart
     );
 

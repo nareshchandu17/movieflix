@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { ActiveStream } from "@/models/ActiveStream";
+import { authOptions } from "@/features/authentication/services/auth";
+import { ActiveStream } from "@/features/history/models/ActiveStream";
 import connectDB from "@/lib/db";
 
 export async function POST(req: NextRequest) {

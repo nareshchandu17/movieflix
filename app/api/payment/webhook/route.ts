@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import crypto from "crypto";
 import { connectDB } from "@/lib/db";
-import Payment from "@/models/Payment";
-import Subscription from "@/models/Subscription";
-import User from "@/models/User";
+import Payment from "@/features/payments/models/Payment";
+import Subscription from "@/features/payments/models/Subscription";
+import User from "@/features/authentication/models/User";
 
 // ============================================================
 // POST /api/payment/webhook
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
       }
 
       default:
-        console.log(`[webhook] Unhandled event: ${event.event}`);
+
     }
 
     return NextResponse.json({ received: true });
@@ -100,30 +101,36 @@ export async function POST(req: NextRequest) {
 // ─── Event Handlers ───────────────────────────────────────────
 
 async function handlePaymentCaptured(payment: any) {
-  const paymentRecord = await Payment.findOneAndUpdate(
-    { razorpayOrderId: payment.order_id },
-    {
-      razorpayPaymentId: payment.id,
-      status: "captured",
-    },
-    { new: true }
-  );
+  const sessionMongoose = await mongoose.startSession();
+  try {
+    await sessionMongoose.withTransaction(async () => {
+      const paymentRecord = await Payment.findOneAndUpdate(
+        { razorpayOrderId: payment.order_id },
+        {
+          razorpayPaymentId: payment.id,
+          status: "captured",
+        },
+        { new: true, session: sessionMongoose }
+      );
 
-  if (!paymentRecord) return;
+      if (!paymentRecord) return;
 
-  const sub = await Subscription.findOneAndUpdate(
-    { _id: paymentRecord.subscriptionId },
-    { status: "active" },
-    { new: true }
-  );
+      const sub = await Subscription.findOneAndUpdate(
+        { _id: paymentRecord.subscriptionId },
+        { status: "active" },
+        { new: true, session: sessionMongoose }
+      );
 
-  await User.findByIdAndUpdate(paymentRecord.userId, {
-    subscription: paymentRecord.planId,
-    subscriptionStatus: "active",
-    subscriptionExpiry: sub?.currentPeriodEnd,
-  });
+      await User.findByIdAndUpdate(paymentRecord.userId, {
+        subscription: paymentRecord.planId,
+        subscriptionStatus: "active",
+        subscriptionExpiry: sub?.currentPeriodEnd,
+      }, { session: sessionMongoose });
+    });
 
-  console.log(`[webhook] Payment captured: ${payment.id}`);
+  } finally {
+    await sessionMongoose.endSession();
+  }
 }
 
 async function handlePaymentFailed(payment: any) {
@@ -132,7 +139,7 @@ async function handlePaymentFailed(payment: any) {
     { status: "failed" }
   );
 
-  console.log(`[webhook] Payment failed: ${payment.id}`);
+
 }
 
 async function handleRefundCreated(refund: any) {
@@ -141,52 +148,63 @@ async function handleRefundCreated(refund: any) {
     { status: "refunded" }
   );
 
-  console.log(`[webhook] Refund created: ${refund.id}`);
+
 }
 
 async function handleSubscriptionCharged(sub: any) {
-  // Handle recurring subscription renewal
-  const subscription = await Subscription.findOne({
-    razorpaySubscriptionId: sub.id,
-  });
+  const sessionMongoose = await mongoose.startSession();
+  try {
+    await sessionMongoose.withTransaction(async () => {
+      const subscription = await Subscription.findOne({
+        razorpaySubscriptionId: sub.id,
+      }).session(sessionMongoose);
 
-  if (subscription) {
-    const now = new Date();
-    const end = new Date(now);
+      if (subscription) {
+        const now = new Date();
+        const end = new Date(now);
 
-    if (subscription.billingCycle === "monthly") {
-      end.setMonth(end.getMonth() + 1);
-    } else {
-      end.setFullYear(end.getFullYear() + 1);
-    }
+        if (subscription.billingCycle === "monthly") {
+          end.setMonth(end.getMonth() + 1);
+        } else {
+          end.setFullYear(end.getFullYear() + 1);
+        }
 
-    subscription.currentPeriodStart = now;
-    subscription.currentPeriodEnd = end;
-    subscription.status = "active";
-    await subscription.save();
+        subscription.currentPeriodStart = now;
+        subscription.currentPeriodEnd = end;
+        subscription.status = "active";
+        await subscription.save({ session: sessionMongoose });
 
-    await User.findByIdAndUpdate(subscription.userId, {
-      subscription: subscription.planId,
-      subscriptionStatus: "active",
-      subscriptionExpiry: end,
+        await User.findByIdAndUpdate(subscription.userId, {
+          subscription: subscription.planId,
+          subscriptionStatus: "active",
+          subscriptionExpiry: end,
+        }, { session: sessionMongoose });
+      }
     });
 
-    console.log(`[webhook] Subscription renewed: ${sub.id}`);
+  } finally {
+    await sessionMongoose.endSession();
   }
 }
 
 async function handleSubscriptionCancelled(sub: any) {
-  const subscription = await Subscription.findOneAndUpdate(
-    { razorpaySubscriptionId: sub.id },
-    { status: "cancelled" },
-    { new: true }
-  );
+  const sessionMongoose = await mongoose.startSession();
+  try {
+    await sessionMongoose.withTransaction(async () => {
+      const subscription = await Subscription.findOneAndUpdate(
+        { razorpaySubscriptionId: sub.id },
+        { status: "cancelled" },
+        { new: true, session: sessionMongoose }
+      );
 
-  if (subscription) {
-    await User.findByIdAndUpdate(subscription.userId, {
-      subscriptionStatus: "cancelled",
+      if (subscription) {
+        await User.findByIdAndUpdate(subscription.userId, {
+          subscriptionStatus: "cancelled",
+        }, { session: sessionMongoose });
+      }
     });
-  }
 
-  console.log(`[webhook] Subscription cancelled: ${sub.id}`);
+  } finally {
+    await sessionMongoose.endSession();
+  }
 }

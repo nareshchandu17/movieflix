@@ -1,0 +1,373 @@
+/**
+ * @file types.ts
+ * @description Core utility services, backend API clients, or database connectors for MovieFlix services.
+ * Provides enterprise-grade reliability, streaming controls, and robust type safety.
+ * 
+ * @author CHANDU NARESH <nareshchandu27@gmail.com>
+ * @copyright (c) 2026 MovieFlix. All rights reserved.
+ */
+
+export interface TMDBMovie {
+  id: number
+  title: string
+  overview: string
+  poster_path: string | null
+  backdrop_path: string | null
+  release_date: string
+  vote_average: number
+  vote_count: number
+  genre_ids: number[]
+  adult: boolean
+  original_language: string
+  original_title: string
+  popularity: number
+  video: boolean
+}
+
+export interface TMDBTVShow {
+  id: number
+  name: string
+  overview: string
+  poster_path: string | null
+  backdrop_path: string | null
+  first_air_date: string
+  vote_average: number
+  vote_count: number
+  genre_ids: number[]
+  adult: boolean
+  origin_country: string[]
+  original_language: string
+  original_name: string
+  popularity: number
+}
+
+export interface TMDBTrendingResponse {
+  page: number
+  results: (TMDBMovie | TMDBTVShow)[]
+  total_pages: number
+  total_results: number
+}
+
+export interface TMDBMovieResponse {
+  page: number
+  results: TMDBMovie[]
+  total_pages: number
+  total_results: number
+}
+
+export interface TMDBTVResponse {
+  page: number
+  results: TMDBTVShow[]
+  total_pages: number
+  total_results: number
+}
+
+/**
+ * Genre interface for TMDB API responses.
+ * Represents genres returned directly from TMDB with a required numeric ID.
+ */
+export interface TMDBGenre {
+  id: number
+  name: string
+}
+
+/**
+ * Genre interface for internal use in detailed movie/TV responses.
+ * Used when genres are processed internally where ID may be absent.
+ */
+export interface Genre {
+  id?: number
+  name: string
+}
+
+export interface TMDBProductionCompany {
+  id: number
+  logo_path: string | null
+  name: string
+  origin_country: string
+}
+
+export interface TMDBProductionCountry {
+  iso_3166_1: string
+  name: string
+}
+
+export interface TMDBCast {
+  id: number
+  name: string
+  character: string
+  profile_path: string | null
+  order: number
+}
+
+export interface TMDBCrew {
+  id: number
+  name: string
+  job: string
+  department: string
+  profile_path: string | null
+}
+
+export interface TMDBCredits {
+  cast: TMDBCast[]
+  crew: TMDBCrew[]
+}
+
+export interface TMDBVideo {
+  id: string
+  iso_639_1: string
+  iso_3166_1: string
+  key: string
+  name: string
+  site: string
+  size: number
+  type: string
+}
+
+export interface TMDBVideosResponse {
+  id: number
+  results: TMDBVideo[]
+}
+
+export interface TMDBSpokenLanguage {
+  english_name: string
+  iso_639_1: string
+  name: string
+}
+
+export interface TMDBMovieDetail extends Omit<TMDBMovie, 'genre_ids'> {
+  belongs_to_collection: {
+    id: number
+    name: string
+    poster_path: string | null
+    backdrop_path: string | null
+  } | null
+  budget: number
+  genres: Genre[]
+  homepage: string | null
+  imdb_id: string | null
+  production_companies: TMDBProductionCompany[]
+  production_countries: TMDBProductionCountry[]
+  revenue: number
+  runtime: number | null
+  spoken_languages: TMDBSpokenLanguage[]
+  status: string
+  tagline: string | null
+}
+
+export interface TMDBCreatedBy {
+  id: number
+  credit_id: string
+  name: string
+  gender: number
+  profile_path: string | null
+}
+
+export interface TMDBNetwork {
+  id: number
+  logo_path: string | null
+  name: string
+  origin_country: string
+}
+
+export interface TMDBSeason {
+  air_date: string | null
+  episode_count: number
+  id: number
+  name: string
+  overview: string
+  poster_path: string | null
+  season_number: number
+  vote_average: number
+}
+
+/**
+ * Episode summary interface for TMDB TV detail responses.
+ * Represents episode information for last_episode_to_air and next_episode_to_air fields.
+ */
+export interface EpisodeSummary {
+  id: number
+  name: string
+  overview: string
+  vote_average: number
+  vote_count: number
+  air_date: string
+  episode_number: number
+  episode_type: string
+  production_code: string
+  runtime: number | null
+  season_number: number
+  show_id: number
+  still_path: string | null
+}
+
+/**
+ * Detailed episode interface for TMDB episode detail responses.
+ * Extends EpisodeSummary with additional required fields.
+ */
+export interface TMDBEpisodeDetail {
+  id: number
+  name: string
+  overview: string
+  vote_average: number
+  vote_count: number
+  air_date: string
+  episode_number: number
+  production_code: string
+  runtime: number
+  season_number: number
+  show_id: number
+  still_path: string
+}
+
+/**
+ * Detailed season interface for TMDB season detail responses.
+ * Includes full episode list and additional metadata.
+ */
+export interface TMDBSeasonDetail {
+  id: number
+  air_date: string
+  episodes: TMDBEpisodeDetail[]
+  name: string
+  overview: string
+  poster_path: string
+  season_number: number
+  vote_average: number
+}
+
+export interface TMDBTVDetail extends Omit<TMDBTVShow, 'genre_ids'> {
+  created_by: TMDBCreatedBy[]
+  episode_run_time: number[]
+  genres: Genre[]
+  homepage: string
+  in_production: boolean
+  languages: string[]
+  last_air_date: string | null
+  last_episode_to_air: EpisodeSummary | null
+  networks: TMDBNetwork[]
+  next_episode_to_air: EpisodeSummary | null
+  number_of_episodes: number
+  number_of_seasons: number
+  production_companies: TMDBProductionCompany[]
+  production_countries: TMDBProductionCountry[]
+  seasons: TMDBSeason[]
+  spoken_languages: TMDBSpokenLanguage[]
+  status: string
+  tagline: string
+  type: string
+}
+
+export interface TMDBGenresResponse {
+  genres: TMDBGenre[]
+}
+
+export interface TMDBSearchResponse {
+  page: number
+  results: (TMDBMovie | TMDBTVShow)[]
+  total_pages: number
+  total_results: number
+}
+
+// Watchlist types
+export interface WatchlistItem {
+  id: number
+  type: 'movie' | 'tv'
+  title: string
+  poster_path: string | null
+  addedAt: string
+}
+
+// Resume watching types
+export interface ResumeData {
+  id: number
+  type: 'movie' | 'tv'
+  progress: number // percentage 0-100
+  lastWatched: string
+}
+
+export interface TMDBPerson {
+  id: number
+  name: string
+  profile_path: string | null
+  known_for_department: string
+  known_for: Array<{
+    id: number
+    title?: string
+    name?: string
+    poster_path?: string
+  }>
+  biography?: string
+  popularity: number
+  birthday?: string
+  place_of_birth?: string
+}
+
+export interface TMDBPersonImage {
+  aspect_ratio: number
+  height: number
+  iso_639_1: string | null
+  file_path: string
+  vote_average: number
+  vote_count: number
+  width: number
+}
+
+export interface TMDBPersonImages {
+  id: number
+  profiles: TMDBPersonImage[]
+}
+
+export interface TMDBCastCredit {
+  id: number
+  adult: boolean
+  backdrop_path: string | null
+  genre_ids: number[]
+  original_language: string
+  original_title?: string // movie
+  original_name?: string // tv
+  overview: string
+  popularity: number
+  poster_path: string | null
+  release_date?: string // movie
+  first_air_date?: string // tv
+  title?: string // movie
+  name?: string // tv
+  video?: boolean
+  vote_average: number
+  vote_count: number
+  character: string
+  credit_id: string
+  order?: number
+  media_type: 'movie' | 'tv'
+}
+
+export interface TMDBCrewCredit extends Omit<TMDBCastCredit, 'character' | 'order'> {
+  department: string
+  job: string
+}
+
+export interface TMDBPersonCombinedCredits {
+  id: number
+  cast: TMDBCastCredit[]
+  crew: TMDBCrewCredit[]
+}
+
+export interface TMDBWatchProvider {
+  provider_id: number;
+  provider_name: string;
+  logo_path: string;
+  display_priority: number;
+}
+
+export interface TMDBWatchProvidersResponse {
+  id: number;
+  results: {
+    [countryCode: string]: {
+      link?: string;
+      flatrate?: TMDBWatchProvider[];
+      rent?: TMDBWatchProvider[];
+      buy?: TMDBWatchProvider[];
+      free?: TMDBWatchProvider[];
+    }
+  }
+}

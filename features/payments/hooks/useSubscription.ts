@@ -1,0 +1,102 @@
+/**
+ * @file useSubscription.ts
+ * @description Custom React state hook for managing reactive client-side workflows and events.
+ * Provides enterprise-grade reliability, streaming controls, and robust type safety.
+ * 
+ * @author CHANDU NARESH <nareshchandu27@gmail.com>
+ * @copyright (c) 2026 MovieFlix. All rights reserved.
+ */
+
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { ISubscription, IPayment, SubscriptionPlan, PLANS } from "@/features/payments/types/payment";
+
+// ============================================================
+// useSubscription Hook — MovieFlix
+// ============================================================
+
+interface SubscriptionData {
+  subscription: (ISubscription & { plan: SubscriptionPlan; daysRemaining: number }) | null;
+  payments: (IPayment & { amountInRupees: number; plan: SubscriptionPlan })[];
+  hasActiveSubscription: boolean;
+}
+
+interface UseSubscriptionReturn extends SubscriptionData {
+  loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+  cancelSubscription: () => Promise<{ success: boolean; message?: string; error?: string }>;
+  cancelling: boolean;
+}
+
+export function useSubscription(): UseSubscriptionReturn {
+  const { status } = useSession();
+  const [data, setData] = useState<SubscriptionData>({
+    subscription: null,
+    payments: [],
+    hasActiveSubscription: false,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  const fetchSubscription = useCallback(async () => {
+    if (status === 'loading') return;
+    if (status === 'unauthenticated') {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const res = await fetch("/api/payment/subscription");
+      if (!res.ok) throw new Error("Failed to fetch subscription");
+
+      const json = await res.json();
+      setData(json);
+    } catch (err: any) {
+      setError(err.message || "Failed to load subscription");
+    } finally {
+      setLoading(false);
+    }
+  }, [status]);
+
+  useEffect(() => {
+    fetchSubscription();
+  }, [fetchSubscription]);
+
+  const cancelSubscription = useCallback(async () => {
+    try {
+      setCancelling(true);
+      const res = await fetch("/api/payment/subscription", {
+        method: "DELETE",
+      });
+
+      const json = await res.json();
+
+      if (res.ok) {
+        await fetchSubscription(); // Refresh data
+        return { success: true, message: json.message };
+      } else {
+        return { success: false, error: json.error };
+      }
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    } finally {
+      setCancelling(false);
+    }
+  }, [fetchSubscription]);
+
+  return {
+    ...data,
+    loading,
+    error,
+    refetch: fetchSubscription,
+    cancelSubscription,
+    cancelling,
+  };
+}

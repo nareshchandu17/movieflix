@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db";
-import Movie from "@/models/Movie";
-import Series from "@/models/Series";
+import Movie from "@/features/movie/models/Movie";
+import Series from "@/features/series/models/Series";
 
 export async function GET(req: NextRequest) {
   try {

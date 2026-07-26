@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { matchMoodToMovies } from "@/lib/moodEngine";
-import Movie from "@/models/Movie";
-import Series from "@/models/Series";
+import { matchMoodToMovies } from "@/features/ai/services/moodEngine";
+import Movie from "@/features/movie/models/Movie";
+import Series from "@/features/series/models/Series";
 
 export async function POST(request: NextRequest) {
   try {

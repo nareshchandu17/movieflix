@@ -1,26 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db/mongodb";
-import { Action } from "@/lib/models/Action";
+import { Action } from "@/features/admin/models/Action";
 import { fetchAPI } from "@/lib/api";
 import { TMDBMovieResponse } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("🎬 Action API called");
+
     
     // Check environment variables first
     if (!process.env.MONGODB_URI) {
       console.error("❌ MONGODB_URI not found in environment");
-      console.log("🔧 Using default MongoDB connection");
+
     }
     
-    console.log("🔌 Connecting to database...");
+
     try {
       await dbConnect();
-      console.log("✅ Database connected successfully");
+
     } catch (dbError) {
       console.error("❌ Database connection failed:", dbError);
-      console.log("🌐 Proceeding with TMDB API fallback...");
+
       
       // Skip MongoDB and go directly to TMDB
       return await fetchFromTMDB(request);
@@ -30,12 +30,12 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     
-    console.log(`📊 Fetching page ${page}, limit ${limit}`);
+
 
     const skip = (page - 1) * limit;
 
     // Try to fetch from MongoDB first
-    console.log("🔍 Checking MongoDB for action movies...");
+
     try {
       let actions = await Action.find()
         .skip(skip)
@@ -44,15 +44,15 @@ export async function GET(request: NextRequest) {
 
       let total = await Action.countDocuments();
       
-      console.log(`📽️ Found ${actions.length} movies in MongoDB, total: ${total}`);
+
 
       // If no data in MongoDB, fallback to TMDB API
       if (actions.length === 0) {
-        console.log("🌐 No action movies in MongoDB, fetching from TMDB...");
+
         return await fetchFromTMDB(request);
       }
 
-      console.log("✅ Returning MongoDB data");
+
       return NextResponse.json(
         {
           results: actions,
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       );
     } catch (mongoError) {
       console.error("❌ MongoDB query failed:", mongoError);
-      console.log("🌐 Falling back to TMDB API...");
+
       return await fetchFromTMDB(request);
     }
   } catch (error) {
@@ -106,7 +106,7 @@ async function fetchFromTMDB(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "10");
   
-  if (!process.env.NEXT_PUBLIC_TMDB_API_KEY) {
+  if (!process.env.TMDB_API_KEY) {
     console.error("❌ TMDB API key not found");
     throw new Error("TMDB API key is missing");
   }
@@ -119,12 +119,12 @@ async function fetchFromTMDB(request: NextRequest) {
     include_video: 'false',
     page: page.toString(),
     limit: limit.toString(),
-    api_key: process.env.NEXT_PUBLIC_TMDB_API_KEY || ''
+    api_key: process.env.TMDB_API_KEY || ''
   });
 
-  console.log("🎬 Fetching from TMDB...");
+
   const tmdbResponse = await fetchAPI<TMDBMovieResponse>(`${baseUrl}?${params}`);
-  console.log(`✅ TMDB returned ${tmdbResponse.results?.length || 0} movies`);
+
   
   return NextResponse.json({
     results: tmdbResponse.results || [],

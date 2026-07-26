@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { RedisManager } from "@/lib/redis";
 
-const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
 interface MoodMapping {
@@ -69,7 +69,7 @@ const LANGUAGE_DISTRIBUTION = [
 ];
 
 async function fetchMoviesFromTMDB(language: string, genres: string, count: number) {
-  let movies: any[] = [];
+  let movies: unknown[] = [];
   let page = 1;
   let currentVoteThreshold = 50;
 
@@ -94,7 +94,7 @@ async function fetchMoviesFromTMDB(language: string, genres: string, count: numb
 
     // 2. Fallback attempt with lower threshold (>= 20 votes) if we got NOTHING
     if (movies.length === 0) {
-      console.log(`[Mood Engine] Relaxing threshold for ${language} to 20 votes...`);
+
       currentVoteThreshold = 20;
       page = 1; // Reset page for new search
       while (movies.length < count && page <= 3) {
@@ -131,12 +131,12 @@ export async function GET(req: NextRequest) {
     const cacheKey = `ai_mood:${mood}`;
     const cachedData = await RedisManager.get(cacheKey);
     if (cachedData) {
-      console.log(`[Mood Engine] Serving cached results for: ${mood}`);
+
       return NextResponse.json(cachedData);
     }
 
     // 2. Fetch concurrently
-    console.log(`[Mood Engine] Fetching fresh data for: ${mood}`);
+
     const genreIds = MOOD_CONFIG[mood].genres;
     
     const requests = LANGUAGE_DISTRIBUTION.map((lang) => 
@@ -145,14 +145,14 @@ export async function GET(req: NextRequest) {
 
     const results = await Promise.all(requests);
     
-    let finalMovies: any[] = [];
+    let finalMovies: unknown[] = [];
     results.forEach((langResults, index) => {
       finalMovies = [...finalMovies, ...langResults];
     });
 
     // 3. Safety Fallback (Ensure >= 100 movies)
     if (finalMovies.length < 100) {
-      console.log(`[Mood Engine] Distribution undershoot (${finalMovies.length}), fetching filler...`);
+
       const filler = await fetchMoviesFromTMDB("en", genreIds, 100 - finalMovies.length);
       finalMovies = [...finalMovies, ...filler];
     }
@@ -172,7 +172,7 @@ export async function GET(req: NextRequest) {
         tamil: results[3].length,
         kannada: results[4].length,
       },
-      movies: finalMovies.map(m => ({
+      movies: finalMovies.map((m: any) => ({
         id: m.id,
         title: m.title,
         poster_path: m.poster_path,

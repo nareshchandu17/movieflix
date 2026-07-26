@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import Subscription from "@/models/Subscription";
-import { PLANS } from "@/types/payment";
+import { authOptions } from "@/features/authentication/services/auth";
+import Subscription from "@/features/payments/models/Subscription";
+import { PLANS } from "@/features/payments/types/payment";
 import connectDB from "@/lib/db";
 
 export async function GET(req: NextRequest) {

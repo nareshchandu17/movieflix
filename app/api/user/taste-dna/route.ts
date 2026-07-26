@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { UserPreferences } from '@/models/UserPreferences';
-import Profile from '@/models/Profile';
-import { getGeminiService } from '@/lib/geminiService';
-import dbConnect from '@/lib/mongodb';
+import { authOptions } from '@/features/authentication/services/auth';
+import { UserPreferences } from '@/features/authentication/models/UserPreferences';
+import Profile from '@/features/profile/models/Profile';
+import { getGeminiService } from '@/features/ai/services/geminiService';
+import connectDB from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectDB();
 
     // 1. Verify Authentication
     const session = await getServerSession(authOptions);

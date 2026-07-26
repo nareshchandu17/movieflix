@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import Subscription from '@/lib/models/Subscription';
-import Plan from '@/lib/models/Plan';
-import User from '@/models/User';
+import Subscription from '@/features/payments/models/Subscription';
+import Plan from '@/features/payments/models/Plan';
+import User from '@/features/authentication/models/User';
 
 export async function GET(req: NextRequest) {
   try {
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       hasAccess: true,
       allowedFeatures: plan.features || [],
       restrictedFeatures: [],
-      expiresAt: subscription.endDate
+      expiresAt: subscription.currentPeriodEnd
     };
 
     // Apply restrictions for BASIC plan

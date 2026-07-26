@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import WatchGroup from "@/models/WatchGroup";
-import MemberStreak from "@/models/MemberStreak";
-import GroupActivity from "@/models/GroupActivity";
-import User from "@/models/User";
+import WatchGroup from "@/features/watch-party/models/WatchGroup";
+import MemberStreak from "@/features/profile/models/MemberStreak";
+import GroupActivity from "@/features/watch-party/models/GroupActivity";
+import User from "@/features/authentication/models/User";
 import connectDB from "@/lib/db";
 
 export async function GET(request: NextRequest) {

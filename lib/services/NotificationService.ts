@@ -8,7 +8,7 @@
  */
 
 import { addNotificationToQueue, NotificationJobData } from "@/lib/queue/notificationQueue";
-import { NotificationType } from "@/types/notifications";
+import { NotificationType } from "@/features/settings/types/notifications";
 
 export class NotificationService {
   /**
@@ -18,7 +18,7 @@ export class NotificationService {
   static async send(data: NotificationJobData) {
     try {
       await addNotificationToQueue(data);
-      console.log(`[NotificationService] Dispatched ${data.type} for user ${data.userId}`);
+
     } catch (error) {
       console.error("[NotificationService] Dispatch error:", error);
     }

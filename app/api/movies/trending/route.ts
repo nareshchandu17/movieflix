@@ -36,7 +36,7 @@ export async function GET(req: Request) {
     logInfo("Cache miss - fetching trending movies from TMDB API");
     
     // Using existing TMDB Key from env
-    const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+    const apiKey = process.env.TMDB_API_KEY;
     if (!apiKey) {
       throw new Error("TMDB API key is missing");
     }

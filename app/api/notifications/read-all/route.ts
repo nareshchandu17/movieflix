@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import connectDB from "@/lib/db";
-import Notification from "@/lib/models/Notification";
+import Notification from "@/features/settings/models/Notification";
 import RedisManager from "@/lib/redis";
 
 export async function PATCH(req: NextRequest) {

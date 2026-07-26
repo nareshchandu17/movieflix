@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import { connectDB } from "@/lib/db";
-import { verifyRazorpaySignature, fetchRazorpayPayment } from "@/lib/razorpay";
-import Payment from "@/models/Payment";
-import Subscription from "@/models/Subscription";
-import User from "@/models/User";
+import { verifyRazorpaySignature, fetchRazorpayPayment } from "@/features/payments/services/razorpay";
+import Payment from "@/features/payments/models/Payment";
+import Subscription from "@/features/payments/models/Subscription";
+import User from "@/features/authentication/models/User";
 import { z } from "zod";
 
 // ============================================================
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     const isDev = process.env.NODE_ENV === "development";
 
     if (isMock && isDev) {
-      console.log("🛠️ Processing MOCK payment verification for Order:", razorpay_order_id);
+
     } else {
       const isValid = verifyRazorpaySignature({
         orderId: razorpay_order_id,
@@ -103,44 +104,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ─── Update Payment Record ──────────────────────────────
-    paymentRecord.razorpayPaymentId = razorpay_payment_id;
-    paymentRecord.razorpaySignature = razorpay_signature;
-    paymentRecord.status = "captured";
-    await paymentRecord.save();
+    // ─── Execute Transaction ────────────────────────────────
+    let subscription: any;
+    
+    const sessionMongoose = await mongoose.startSession();
+    try {
+      await sessionMongoose.withTransaction(async () => {
+        paymentRecord.razorpayPaymentId = razorpay_payment_id;
+        paymentRecord.razorpaySignature = razorpay_signature;
+        paymentRecord.status = "captured";
+        await paymentRecord.save({ session: sessionMongoose });
 
-    // ─── Deactivate previous subscriptions ─────────────────
-    await Subscription.updateMany(
-      { userId, status: "active", _id: { $ne: subscriptionId } },
-      { status: "cancelled", cancelAtPeriodEnd: false }
-    );
+        await Subscription.updateMany(
+          { userId, status: "active", _id: { $ne: subscriptionId } },
+          { status: "cancelled", cancelAtPeriodEnd: false },
+          { session: sessionMongoose }
+        );
 
-    // ─── Activate new subscription ──────────────────────────
-    const subscription = await Subscription.findOneAndUpdate(
-      { _id: subscriptionId, userId },
-      {
-        status: "active",
-        razorpaySubscriptionId: razorpay_payment_id,
-      },
-      { new: true }
-    );
+        subscription = await Subscription.findOneAndUpdate(
+          { _id: subscriptionId, userId },
+          {
+            status: "active",
+            razorpaySubscriptionId: razorpay_payment_id,
+          },
+          { new: true, session: sessionMongoose }
+        );
 
-    if (!subscription) {
-      console.warn("❌ Payment verification failed: Subscription ID mismatch:", subscriptionId);
-      return NextResponse.json(
-        { error: "Subscription not found" },
-        { status: 404 }
-      );
+        if (!subscription) {
+          throw new Error(`Subscription ID mismatch: ${subscriptionId}`);
+        }
+
+        await User.findByIdAndUpdate(userId, {
+          subscription: subscription.planId,
+          subscriptionStatus: "active",
+          subscriptionExpiry: subscription.currentPeriodEnd,
+        }, { session: sessionMongoose });
+      });
+    } finally {
+      await sessionMongoose.endSession();
     }
 
-    // ─── Update User's subscription tier ───────────────────
-    await User.findByIdAndUpdate(userId, {
-      subscription: subscription.planId,
-      subscriptionStatus: "active",
-      subscriptionExpiry: subscription.currentPeriodEnd,
-    });
 
-    console.log("✅ Payment verification success for User:", userId, "Plan:", subscription.planId);
 
     return NextResponse.json({
       success: true,

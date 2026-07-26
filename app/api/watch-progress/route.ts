@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import { WatchProgress } from "@/lib/models/WatchProgress";
+import { WatchProgress } from "@/features/history/models/WatchProgress";
 
 export async function POST(request: NextRequest) {
   try {

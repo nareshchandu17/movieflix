@@ -40,6 +40,9 @@ export async function GET(request: NextRequest) {
 
     response.headers.set("X-RateLimit-Limit", limit.limit.toString());
     response.headers.set("X-RateLimit-Remaining", limit.remaining.toString());
+    
+    // Cache at the Edge CDN for 60 seconds, allow stale serving for up to 5 minutes
+    response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
 
     return response;
   } catch (error: any) {

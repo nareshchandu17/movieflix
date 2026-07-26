@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import { WatchCircle, WatchParty, CircleStreak } from '@/models/WatchCircle';
+import { WatchCircle, WatchParty, CircleStreak } from '@/features/social/models/WatchCircle';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/features/authentication/services/auth';
 import mongoose from 'mongoose';
 import type { Session } from 'next-auth';
 

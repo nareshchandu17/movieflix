@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import ReactionClip from '@/models/ReactionClip';
+import ReactionClip from '@/features/social/models/ReactionClip';
 
 export async function POST(
   req: NextRequest,

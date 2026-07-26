@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import { connectDB } from "@/lib/db";
 import {
   createRazorpayOrder,
   generateReceiptId,
-} from "@/lib/razorpay";
-import Payment from "@/models/Payment";
-import Subscription from "@/models/Subscription";
-import { PlanTier, BillingCycle, PLANS } from "@/types/payment";
+} from "@/features/payments/services/razorpay";
+import Payment from "@/features/payments/models/Payment";
+import Subscription from "@/features/payments/models/Subscription";
+import { PlanTier, BillingCycle, PLANS } from "@/features/payments/types/payment";
 import { z } from "zod";
 
 // ============================================================
@@ -82,31 +83,42 @@ export async function POST(req: NextRequest) {
       periodEnd.setFullYear(periodEnd.getFullYear() + 1);
     }
 
-    const subscription = await Subscription.create({
-      userId,
-      planId,
-      status: "inactive", // becomes active on payment success
-      billingCycle,
-      currentPeriodStart: now,
-      currentPeriodEnd: periodEnd,
-      cancelAtPeriodEnd: false,
-    });
+    // ─── Execute Transaction ────────────────────────────────
+    let subscription: any;
+    
+    const sessionMongoose = await mongoose.startSession();
+    try {
+      await sessionMongoose.withTransaction(async () => {
+        const subscriptions = await Subscription.create([{
+          userId,
+          planId,
+          status: "inactive",
+          billingCycle,
+          currentPeriodStart: now,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+        }], { session: sessionMongoose });
+        
+        subscription = subscriptions[0];
 
-    // ─── Create Payment Record ──────────────────────────────
-    await Payment.create({
-      userId,
-      subscriptionId: subscription._id.toString(),
-      razorpayOrderId: razorpayOrder.id,
-      amount: razorpayOrder.amount as number,
-      currency: razorpayOrder.currency,
-      status: "created",
-      planId,
-      billingCycle,
-      metadata: {
-        receipt,
-        previousSubscriptionId: existingSub?._id?.toString(),
-      },
-    });
+        await Payment.create([{
+          userId,
+          subscriptionId: subscription._id.toString(),
+          razorpayOrderId: razorpayOrder.id,
+          amount: razorpayOrder.amount as number,
+          currency: razorpayOrder.currency,
+          status: "created",
+          planId,
+          billingCycle,
+          metadata: {
+            receipt,
+            previousSubscriptionId: existingSub?._id?.toString(),
+          },
+        }], { session: sessionMongoose });
+      });
+    } finally {
+      await sessionMongoose.endSession();
+    }
 
     // ─── Response ───────────────────────────────────────────
     return NextResponse.json({

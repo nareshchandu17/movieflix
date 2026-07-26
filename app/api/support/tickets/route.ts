@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/features/authentication/services/auth';
 import connectDB from '@/lib/db';
-import SupportTicket from '@/models/SupportTicket';
+import SupportTicket from '@/features/settings/models/SupportTicket';
 
 // GET: Fetch user's support tickets
 export async function GET() {

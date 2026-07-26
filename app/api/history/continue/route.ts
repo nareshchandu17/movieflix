@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import WatchHistory from '@/lib/models/WatchHistory';
+import WatchHistory from '@/features/history/models/WatchHistory';
 
 // GET /api/history/continue - Get continue watching items for profile
 export async function GET(req: NextRequest) {

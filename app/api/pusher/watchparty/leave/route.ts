@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import connectDB from "@/lib/db";
-import WatchPartyRoom from "@/models/WatchPartyRoom";
+import WatchPartyRoom from "@/features/watch-party/models/WatchPartyRoom";
 import { triggerRoomEvent } from "@/lib/pusher/server";
 
 export async function POST(req: NextRequest) {

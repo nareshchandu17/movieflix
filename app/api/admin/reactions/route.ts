@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import ReactionClip from '@/models/ReactionClip';
+import ReactionClip from '@/features/social/models/ReactionClip';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/features/authentication/services/auth';
 
 /**
  * GET: List reactions for moderation.

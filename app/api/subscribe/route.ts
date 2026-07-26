@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import Plan from '@/lib/models/Plan';
-import PaymentAttempt from '@/lib/models/PaymentAttempt';
-import Subscription from '@/lib/models/Subscription';
-import User from '@/models/User';
+import Plan from '@/features/payments/models/Plan';
+import PaymentAttempt from '@/features/payments/models/PaymentAttempt';
+import Subscription from '@/features/payments/models/Subscription';
+import User from '@/features/authentication/models/User';
 
 export async function POST(req: NextRequest) {
   try {

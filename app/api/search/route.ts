@@ -7,10 +7,10 @@ import { GatewayClients } from "@/lib/gateway/clients";
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
   const { searchParams } = new URL(request.url);
-  
+
   // 1. Validation
   const validated = SearchSchema.safeParse({
-    query: searchParams.get("query"),
+    query: searchParams.get("query") || searchParams.get("q") || "",
     page: searchParams.get("page"),
     type: searchParams.get("type"),
   });
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   // 2. Rate Limiting
   const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
   const limit = await gatewayRateLimit(ip, RATE_LIMIT_POLICIES.SEARCH);
-  
+
   if (!limit.allowed) {
     return createGatewayError("Too many search requests. Please try again in a minute.", 429);
   }

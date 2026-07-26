@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import connectDB from "@/lib/db";
-import User from "@/models/User";
-import WatchHistory from "@/models/WatchHistory";
-import Movie from "@/models/Movie";
-import Series from "@/models/Series";
+import User from "@/features/authentication/models/User";
+import WatchHistory from "@/features/history/models/WatchHistory";
+import Movie from "@/features/movie/models/Movie";
+import Series from "@/features/series/models/Series";
 import { withContentFilter } from "@/lib/contentFilterMiddleware";
 
 async function recommendationsHandler(req: NextRequest) {
@@ -33,7 +33,7 @@ async function recommendationsHandler(req: NextRequest) {
     let preferredActors = new Set<string>();
 
     for (const item of history) {
-        const contentModel = item.contentType === 'Movie' ? Movie : Series;
+        const contentModel = item.contentType === 'movie' ? Movie : Series;
         const content = await contentModel.findById(item.contentId);
         
         if (content) {

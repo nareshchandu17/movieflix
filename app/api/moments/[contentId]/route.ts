@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import MomentRegistry from "@/models/MomentRegistry";
+import MomentRegistry from "@/features/ai/models/MomentRegistry";
 import connectDB from "@/lib/db";
 
 export async function GET(

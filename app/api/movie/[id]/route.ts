@@ -3,6 +3,7 @@ import { MovieDetailsSchema } from "@/lib/gateway/schemas";
 import { createGatewayResponse, createGatewayError } from "@/lib/gateway/response";
 import { gatewayRateLimit, RATE_LIMIT_POLICIES } from "@/lib/gateway/rate-limiter";
 import { GatewayClients } from "@/lib/gateway/clients";
+import { getAPIErrorMessage, hasCriticalAPIKeys } from "@/lib/api-config";
 
 export async function GET(
   request: NextRequest,
@@ -10,6 +11,11 @@ export async function GET(
 ) {
   const startTime = Date.now();
   const { id: paramId } = await params;
+  
+  // 0. API Key Validation
+  if (!hasCriticalAPIKeys()) {
+    return createGatewayError(getAPIErrorMessage('tmdb'), 503);
+  }
   
   // 1. Validation
   const validated = MovieDetailsSchema.safeParse({

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import ContentSegment from "@/models/ContentSegment";
-import NarrativeSnapshot from "@/models/NarrativeSnapshot";
-import Movie from "@/models/Movie";
+import ContentSegment from "@/features/ai/models/ContentSegment";
+import NarrativeSnapshot from "@/features/ai/models/NarrativeSnapshot";
+import Movie from "@/features/movie/models/Movie";
 import connectDB from "@/lib/db";
 
 const sampleNarrativeData = [

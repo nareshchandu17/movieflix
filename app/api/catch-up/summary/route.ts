@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { getSkipSafeSummary } from "@/lib/narrativeEngine";
+import { getSkipSafeSummary } from "@/features/ai/services/narrativeEngine";
 
 export async function POST(request: NextRequest) {
   try {

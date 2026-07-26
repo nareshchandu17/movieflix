@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/features/authentication/services/auth';
 import connectDB from '@/lib/db';
-import AccountSettings from '@/models/AccountSettings';
-import User from '@/models/User';
-import Subscription from '@/models/Subscription';
+import AccountSettings from '@/features/authentication/models/AccountSettings';
+import User from '@/features/authentication/models/User';
+import Subscription from '@/features/payments/models/Subscription';
 
 export async function GET() {
   try {

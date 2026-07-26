@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { getLastUsedProfile } from '@/lib/active-profile-manager';
+import { authOptions } from '@/features/authentication/services/auth';
+import { getLastUsedProfile } from '@/features/profile/services/active-profile-manager';
 
 // GET /api/profiles/last-used - get user's last used profile for session sync
 export async function GET(req: NextRequest) {

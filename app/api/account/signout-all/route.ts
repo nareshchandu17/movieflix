@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/features/authentication/services/auth';
 import connectDB from '@/lib/db';
-import LoginActivity from '@/models/LoginActivity';
-import Device from '@/models/Device';
+import LoginActivity from '@/features/authentication/models/LoginActivity';
+import Device from '@/features/authentication/models/Device';
 import { NotificationService } from '@/lib/services/NotificationService';
 
 export async function DELETE() {

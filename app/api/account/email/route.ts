@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/features/authentication/services/auth';
 import connectDB from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import User from '@/models/User';
-import AccountSettings from '@/models/AccountSettings';
+import User from '@/features/authentication/models/User';
+import AccountSettings from '@/features/authentication/models/AccountSettings';
 import { NotificationService } from '@/lib/services/NotificationService';
 
 export async function PUT(request: NextRequest) {
