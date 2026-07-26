@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import MoodProfile from '@/models/MoodProfile';
-import Movie from '@/models/Movie';
+import MoodProfile from '@/features/ai/models/MoodProfile';
+import Movie from '@/features/movie/models/Movie';
 import connectDB from '@/lib/db';
 
 const sampleMoodData = [
@@ -77,11 +77,11 @@ const sampleMoodData = [
 ];
 
 async function seedMoodProfiles() {
-  console.log('🎬 Seeding Mood Profiles for Mood-to-Movie Engine\n');
+
   
   try {
     await connectDB();
-    console.log('✅ Connected to MongoDB');
+
 
     for (const data of sampleMoodData) {
       const movie = await Movie.findOne({ title: data.title });
@@ -96,19 +96,19 @@ async function seedMoodProfiles() {
           },
           { upsert: true, new: true }
         );
-        console.log(`✅ Seeded mood profile for: ${title}`);
+
       } else {
-        console.log(`⚠️ Movie not found in DB, skipping: ${data.title}`);
+
       }
     }
 
-    console.log('\n🎯 Mood Engine seeding complete!');
+
 
   } catch (error: any) {
     console.error('❌ Failed to seed mood profiles:', error.message);
   } finally {
     await mongoose.disconnect();
-    console.log('🔌 Disconnected from database');
+
   }
 }
 

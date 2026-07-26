@@ -17,7 +17,7 @@ try {
         }
       }
     });
-    console.log('📖 Loaded .env.local manually');
+
   }
 } catch (e) {
   console.warn('⚠️ Failed to load .env.local:', e);
@@ -190,18 +190,18 @@ const comprehensiveMoodData = [
 ];
 
 async function seedComprehensiveMoods() {
-  console.log('🚀 Starting COMPREHENSIVE Mood Engine Seeding...');
-  console.log('🎯 Targeting 60% Tollywood / 40% Global content\n');
+
+
 
   try {
     // Dynamic imports after env is loaded
     const mongoose = (await import('mongoose')).default;
     const connectDB = (await import('../lib/db')).default;
-    const Movie = (await import('../models/Movie')).default;
-    const MoodProfile = (await import('../models/MoodProfile')).default;
+    const Movie = (await import('../features/movie/models/Movie')).default;
+    const MoodProfile = (await import('../features/ai/models/MoodProfile')).default;
 
     await connectDB();
-    console.log('✅ Connected to MongoDB');
+
 
     for (const data of comprehensiveMoodData) {
       // 1. Ensure Movie exists
@@ -230,11 +230,11 @@ async function seedComprehensiveMoods() {
         { upsert: true, new: true }
       );
 
-      console.log(`✅ Seeded: [${data.language.toUpperCase()}] ${data.title}`);
+
     }
 
-    console.log('\n✨ Seeding successful! Your Mood Engine is now balanced and ready.');
-    console.log('📊 Total Profiles: ', await MoodProfile.countDocuments());
+
+
 
     await mongoose.disconnect();
     process.exit(0);

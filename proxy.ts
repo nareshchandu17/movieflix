@@ -30,7 +30,7 @@ function getSecurityHeaders(): Record<string, string> {
     "X-Frame-Options": "DENY",
     "X-XSS-Protection": "1; mode=block",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; form-action 'self' https://accounts.google.com;",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; form-action 'self' https://accounts.google.com; frame-src 'self' https://www.youtube.com;",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   };
@@ -78,7 +78,7 @@ function createEdgeRateLimiter(maxRequests: number, windowMs: number) {
   };
 }
 
-const authRateLimiter = createEdgeRateLimiter(5, 15 * 60 * 1000);
+const authRateLimiter = createEdgeRateLimiter(15, 15 * 60 * 1000);
 const generalRateLimiter = createEdgeRateLimiter(100, 60 * 1000);
 
 function isAllowedApiOrigin(req: NextRequest) {
@@ -115,10 +115,17 @@ export async function proxy(req: NextRequest) {
   const clientIp = getClientIp(req);
 
   try {
+    const isNextAuthReadRoute =
+      req.method === "GET" &&
+      (pathname.startsWith("/api/auth/session") ||
+        pathname.startsWith("/api/auth/providers") ||
+        pathname.startsWith("/api/auth/csrf"));
+
     const isAuthSensitivePath =
-      pathname.startsWith("/api/auth") ||
-      pathname.includes("/login") ||
-      pathname.includes("/password");
+      !isNextAuthReadRoute &&
+      (pathname.startsWith("/api/auth") ||
+        pathname.includes("/login") ||
+        pathname.includes("/password"));
 
     const rateLimit = isAuthSensitivePath
       ? authRateLimiter(`${clientIp}:${pathname}`)

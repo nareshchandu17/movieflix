@@ -9,11 +9,11 @@ export default defineConfig({
     viewportWidth: 1280,
     viewportHeight: 720,
     setupNodeEvents(on, config) {
-      let eventHistory: any[] = [];
+      let eventHistory: unknown[] = [];
 
       on("task", {
         async socketAction(data: any) {
-          console.log(`[Cypress Mock Task] socketAction called:`, data);
+
           if (data.type === "join") {
             return { status: "connected", id: "mock-pusher-cypress-id" };
           }
