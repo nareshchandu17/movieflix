@@ -14,7 +14,7 @@ import { applyProfileFilter, ProfileFilterResult } from './profileMiddleware';
  * Higher-order function to wrap API handlers with profile-based content filtering
  */
 export function withContentFilter(handler: Function) {
-  return async (request: NextRequest, ...args: any[]) => {
+  return async (request: NextRequest, ...args: unknown[]) => {
     try {
       // Call the original handler
       const result = await handler(request, ...args);
@@ -48,7 +48,7 @@ export function withContentFilter(handler: Function) {
  */
 export async function filterSearchResults(
   request: NextRequest,
-  results: any[]
+  results: unknown[]
 ) {
   const filtered = await applyProfileFilter(request, results);
   return {

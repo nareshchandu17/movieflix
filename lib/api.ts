@@ -18,48 +18,20 @@ import {
   TMDBSeasonDetail,
   TMDBEpisodeDetail,
   TMDBPerson,
+  TMDBPersonImages,
+  TMDBPersonCombinedCredits,
   TMDBCredits,
+  TMDBWatchProvidersResponse,
 } from "./types";
 
-// --- MEMORY CACHE LAYER (LRU-lite) ---
-class MemoryCache {
-  private cache = new Map<string, { data: any; expiry: number }>();
-  private maxSize = 100;
-
-  set(key: string, data: any, ttlMs: number) {
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey) this.cache.delete(firstKey);
-    }
-    this.cache.set(key, { data, expiry: Date.now() + ttlMs });
-  }
-
-  get(key: string) {
-    const item = this.cache.get(key);
-    if (!item) return null;
-    if (Date.now() > item.expiry) {
-      this.cache.delete(key);
-      return null;
-    }
-    return item.data;
-  }
-
-  getStale(key: string) {
-    const item = this.cache.get(key);
-    return item ? item.data : null;
-  }
-
-  clear() {
-    this.cache.clear();
-  }
-}
-
-const localCache = new MemoryCache();
+import RedisManager from './redis';
+import { getSportsAndFitnessSeries } from './services/sportsAndFitnessService';
 
 // --- CONFIGURATION ---
 const ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN;
-const API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-const BASE_URL = "https://api.themoviedb.org/3";
+const API_KEY = process.env.TMDB_API_KEY;
+const isClient = typeof window !== 'undefined';
+const BASE_URL = isClient ? "/api/tmdb-proxy" : "https://api.themoviedb.org/3";
 
 // --- CACHE STRATEGY HELPERS ---
 const getCacheConfig = (url: string) => {
@@ -82,8 +54,10 @@ const getCacheConfig = (url: string) => {
 
 // Validate environment configuration
 const validateEnvironment = () => {
-  if (!API_KEY) {
-    throw new Error("TMDB API key is missing");
+  if (isClient) return;
+
+  if (!API_KEY && !ACCESS_TOKEN) {
+    throw new Error("TMDB API key or Access Token is missing");
   }
 
   if (ACCESS_TOKEN && ACCESS_TOKEN.length < 10) {
@@ -92,7 +66,7 @@ const validateEnvironment = () => {
     );
   }
 
-  if (API_KEY.length < 10) {
+  if (API_KEY && API_KEY.length < 10) {
     throw new Error(
       "TMDB API Key appears to be invalid (too short). Please check your API_KEY environment variable."
     );
@@ -110,6 +84,36 @@ const getHeaders = () => ({
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
 });
 
+// Concurrency Limiter to prevent TMDB 429 Too Many Requests
+class ConcurrencyLimiter {
+  private queue: (() => void)[] = [];
+  private activeCount = 0;
+  private readonly maxConcurrent = 3; // Strict 3 concurrent max
+  private readonly delayMs = 300; // 300ms delay ensures ~3 req/sec across burst
+
+  async acquire(): Promise<void> {
+    if (this.activeCount < this.maxConcurrent) {
+      this.activeCount++;
+      return;
+    }
+    return new Promise(resolve => {
+      this.queue.push(resolve);
+    });
+  }
+
+  release(): void {
+    if (this.queue.length > 0) {
+      const next = this.queue.shift()!;
+      setTimeout(() => {
+        next();
+      }, this.delayMs);
+    } else {
+      this.activeCount--;
+    }
+  }
+}
+const requestLimiter = new ConcurrencyLimiter();
+
 // Request deduplication cache to prevent duplicate simultaneous requests
 const pendingRequests = new Map<string, Promise<unknown>>();
 
@@ -125,10 +129,14 @@ export async function fetchAPI<T = unknown>(
     requestUrl += `${requestUrl.includes('?') ? '&' : '?'}api_key=${API_KEY}`;
   }
 
-  // 1. IN-MEMORY CACHE (Level 1)
+  // 1. REDIS CACHE (Level 1)
   if (typeof window === 'undefined') {
-    const memCached = localCache.get(requestUrl);
-    if (memCached) return memCached as T;
+    try {
+      const redisCached = await RedisManager.get<T>(requestUrl);
+      if (redisCached) return redisCached;
+    } catch (e) {
+      console.warn(`[Cache] Redis get failed for ${requestUrl}`, e);
+    }
   }
 
   // 2. REQUEST DEDUPLICATION (Level 2)
@@ -160,7 +168,14 @@ export async function fetchAPI<T = unknown>(
           }
         };
 
-        const response = await fetch(requestUrl, fetchOptions);
+        await requestLimiter.acquire();
+        let response;
+        try {
+          response = await fetch(requestUrl, fetchOptions);
+        } finally {
+          requestLimiter.release();
+        }
+        
         clearTimeout(timeoutId);
         
         if (!response.ok) {
@@ -182,15 +197,20 @@ export async function fetchAPI<T = unknown>(
         
         const data = await response.json();
 
-        // Save to memory cache for hot reuse
+        // Save to Redis cache for global distributed reuse (1 hour default, lists 15 mins)
         if (typeof window === 'undefined') {
-          localCache.set(requestUrl, data, 60000); 
+          try {
+            const ttl = requestUrl.includes('/trending/') || requestUrl.includes('/popular') ? 900 : 3600;
+            await RedisManager.set(requestUrl, data, ttl);
+          } catch (e) {
+            console.warn(`[Cache] Redis set failed for ${requestUrl}`, e);
+          }
         }
 
         return data;
       } catch (error: any) {
         lastError = error;
-        const isNetworkError = error.name === 'TypeError' || error.code === 'ECONNRESET' || error.name === 'AbortError';
+        const isNetworkError = error.name === 'TypeError' || error.code === 'ECONNRESET' || error.name === 'AbortError' || error.code === 'RATE_LIMITED' || error.status >= 500;
         
         if (isNetworkError && i < retries) {
           console.warn(`[API] Retry ${i+1}/${retries} for: ${requestUrl} - ${error.message}`);
@@ -198,14 +218,7 @@ export async function fetchAPI<T = unknown>(
           continue;
         }
         
-        // 4. STALE-ON-ERROR FALLBACK (Level 4)
-        if (typeof window === 'undefined') {
-          const staleData = localCache.getStale(requestUrl);
-          if (staleData) {
-            console.warn(`[Cache] STALE FALLBACK on error for: ${requestUrl}`);
-            return staleData as T;
-          }
-        }
+        // 4. NO STALE-ON-ERROR FALLBACK (Redis handles TTL naturally)
         
         if (error.name === 'AbortError') {
           const timeoutError = new Error('Request timed out after 12 seconds') as any;
@@ -290,6 +303,21 @@ async function getVideos(
 ): Promise<any> {
   checkAccessToken();
   return await fetchAPI<any>(`${BASE_URL}/${mediaType}/${id}/videos`, {
+    headers: getHeaders(),
+  });
+}
+
+// Get watch providers (streaming platforms)
+function getWatchProviders(mediaType: "movie", id: number): Promise<TMDBWatchProvidersResponse>;
+function getWatchProviders(mediaType: "tv", id: number): Promise<TMDBWatchProvidersResponse>;
+function getWatchProviders(mediaType: "movie" | "tv", id: number): Promise<TMDBWatchProvidersResponse>;
+
+async function getWatchProviders(
+  mediaType: "movie" | "tv",
+  id: number
+): Promise<TMDBWatchProvidersResponse> {
+  checkAccessToken();
+  return await fetchAPI<TMDBWatchProvidersResponse>(`${BASE_URL}/${mediaType}/${id}/watch/providers`, {
     headers: getHeaders(),
   });
 }
@@ -405,6 +433,7 @@ export const api = {
       airDateLte?: string;
       certificationLte?: string;
       isKids?: boolean;
+      [key: string]: any;
     } = {}
   ): Promise<TMDBTrendingResponse> {
     checkAccessToken();
@@ -412,26 +441,35 @@ export const api = {
     // Default Kids restriction is PG
     const kidsCertification = params.certificationLte || 'PG';
     
+    const {
+      page, genre, sortBy, year, language, minRating, airDateGte, airDateLte, certificationLte, isKids,
+      ...extraParams
+    } = params;
+
     const searchParams = new URLSearchParams({
-      page: (params.page || 1).toString(),
-      ...(params.genre && { with_genres: params.genre }),
-      ...(params.sortBy && { sort_by: params.sortBy }),
-      ...(params.year && { year: params.year.toString() }),
-      ...(params.language && { with_original_language: params.language }),
-      ...(params.minRating && {
-        "vote_average.gte": params.minRating.toString(),
+      page: (page || 1).toString(),
+      ...(genre && { with_genres: genre }),
+      ...(sortBy && { sort_by: sortBy }),
+      ...(year && { year: year.toString() }),
+      ...(language && { with_original_language: language }),
+      ...(minRating && {
+        "vote_average.gte": minRating.toString(),
       }),
-      ...(params.airDateGte && {
-        "air_date.gte": params.airDateGte,
+      ...(airDateGte && {
+        "air_date.gte": airDateGte,
       }),
-      ...(params.airDateLte && {
-        "air_date.lte": params.airDateLte,
+      ...(airDateLte && {
+        "air_date.lte": airDateLte,
       }),
       // Enforce maturity rating for Kids
-      ...(params.isKids && {
+      ...(isKids && {
         "certification_country": "US",
         "certification.lte": kidsCertification,
       }),
+      ...Object.entries(extraParams).reduce((acc, [k, v]) => {
+        if (v !== undefined && v !== null) acc[k] = v.toString();
+        return acc;
+      }, {} as Record<string, string>),
     });
 
     return await fetchAPI<TMDBTrendingResponse>(
@@ -671,9 +709,17 @@ export const api = {
   async getCombinedCredits(
     mediaType: "person",
     id: number
-  ): Promise<any> {
+  ): Promise<TMDBPersonCombinedCredits> {
     checkAccessToken();
-    return await fetchAPI<any>(`${BASE_URL}/${mediaType}/${id}/combined_credits`, {
+    return await fetchAPI<TMDBPersonCombinedCredits>(`${BASE_URL}/${mediaType}/${id}/combined_credits`, {
+      headers: getHeaders(),
+    });
+  },
+
+  // Get person images
+  async getPersonImages(id: number): Promise<TMDBPersonImages> {
+    checkAccessToken();
+    return await fetchAPI<TMDBPersonImages>(`${BASE_URL}/person/${id}/images`, {
       headers: getHeaders(),
     });
   },
@@ -742,6 +788,9 @@ export const api = {
   // Get videos (trailers, clips, etc.)
   getVideos,
 
+  // Get watch providers
+  getWatchProviders,
+
   // Health check utility
   async healthCheck(): Promise<{ healthy: boolean; latency?: number; error?: string }> {
     const startTime = Date.now();
@@ -759,4 +808,9 @@ export const api = {
       };
     }
   },
+
+  // Sports & Fitness curated TV series curation service
+  getSportsAndFitnessSeries,
 };
+
+export { getSportsAndFitnessSeries };

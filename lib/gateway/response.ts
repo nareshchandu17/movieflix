@@ -23,9 +23,11 @@ export interface GatewayResponse<T> {
 export function createGatewayResponse<T>(
   data: T,
   meta?: GatewayResponse<T>["meta"]
-): NextResponse<GatewayResponse<T>> {
+): NextResponse<any> {
+  const rootProps = data && typeof data === "object" && !Array.isArray(data) ? data : {};
   return NextResponse.json({
     success: true,
+    ...rootProps,
     data,
     meta: {
       source: meta?.source || "live",

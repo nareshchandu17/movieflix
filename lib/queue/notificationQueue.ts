@@ -8,9 +8,9 @@
  */
 
 import { redis } from "@/lib/redis";
-import { NotificationType } from "@/types/notifications";
-import connectDB from "@/lib/db";
-import Notification from "@/lib/models/Notification";
+import { NotificationType } from '@/features/settings/types/notifications';
+import connectDB from '@/lib/db';
+import Notification from '@/features/settings/models/Notification';
 
 export const NOTIFICATION_QUEUE_NAME = "notification-queue";
 
@@ -51,20 +51,7 @@ export async function addNotificationToQueue(data: NotificationJobData) {
       await redis.del(unreadCountKey);
     }
 
-    // 3. Push real-time notification via Pusher
-    try {
-      const { pushNotificationToUser } = await import("@/lib/pusher/notifications");
-      await pushNotificationToUser(userId, {
-        id: notification._id.toString(),
-        type,
-        title,
-        message,
-        link,
-        createdAt: notification.createdAt.toISOString(),
-      });
-    } catch (pushError) {
-      console.error("[Queue] Failed to push real-time notification via Pusher:", pushError);
-    }
+    // 3. Push real-time notification via Pusher (Removed as Pusher integration was deleted)
 
     console.log(`[Queue] Notification processed and published for user: ${userId}`);
     return { success: true, notificationId: notification._id };

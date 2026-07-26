@@ -27,7 +27,7 @@ const requiredEnvVars: EnvVarConfig[] = [
   { name: 'GOOGLE_CLIENT_SECRET', required: true },
   
   // API Keys
-  { name: 'NEXT_PUBLIC_TMDB_API_KEY', required: true, clientSafe: true },
+  { name: 'TMDB_API_KEY', required: true },
   { name: 'GEMINI_API_KEY', required: false }, // Optional - has simulation mode
   { name: 'YOUTUBE_API_KEY', required: false }, // Optional
   { name: 'CLOUDINARY_API_KEY', required: false }, // Optional
@@ -87,7 +87,7 @@ export function validateEnvironmentVariables(): void {
   }
 
   if (missing.length === 0) {
-    console.log('✅ All required environment variables are set');
+
   }
 }
 

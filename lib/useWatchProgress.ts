@@ -60,7 +60,7 @@ export function useWatchProgress() {
       }
     }
 
-    return items.sort((a, b) => b.timestamp - a.timestamp);
+    return items.sort((a: any, b: any) => b.timestamp - a.timestamp);
   }, []);
 
   return {

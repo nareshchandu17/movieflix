@@ -29,10 +29,10 @@ export async function gatewayRateLimit(
   policy: RateLimitConfig = RATE_LIMIT_POLICIES.GENERAL
 ) {
   const key = `ratelimit:${identifier}:${Math.floor(Date.now() / policy.windowMs)}`;
-  
+
   try {
     const current = await RedisManager.increment(key);
-    
+
     if (current === 1) {
       await RedisManager.expire(key, Math.ceil(policy.windowMs / 1000));
     }

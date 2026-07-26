@@ -14,7 +14,7 @@ import mongoose from "mongoose";
 // ============================================================
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var _mongooseCache: {
     conn: typeof mongoose | null;
     promise: Promise<typeof mongoose> | null;
@@ -47,7 +47,7 @@ export async function connectDB(): Promise<typeof mongoose> {
     cached.promise = mongoose
       .connect(MONGODB_URI, opts)
       .then((m) => {
-        console.log("✅ MongoDB connected");
+
         return m;
       })
       .catch((err) => {

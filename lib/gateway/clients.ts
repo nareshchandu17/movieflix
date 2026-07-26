@@ -8,7 +8,7 @@
  */
 
 import { api as tmdb } from "@/lib/api";
-import { geminiSearch } from "@/lib/geminiService";
+import { geminiSearch } from "@/features/ai/services/geminiService";
 
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const YOUTUBE_BASE_URL = "https://www.googleapis.com/youtube/v3";

@@ -8,7 +8,7 @@
  */
 
 import RedisManager from './redis';
-import SyncEngine, { ProgressUpdate } from './sync-engine';
+import { SyncEngine, ProgressUpdate } from '@/features/watch-party/services/sync-engine';
 
 export interface ConflictResolutionStrategy {
   name: string;

@@ -24,16 +24,16 @@ interface TMDBMovieResponse {
 }
 
 class TMDBAPI {
-  private readonly baseURL = 'https://api.themoviedb.org/3';
+  private readonly baseURL = typeof window !== 'undefined' ? '/api/tmdb-proxy' : 'https://api.themoviedb.org/3';
   private readonly imageBaseURL = 'https://image.tmdb.org/t/p/w500';
   private readonly apiKey: string;
 
   constructor() {
-    this.apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY || '';
+    this.apiKey = process.env.TMDB_API_KEY || '';
   }
 
   private async fetchWithCache<T>(url: string, cacheKey: string): Promise<T> {
-    if (!this.apiKey) {
+    if (typeof window === 'undefined' && !this.apiKey) {
       throw new Error("TMDB API key is missing");
     }
 
@@ -49,19 +49,55 @@ class TMDBAPI {
       }
     }
 
-    const response = await fetch(url);
+    let response;
+    let retries = 3;
+    let delay = 500;
+
+    while (retries > 0) {
+      try {
+        response = await fetch(url);
+        if (response.ok) break;
+        
+        // If it's a client error (4xx) other than 429 (rate limit), don't retry
+        if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+          break;
+        }
+      } catch (error) {
+        // Network error, we will retry
+      }
+      
+      retries--;
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2;
+      }
+    }
+
+    if (!response) {
+      throw new Error(`TMDB API Network Error: Unable to fetch ${url}`);
+    }
+
     if (!response.ok) {
-      throw new Error(`TMDB API Error: ${response.statusText}`);
+      let errorMsg = response.statusText;
+      try {
+        const errorData = await response.json();
+        if (errorData.error) errorMsg = errorData.error;
+      } catch (e) {}
+      throw new Error(`TMDB API Error (${response.status}): ${errorMsg}`);
     }
 
     const data = await response.json();
 
     // Cache the result
     if (typeof window !== 'undefined') {
-      localStorage.setItem(cacheKey, JSON.stringify({
-        data,
-        timestamp: Date.now()
-      }));
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data,
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        // Ignore localStorage quota errors
+      }
     }
 
     return data;
