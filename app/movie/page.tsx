@@ -1,8 +1,9 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
-import PageTitle from "@/components/title/PageTitle";
-import EnhancedMoviePageClient from "@/components/movie/EnhancedMoviePageClient";
-import {PageLoading} from "@/components/loading/PageLoading";
+import PageTitle from "@/features/shared/components/title/PageTitle";
+import EnhancedMoviePageClientRefactored from "@/features/movie/components/movie/EnhancedMoviePageClientRefactored";
+import {PageLoading} from "@/features/shared/components/loading/PageLoading";
+import { MovieErrorBoundary } from "@/features/shared/components/error/MovieErrorBoundary";
 
 export const metadata: Metadata = {
   title: "All Movies | MovieFlix",
@@ -13,14 +14,12 @@ export const metadata: Metadata = {
 export default function MoviePage() {
   return (
     <div className="app-bg-enhanced pt-20">
-      <PageTitle
-        segments={[{ text: "All" }, { text: " Movies", className: "text-red-500" }]}
-        subtitle="Browse our entire collection"
-      />
 
-      <Suspense fallback={<PageLoading>Loading movies...</PageLoading>}>
-        <EnhancedMoviePageClient />
-      </Suspense>
+      <MovieErrorBoundary>
+        <Suspense fallback={<PageLoading>Loading movies...</PageLoading>}>
+          <EnhancedMoviePageClientRefactored />
+        </Suspense>
+      </MovieErrorBoundary>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useSubscription } from "@/hooks/useSubscription";
-import { formatCurrency, getPlanById } from "@/types/payment";
+import { useSubscription } from "@/features/payments/hooks/useSubscription";
+import { formatCurrency, getPlanById } from "@/features/payments/types/payment";
 import {
   CheckCircle2,
   XCircle,

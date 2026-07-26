@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import ActressesPage from "@/components/actresses/ActressesPage";
+import ActressesPage from "@/features/movie/components/actresses/ActressesPage";
 
 export const metadata: Metadata = {
   title: "Great Actresses Collection | MovieFlix",

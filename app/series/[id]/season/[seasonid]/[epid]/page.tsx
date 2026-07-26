@@ -1,6 +1,6 @@
 import { Metadata } from "next";
-import EpisodeNotFound from "@/components/not-found/EpisodeNotFound";
-import EpisodeInfo from "@/components/series/EpisodeInfo";
+import EpisodeNotFound from "@/features/shared/components/not-found/EpisodeNotFound";
+import EpisodeInfo from "@/features/series/components/series/EpisodeInfo";
 
 export const metadata: Metadata = {
   title: "Episode | MovieFlix",

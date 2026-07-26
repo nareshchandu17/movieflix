@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useWatchPartyPusher } from "@/hooks/useWatchPartyPusher";
-import { WatchPartyHeader } from "@/components/watch/WatchPartyHeader";
-import { WatchPartyPlayer } from "@/components/watch/WatchPartyPlayer";
-import { WatchPartyDashboard } from "@/components/watch/WatchPartyDashboard";
-import { WatchPartySidePanel } from "@/components/watch/WatchPartySidePanel";
-import { WatchPartyFooter } from "@/components/watch/WatchPartyFooter";
-import { NameModal } from "@/components/watch/NameModal";
+import { useWatchPartyPusher } from "@/features/watch-party/hooks/useWatchPartyPusher";
+import { WatchPartyHeader } from "@/features/watch/components/watch/WatchPartyHeader";
+import { WatchPartyPlayer } from "@/features/watch/components/watch/WatchPartyPlayer";
+import { WatchPartyDashboard } from "@/features/watch/components/watch/WatchPartyDashboard";
+import { WatchPartySidePanel } from "@/features/watch/components/watch/WatchPartySidePanel";
+import { WatchPartyFooter } from "@/features/watch/components/watch/WatchPartyFooter";
+import { NameModal } from "@/features/watch/components/watch/NameModal";
 
 interface WatchPartyData {
   _id: string;

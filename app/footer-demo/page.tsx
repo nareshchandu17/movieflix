@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import Footer from "@/components/layout/Footer";
+import Footer from "@/features/shared/components/footer/Footer";
 
 export const metadata: Metadata = {
   title: "Footer Demo | MovieFlix",

@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import { motion } from "framer-motion";
 import { Play, Users, Tv, Sparkles, ArrowRight, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/features/shared/components/ui/button";
+import { Input } from "@/features/shared/components/ui/input";
 
 const LandingContent = () => {
   const [mode, setMode] = useState<"idle" | "create" | "join">("idle");

@@ -3,10 +3,10 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Clip } from "@/lib/scenes/types";
 import { CAROUSEL_CONFIGS } from "@/lib/scenes/carouselData";
-import SceneHero from "@/components/scenes/SceneHero";
-import SceneCarousel from "@/components/scenes/SceneCarousel";
-import SceneSearch from "@/components/scenes/SceneSearch";
-import PlayerModal from "@/components/scenes/PlayerModal";
+import SceneHero from "@/features/social/components/scenes/SceneHero";
+import SceneCarousel from "@/features/social/components/scenes/SceneCarousel";
+import SceneSearch from "@/features/social/components/scenes/SceneSearch";
+import PlayerModal from "@/features/social/components/scenes/PlayerModal";
 import "./scenes.css";
 
 // Category group labels for section dividers

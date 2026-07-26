@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/features/shared/components/ui/button";
 import { User, Settings, CreditCard, Shield } from "lucide-react";
 
 export default function ManageAccount() {

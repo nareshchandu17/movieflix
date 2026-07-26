@@ -1,4 +1,4 @@
-import MovieLayoutWrapper from "@/components/movie/MovieLayoutWrapper";
+import MovieLayoutWrapper from "@/features/movie/components/movie/MovieLayoutWrapper";
 import { ReactNode } from "react";
 
 interface MovieLayoutProps {

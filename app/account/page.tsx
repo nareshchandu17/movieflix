@@ -32,8 +32,8 @@ import {
   AlertCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useProfileContext } from "@/contexts/ProfileContext";
-import { AVATAR_MAP } from "@/lib/avatars";
+import { useProfileContext } from "@/features/profile/components/ProfileContext";
+import { AVATAR_MAP } from "@/features/profile/utils/avatars";
 import { toast } from "sonner";
 import { 
   AccountCard, 
@@ -42,8 +42,8 @@ import {
   SecurityActionCard, 
   ProfileDetailTile, 
   AddProfileCard 
-} from "@/components/account/AccountCards";
-import { PLANS, getPlanById } from "@/types/payment";
+} from "@/features/settings/components/account/AccountCards";
+import { PLANS, getPlanById } from "@/features/payments/types/payment";
 
 interface AccountSettings {
   _id: string;
@@ -78,8 +78,8 @@ const AccountPage = () => {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [securityData, setSecurityData] = useState<{
-    devices: any[];
-    loginActivity: any[];
+    devices: unknown[];
+    loginActivity: unknown[];
     stats: any;
   } | null>(null);
   const [securityLoading, setSecurityLoading] = useState(false);

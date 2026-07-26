@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
-import PageTitle from "@/components/title/PageTitle";
-import SearchPageContent from "@/components/search/SearchPageContent";
-import {PageLoading} from "@/components/loading/PageLoading";
+import PageTitle from "@/features/shared/components/title/PageTitle";
+import SearchPageContent from "@/features/search/components/search/SearchPageContent";
+import {PageLoading} from "@/features/shared/components/loading/PageLoading";
 
 export const metadata: Metadata = {
   title: "Search | MovieFlix",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function SearchPage() {
   return (
-    <div className="app-bg-enhanced mt-24">
+    <div className="app-bg-enhanced pt-4 pb-12">
       <PageTitle
         segments={[
           { text: "Explore, Discover, and" },

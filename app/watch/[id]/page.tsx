@@ -1,16 +1,16 @@
 import { getServerSession } from "next-auth";
 export const dynamic = "force-dynamic";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import mongoose from "mongoose";
 import connectDB from "@/lib/db";
-import Movie from "@/models/Movie";
-import Series from "@/models/Series";
-import Profile from "@/lib/models/Profile";
-import { PlayerRoot } from "@/components/player/PlayerRoot";
-import RestrictedScreen from "@/components/player/RestrictedScreen";
+import Movie from "@/features/movie/models/Movie";
+import Series from "@/features/series/models/Series";
+import Profile from "@/features/profile/models/Profile";
+import { PlayerRoot } from "@/features/watch/components/player/PlayerRoot";
+import RestrictedScreen from "@/features/watch/components/player/RestrictedScreen";
 import { api } from "@/lib/api";
 
 async function getContentFromDB(id: string, type: string = 'movie') {
@@ -90,12 +90,16 @@ export default async function WatchPage({
 
     try {
       if (effectiveTmdbId) {
-        const [details, videoData] = await Promise.all([
+        const [details, videoData, providersData] = await Promise.all([
           api.getDetails(mType, effectiveTmdbId),
-          api.getVideos(mType, effectiveTmdbId).catch(() => ({ results: [] }))
+          api.getVideos(mType, effectiveTmdbId).catch(() => ({ results: [] })),
+          api.getWatchProviders(mType, effectiveTmdbId).catch(() => ({ results: {} }))
         ]);
 
-        const videos = videoData.results || [];
+        const usProviders = (providersData as any)?.results?.US || {};
+        contentData.providers = usProviders;
+
+        const videos = (videoData as any).results || [];
         const trailer = videos.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube') 
                      || videos.find((v: any) => v.site === 'YouTube');
         
@@ -104,6 +108,7 @@ export default async function WatchPage({
         if (contentData) {
           // Update existing DB record metadata with trailer
           contentData.videoUrl = trailerUrl;
+          contentData.tmdbDetails = details;
           if (!contentData.certification) {
             if (mType === 'tv') {
               contentData.certification = (details as any).content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US')?.rating;
@@ -226,13 +231,17 @@ export default async function WatchPage({
     console.warn(`No video URL for content ${id}`);
   }
 
+  // The user requested to hardcode all videos to the local watchparty.mp4 for testing
+  const finalVideoUrl = "/watchparty.mp4";
+
   return (
     <div className="min-h-screen bg-black">
       <PlayerRoot 
         contentId={id}
-        url={videoUrl || ""}
+        url={finalVideoUrl}
         title={displayTitle}
         type={resolvedType as 'movie' | 'series'}
+        contentData={JSON.parse(JSON.stringify(contentData))}
       />
     </div>
   );

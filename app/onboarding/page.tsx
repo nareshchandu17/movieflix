@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import OnboardingCard from "@/components/OnboardingCard";
+import OnboardingCard from "@/features/home/components/OnboardingCard";
 
 export default function OnboardingPage() {
   const { data: session, status } = useSession();

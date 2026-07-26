@@ -1,8 +1,16 @@
 import { Suspense } from "react";
-import InfoNotFound from "@/components/not-found/InfoNotFound";
-import EnhancedMovieInfo from "@/components/movie/EnhancedMovieInfo";
-import BingeSeriesInfo from "@/components/series/BingeSeriesInfo";
-import { ProfileProvider } from "@/contexts/ProfileContext";
+import InfoNotFound from "@/features/shared/components/not-found/InfoNotFound";
+import { ProfileProvider } from "@/features/profile/components/ProfileContext";
+import dynamic from "next/dynamic";
+import { InfoLoading } from "@/features/shared/components/loading/PageLoading";
+
+const EnhancedMovieInfo = dynamic(() => import("@/features/movie/components/movie/EnhancedMovieInfo"), {
+  loading: () => <InfoLoading />,
+});
+
+const BingeSeriesInfo = dynamic(() => import("@/features/series/components/series/BingeSeriesInfo"), {
+  loading: () => <InfoLoading />,
+});
 
 interface NewPopularDetailPageProps {
   params: Promise<{

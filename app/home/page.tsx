@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 export const dynamic = "force-dynamic";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import { redirect } from "next/navigation";
 
 export default async function Home() {

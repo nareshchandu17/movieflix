@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import ActorDetailPage from "@/components/actors/ActorDetailPage";
+import ActorDetailPage from "@/features/movie/components/actors/ActorDetailPage";
 
 interface ActorPageProps {
   params: Promise<{ name: string }>;

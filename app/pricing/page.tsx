@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSession, signIn } from "next-auth/react";
-import { GoogleAuthModal } from "@/components/auth/GoogleAuthModal";
+import { GoogleAuthModal } from "@/features/authentication/components/auth/GoogleAuthModal";
 import { useRouter } from "next/navigation";
 import {
   PLANS,
@@ -10,9 +10,9 @@ import {
   BillingCycle,
   PlanTier,
   formatCurrency,
-} from "@/types/payment";
-import { useRazorpay } from "@/hooks/useRazorpay";
-import { useSubscription } from "@/hooks/useSubscription";
+} from "@/features/payments/types/payment";
+import { useRazorpay } from "@/features/payments/hooks/useRazorpay";
+import { useSubscription } from "@/features/payments/hooks/useSubscription";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check,

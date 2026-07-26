@@ -1,17 +1,17 @@
 "use client";
 
-import Header from "@/components/navbar/Header";
-import Footer from "@/components/footer/Footer";
-import Sidebar from "@/components/navbar/Sidebar";
-import MobileNav from "@/components/navbar/MobileNav";
+import Header from "@/features/shared/components/navbar/Header";
+import Footer from "@/features/shared/components/footer/Footer";
+import Sidebar from "@/features/shared/components/navbar/Sidebar";
+import MobileNav from "@/features/shared/components/navbar/MobileNav";
 import { ReactNode } from "react";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
-import { useSearch } from "@/contexts/SearchContext";
+import { useSearch } from "@/features/search/components/SearchContext";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import NotificationListener from "@/components/notifications/NotificationListener";
+import NotificationListener from "@/features/settings/components/notifications/NotificationListener";
 
 interface ClientLayoutProps {
   children: ReactNode;
@@ -54,14 +54,12 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       />
 
       <div className="min-h-screen relative z-[90]">
-        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isDownloadsPage && !isProfilesPage && <Header />}
-        
         {/* Sidebar for Desktop */}
-        {!isWatchPartyPage && !isWatchPage && <Sidebar />}
+        {!isWatchPartyPage && !isWatchPage && !isProfilesPage && <Sidebar />}
 
         <main className={cn(
           "transition-all duration-500",
-          mounted && isAuthenticated && !isWatchPage && !isWatchPartyPage && "lg:pl-[72px]", // Only offset if not in a full-screen player
+          mounted && isAuthenticated && !isWatchPage && !isWatchPartyPage && !isProfilesPage && "md:pl-[72px]", // Only offset if not in a full-screen player
           mounted && showDeepOverlay 
             ? "blur-xl scale-[0.97] opacity-20 pointer-events-none" 
             : "opacity-100"
@@ -73,6 +71,10 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         {!isWatchPartyPage && !isWatchPage && <MobileNav />}
 
         {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isDownloadsPage && !isProfilesPage && <Footer />}
+        
+        {/* Header moved after main to guarantee highest stacking context priority */}
+        {!isWatchPartyPage && !isWatchPage && !isMoviePage && !isSeriesPage && !isCastInfoPage && !isDownloadsPage && !isProfilesPage && <Header />}
+        
         <NotificationListener />
         <Toaster position="top-right" richColors />
       </div>

@@ -1,13 +1,13 @@
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/features/authentication/services/auth";
 import { redirect } from "next/navigation";
 import connectDB from "@/lib/db";
-import Collection from "@/models/Collection";
-import CollectionItem from "@/models/CollectionItem";
-import CollectionCarousel from "@/components/collections/CollectionCarousel";
-import MyListHeaderAction from "@/components/collections/MyListHeaderAction";
-import { Bookmark, Library, Film, Tv } from "lucide-react";
+import Collection from "@/features/history/models/Collection";
+import CollectionItem from "@/features/history/models/CollectionItem";
+import MyListContainer from "@/features/history/components/collections/MyListContainer";
+import { Library } from "lucide-react";
+import mongoose from "mongoose";
 
 export const metadata: Metadata = {
   title: "My List | MovieFlix",
@@ -26,42 +26,52 @@ export default async function MyListPage() {
 
   await connectDB();
 
-  // Fetch collections for user
-  const collections = await Collection.find({ userId: session.user.id }).sort({ createdAt: -1 }).lean();
+  // Fetch collections with items using aggregation to avoid N+1 queries (Issue 8 fix)
+  const isValidId = mongoose.isValidObjectId(session.user.id);
+  const userIdMatch = isValidId 
+    ? { $in: [new mongoose.Types.ObjectId(session.user.id), session.user.id] }
+    : session.user.id;
 
-  // Fetch items for each collection
-  const collectionsWithItems = await Promise.all(
-    collections.map(async (col) => {
-      const items = await CollectionItem.find({ collectionId: col._id })
-        .sort({ addedAt: -1 })
-        .lean();
-      
-      // Transform MongoDB _id to string for Client Components
-      const serializedItems = items.map(item => ({
+  const collectionsWithItems = await Collection.aggregate([
+    { $match: { userId: userIdMatch } },
+    { $sort: { createdAt: -1 } },
+    {
+      $lookup: {
+        from: "collectionitems",
+        localField: "_id",
+        foreignField: "collectionId",
+        as: "items",
+        pipeline: [
+          { $sort: { addedAt: -1 } }
+        ]
+      }
+    }
+  ]);
+
+  // Transform data for client components
+  const serializedCollections = collectionsWithItems.map(col => {
+    return {
+      ...col,
+      _id: col._id.toString(),
+      userId: col.userId.toString(),
+      createdAt: col.createdAt?.toISOString(),
+      updatedAt: col.updatedAt?.toISOString(),
+      items: col.items.map((item: any) => ({
         ...item,
         _id: item._id.toString(),
         collectionId: item.collectionId.toString(),
         addedAt: item.addedAt?.toISOString() || new Date().toISOString(),
         lastWatchedAt: item.lastWatchedAt ? item.lastWatchedAt.toISOString() : null,
-      }));
-
-      return {
-        ...col,
-        _id: col._id.toString(),
-        userId: col.userId.toString(),
-        createdAt: col.createdAt?.toISOString(),
-        updatedAt: col.updatedAt?.toISOString(),
-        items: serializedItems
-      };
-    })
-  );
+      }))
+    };
+  });
 
   return (
     <div className="min-h-screen bg-black text-white pb-24">
       {/* Header Section */}
       <div className="relative w-full h-[40vh] min-h-[300px] flex items-end">
         <div className="absolute inset-0 bg-gradient-to-br from-red-900/40 via-black to-black z-0" />
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-10 mix-blend-overlay" />
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=75&w=1600&auto=format&fit=crop')] bg-cover bg-center opacity-10 mix-blend-overlay" />
         
         <div className="relative z-10 px-4 sm:px-6 md:px-12 lg:px-20 pb-12 w-full max-w-7xl flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
@@ -77,36 +87,11 @@ export default async function MyListPage() {
               Your personal collections, watchlists, and saved content.
             </p>
           </div>
-          <div>
-            <MyListHeaderAction />
-          </div>
         </div>
       </div>
 
-      {/* Collections Section */}
-      <div className="relative z-20 -mt-8">
-        {collectionsWithItems.length === 0 ? (
-          <div className="px-4 sm:px-6 md:px-12 lg:px-20 mt-16 text-center">
-            <div className="mx-auto w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10">
-              <Bookmark className="w-10 h-10 text-gray-500" />
-            </div>
-            <h2 className="text-2xl font-bold mb-3">Your library is empty</h2>
-            <p className="text-gray-400 max-w-md mx-auto mb-8">
-              Start adding your favorite movies and TV series to your collections by clicking the + button on any title.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {collectionsWithItems.map((collection) => (
-              <CollectionCarousel 
-                key={collection._id} 
-                title={collection.name} 
-                items={collection.items} 
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Collections Section with instant client-side update */}
+      <MyListContainer initialCollections={serializedCollections} />
     </div>
   );
 }

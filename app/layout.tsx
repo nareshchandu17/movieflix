@@ -4,12 +4,12 @@ import { ReactNode } from "react";
 import { Toaster } from "sonner";
 import "@/lib/env-validation"; // Validate environment variables at startup
 import ClientLayout from "./ClientLayout";
-import { RoomProvider } from "@/contexts/RoomContext";
-import { SearchProvider } from "@/contexts/SearchContext";
-import { WatchHistoryProvider } from "@/contexts/WatchHistoryContext";
-import { ProfileProvider } from "@/contexts/ProfileContext";
-import { ProfileLoadingProvider } from "@/contexts/ProfileLoadingContext";
-import ProfileLoadingBlocker from "@/components/ProfileLoadingBlocker";
+import { RoomProvider } from "@/features/watch-party/components/RoomContext";
+import { SearchProvider } from "@/features/search/components/SearchContext";
+import { WatchHistoryProvider } from "@/features/history/components/WatchHistoryContext";
+import { ProfileProvider } from "@/features/profile/components/ProfileContext";
+import { ProfileLoadingProvider } from "@/features/profile/components/ProfileLoadingContext";
+import ProfileLoadingBlocker from "@/features/profile/components/ProfileLoadingBlocker";
 import { Providers } from "./providers";
 import { Analytics } from "@vercel/analytics/next";
 

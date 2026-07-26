@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { CheckCircle2, ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import confetti from "canvas-confetti";
-import { getPlanById, formatCurrency } from "@/types/payment";
+import { getPlanById, formatCurrency } from "@/features/payments/types/payment";
 
 import { Suspense } from "react";
 

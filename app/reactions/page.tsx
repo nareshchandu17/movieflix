@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react';
-import ReactionFeed from '@/components/reaction/ReactionFeed';
-import { ReactionProvider } from '@/contexts/ReactionContext';
+import ReactionFeed from '@/features/social/components/reaction/ReactionFeed';
+import { ReactionProvider } from '@/features/social/components/ReactionContext';
 
 export default function ReactionsPage() {
   return (

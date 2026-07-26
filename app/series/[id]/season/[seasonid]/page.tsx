@@ -1,6 +1,6 @@
 import { Metadata } from "next";
-import SeasonNotFound from "@/components/not-found/SeasonNotFound";
-import SeasonInfo from "@/components/series/SeasonInfo";
+import SeasonNotFound from "@/features/shared/components/not-found/SeasonNotFound";
+import SeasonInfo from "@/features/series/components/series/SeasonInfo";
 
 export const metadata: Metadata = {
   title: "Season Details | MovieFlix",

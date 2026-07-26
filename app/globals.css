@@ -110,7 +110,7 @@
     margin: 0;
     padding: 0;
     width: 100%;
-    height: 100%;
+    min-height: 100%;
   }
 
   body {
@@ -211,114 +211,11 @@
     @apply pl-4 sm:pl-6 md:pl-[60px];
   }
 
-  /* Mobile optimized background */
-  @media (max-width: 768px) {
-    .app-bg-enhanced {
-      background-attachment: scroll;
-      background-size: cover;
-    }
-  }
-
-  /* Reusable component classes */
-  .glass-container {
-    @apply bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 p-4 sm:p-6;
-  }
-
-  .filter-label-xs {
-    @apply text-xs font-medium text-gray-300 mb-1;
-  }
-
-  .filter-label-sm {
-    @apply text-sm font-medium text-gray-300 whitespace-nowrap;
-  }
-
-  .footer-link {
-    @apply text-gray-300 hover:text-primary text-sm transition-all duration-200 hover:scale-105 relative;
-  }
-
-  .smooth-transition {
-    @apply transition-all duration-200;
-  }
-}
-
-@layer utilities {
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Netflix-style smooth horizontal scrolling */
-  .horizontal-scroll {
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-  }
-
-  /* Better mobile touch scrolling */
-  .touch-scroll {
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-  }
-
-  /* Navigation arrow styling */
-  .nav-arrow {
-    backdrop-filter: blur(8px);
-    background: rgba(var(--theme-primary-rgb), 0.9);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .nav-arrow:hover {
-    background: rgba(var(--light-primary-rgb), 1);
-    transform: scale(1.1);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-  }
-
-  /* Section hover for chevron buttons only */
-  .section-hover:hover .chevron-btn-left,
-  .section-hover:hover .chevron-btn-right {
-    opacity: 1;
-  }
-
-  /* Enhanced app background with better responsiveness */
-  .app-bg-enhanced {
-    @apply min-h-screen;
-    background: radial-gradient(circle at center top, #141414 0%, #000000 100%);
-    background-attachment: fixed;
-    background-size: 100% 100%;
+  .row-title-alignment {
+    @apply pl-4 sm:pl-6 md:pl-[60px];
   }
 
   /* Mobile optimized background */
-  @media (max-width: 768px) {
-    .app-bg-enhanced {
-      background-attachment: scroll;
-      background-size: cover;
-    }
-  }
-
-  /* Reusable component classes */
-  .glass-container {
-    @apply bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 p-4 sm:p-6;
-  }
-
-  .filter-label-xs {
-    @apply text-xs font-medium text-gray-300 mb-1;
-  }
-
-  .filter-label-sm {
-    @apply text-sm font-medium text-gray-300 whitespace-nowrap;
-  }
-
-  .footer-link {
-    @apply text-gray-300 hover:text-primary text-sm transition-all duration-200 hover:scale-105 relative;
-  }
-
-  .smooth-transition {
-    @apply transition-all duration-200;
-  }
-}
 
 /* High-contrast system mode support for focus indicators */
 @media (prefers-contrast: high) {
@@ -433,6 +330,7 @@
   left: 0 !important;
   right: 0 !important;
 }
+}
 
 @keyframes shimmer {
   0% {
@@ -491,10 +389,6 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.4);
   background-clip: content-box;
-}
-
-.dark * {
-  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.1);
 }
 
 .dark * {

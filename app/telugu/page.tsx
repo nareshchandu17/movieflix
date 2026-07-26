@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { teluguApi, TeluguMovie } from "@/lib/teluguApi";
+import { teluguApi, TeluguMovie } from "@/features/home/services/teluguApi";
 import { Star, Calendar, Filter } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";

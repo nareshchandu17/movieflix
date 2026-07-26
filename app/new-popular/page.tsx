@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
-import NewAndPopularClient from "../../components/newpopular/NewAndPopularClient";
-import { PageLoading } from "../../components/loading/PageLoading";
+import NewAndPopularClient from "@/features/home/components/newpopular/NewAndPopularClient";
+import { PageLoading } from "@/features/shared/components/loading/PageLoading";
 
 export const metadata: Metadata = {
   title: "New & Popular | MovieFlix",

@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useCallback, use } from "react";
 import { CAROUSEL_CONFIGS } from "@/lib/scenes/carouselData";
-import { useScenes } from "@/hooks/useScenes";
+import { useScenes } from "@/features/social/hooks/useScenes";
 import { Clip } from "@/lib/scenes/types";
-import ClipCard from "@/components/scenes/ClipCard";
-import PlayerModal from "@/components/scenes/PlayerModal";
+import ClipCard from "@/features/social/components/scenes/ClipCard";
+import PlayerModal from "@/features/social/components/scenes/PlayerModal";
 import { FiArrowLeft, FiGrid } from "react-icons/fi";
 import Link from "next/link";
 import "../../scenes.css";

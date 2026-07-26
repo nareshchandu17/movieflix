@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
-import HomePage from "@/components/HomeClient";
-import { getServerSideProfileState } from "@/lib/server-side-profile";
+import HomePage from "@/features/home/components/HomeClient";
+import { getServerSideProfileState } from "@/features/profile/services/server-side-profile";
 
 export const metadata: Metadata = {
   title: "Movieflix - Watch Movies & TV Shows Online",

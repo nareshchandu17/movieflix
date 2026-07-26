@@ -4,12 +4,12 @@ import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Loader2, Pencil, ShieldCheck, Lock, HelpCircle } from "lucide-react";
-import ProfileCard from "@/components/profiles/ProfileCard";
-import ManageProfilesGrid from "@/components/profiles/ManageProfilesGrid";
-import { AVATAR_MAP } from "@/lib/avatars";
-import { useProfiles } from "@/hooks/useProfiles";
-import type { Profile } from "@/types/profiles";
-import PinModal from "@/components/profiles/PinModal";
+import ProfileCard from "@/features/profile/components/profiles/ProfileCard";
+import ManageProfilesGrid from "@/features/profile/components/profiles/ManageProfilesGrid";
+import { AVATAR_MAP } from "@/features/profile/utils/avatars";
+import { useProfiles } from "@/features/profile/hooks/useProfiles";
+import type { Profile } from "@/features/profile/types/profiles";
+import PinModal from "@/features/profile/components/profiles/PinModal";
 
 export default function ProfileSelectPage() {
   const router = useRouter();

@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import ActressDetailPage from "@/components/actresses/ActressDetailPage";
+import ActressDetailPage from "@/features/movie/components/actresses/ActressDetailPage";
 
 interface PageProps {
   params: Promise<{ id: string }>;

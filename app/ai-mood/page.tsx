@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import MoodInput from "@/components/mood-engine/MoodInput";
-import MoodResults from "@/components/mood-engine/MoodResults";
+import MoodInput from "@/features/ai/components/mood-engine/MoodInput";
+import MoodResults from "@/features/ai/components/mood-engine/MoodResults";
 import ClientLayout from "@/app/ClientLayout";
 
 export default function MoodEnginePage() {

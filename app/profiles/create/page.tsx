@@ -4,11 +4,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Loader2, Check, ChevronLeft, Pencil } from "lucide-react";
-import AvatarCarousel from "@/components/profiles/AvatarCarousel";
-import ProfileNameInput from "@/components/profiles/ProfileNameInput";
-import KidsToggle from "@/components/profiles/KidsToggle";
-import { AVATAR_MAP } from "@/lib/avatars";
-import { useProfiles } from "@/hooks/useProfiles";
+import AvatarCarousel from "@/features/profile/components/profiles/AvatarCarousel";
+import ProfileNameInput from "@/features/profile/components/profiles/ProfileNameInput";
+import KidsToggle from "@/features/profile/components/profiles/KidsToggle";
+import { AVATAR_MAP } from "@/features/profile/utils/avatars";
+import { useProfiles } from "@/features/profile/hooks/useProfiles";
 
 export default function CreateProfilePage() {
   const router = useRouter();

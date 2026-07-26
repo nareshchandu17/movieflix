@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
-import SeriesPageClient from "@/components/series/SeriesPageClient";
-import {PageLoading} from "@/components/loading/PageLoading";
+import SeriesPageClient from "@/features/series/components/series/SeriesPageClient";
+import {PageLoading} from "@/features/shared/components/loading/PageLoading";
 
 export const metadata: Metadata = {
   title: "All TV Shows | MovieFlix",

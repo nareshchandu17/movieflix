@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import PaginatedMediaPage from "@/components/info/PaginatedMediaPage";
+import PaginatedMediaPage from "@/features/movie/components/info/PaginatedMediaPage";
 
 export const metadata: Metadata = {
   title: "Comedy Movies | MovieFlix",

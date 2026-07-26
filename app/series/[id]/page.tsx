@@ -1,9 +1,11 @@
-"use client";
+import { ProfileProvider } from "@/features/profile/components/ProfileContext";
+import InfoNotFound from "@/features/shared/components/not-found/InfoNotFound";
+import dynamic from "next/dynamic";
+import { InfoLoading } from "@/features/shared/components/loading/PageLoading";
 
-import { use } from "react";
-import { ProfileProvider } from "@/contexts/ProfileContext";
-import BingeSeriesInfo from "@/components/series/BingeSeriesInfo";
-import InfoNotFound from "@/components/not-found/InfoNotFound";
+const BingeSeriesInfo = dynamic(() => import("@/features/series/components/series/BingeSeriesInfo"), {
+  loading: () => <InfoLoading />,
+});
 
 interface SeriesDetailsPageProps {
   params: Promise<{
@@ -11,10 +13,10 @@ interface SeriesDetailsPageProps {
   }>;
 }
 
-export default function SeriesDetailsPage({
+export default async function SeriesDetailsPage({
   params,
 }: SeriesDetailsPageProps) {
-  const { id } = use(params);
+  const { id } = await params;
   const parsedId = parseInt(id, 10);
 
   if (isNaN(parsedId) || parsedId <= 0) {

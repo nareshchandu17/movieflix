@@ -4,7 +4,7 @@ import React, { useEffect, useState, use } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Grid, Layout, SlidersHorizontal, Search, Heart, MessageCircle, Share2, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { ReactionCard } from '@/components/reactions/ReactionCard';
+import { ReactionCard } from '@/features/social/components/fan-reactions/ReactionCard';
 
 interface ReactionsPageProps {
   params: Promise<{ id: string }>;
@@ -141,7 +141,7 @@ export default function ReactionsPage({ params }: ReactionsPageProps) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <ReactionCard reaction={reaction} movieId={movieId} />
+                  <ReactionCard reaction={reaction} isActive={false} />
                 </motion.div>
               ))}
             </AnimatePresence>

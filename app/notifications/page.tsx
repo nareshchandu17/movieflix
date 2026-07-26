@@ -11,8 +11,8 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { format, isToday, isYesterday, isAfter } from "date-fns";
-import NotificationItem from "@/components/notifications/NotificationItem";
-import { NotificationType } from "@/types/notifications";
+import NotificationItem from "@/features/settings/components/notifications/NotificationItem";
+import { NotificationType } from "@/features/settings/types/notifications";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
