@@ -1,9 +1,22 @@
-# Premium OTT UI Overhaul Tasks
+# Netflix-Quality Content Discovery Platform Overhaul Status
 
-- [/] 1. Update `globals.css` (Background & utilities)
-- [ ] 2. Update `Header.tsx` (Gradient visibility problem)
-- [ ] 3. Update `SmartSearch.tsx` (Glass effect, placeholder)
-- [ ] 4. Update `Hero.tsx` (75vh height, fix UI hierarchy)
-- [ ] 5. Update `EnhancedMediaCard.tsx` (Hover effects, scale, strict aspect ratio 2/3)
-- [ ] 6. Update `TrendingNow.tsx` (Row padding 60px, card gap 24px, scroll arrows)
-- [ ] 7. Review other carousels for padding consistency (Optional but recommended)
+- [x] Phase 1: Core Engine & Strategy Architecture (`services/content-engine/`)
+  - [x] TMDB API service with retry mechanics and batch detail fetching (`tmdb-service.ts`)
+  - [x] 8 specific strategy pipelines with custom mapping (`strategies/index.ts`)
+  - [x] Normalizer for unified `NormalizedMediaItem` schema (`normalizer.ts`)
+  - [x] Quality filtering engine (`quality-filter.ts`)
+  - [x] Mathematical ranking engine (`ranking-engine.ts`)
+  - [x] Global deduplication registry (`deduplication.ts`)
+  - [x] Central allocation dispatcher (`index.ts`)
+- [x] Phase 2: UI Carousel Architecture (`components/display/MovieCarousel.tsx` & `SeeAllClient.tsx`)
+  - [x] Lazy loading via `IntersectionObserver`
+  - [x] Server-driven allocation API (`/api/content-engine/allocate`)
+  - [x] Infinite scrolling "See All" view (`/api/content-engine/see-all`)
+- [x] Phase 3: Diagnostics & Verification (`/api/content-engine/test`)
+  - [x] Automated runtime diagnostics suite verifying 0 duplicates across carousels
+  - [x] Quality checking and mathematical score order verification
+- [x] Phase 4 & 5: Page Migrations
+  - [x] Migrate `Home` Page (`components/HomeClient.tsx`)
+  - [x] Migrate `Movies` Page (`components/movie/EnhancedMoviePageClient.tsx`)
+  - [x] Migrate `TV Series` Page (`components/series/SeriesCarousels.tsx`)
+  - [x] Migrate `New & Popular` Page (`components/newpopular/NewAndPopularClient.tsx`)
