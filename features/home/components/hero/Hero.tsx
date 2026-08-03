@@ -18,15 +18,7 @@ import {
   VolumeX
 } from "lucide-react";
 
-// Curated list as requested
-const curatedTitles = [
-  { id: 693134, type: 'movie', title: 'Dune: Part Two' },
-  { id: 533535, type: 'movie', title: 'Deadpool & Wolverine' },
-  { id: 1291608, type: 'movie', title: 'Dhurandhar' },
-  { id: 76479, type: 'tv', title: 'The Boys' },
-  { id: 94997, type: 'tv', title: 'House of the Dragon' },
-  { id: 65930, type: 'tv', title: 'My Hero Academia' }
-];
+
 
 export default function Hero() {
   const [slides, setSlides] = useState<any[]>([]);
@@ -39,18 +31,23 @@ export default function Hero() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchHeroSlides = useCallback(async () => {
-
     try {
-      const results = await Promise.all(
-        curatedTitles.map(async (item) => {
-          try {
+      // Fetch trending to get dynamic top items
+      const trending = await api.getTrending('all', 'day');
+      // Filter out items without a backdrop image and take top 6
+      const topItems = trending.results
+        .filter((item: any) => item.backdrop_path && (item.media_type === 'movie' || item.media_type === 'tv'))
+        .slice(0, 6);
 
-            const data = await (item.type === 'movie'
+      const results = await Promise.all(
+        topItems.map(async (item: any) => {
+          try {
+            const data = await (item.media_type === 'movie'
               ? api.getDetails('movie', item.id)
               : api.getDetails('tv', item.id));
             return data;
           } catch (err) {
-            console.error(`[Hero] Error fetching ${item.title}:`, err);
+            console.error(`[Hero] Error fetching details for ${item.id}:`, err);
             return null;
           }
         })
@@ -58,9 +55,8 @@ export default function Hero() {
 
       const validSlides = results.filter((s) => s !== null);
 
-
       if (validSlides.length === 0) {
-        console.warn("[Hero] No curated slides loaded, falling back to popular...");
+        console.warn("[Hero] No slides loaded, falling back to popular...");
         const popular = await api.getPopular('movie', 1);
         setSlides(popular.results.slice(0, 6));
       } else {

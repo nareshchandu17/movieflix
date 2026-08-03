@@ -299,6 +299,7 @@ export interface TMDBPerson {
   biography?: string
   popularity: number
   birthday?: string
+  deathday?: string
   place_of_birth?: string
 }
 

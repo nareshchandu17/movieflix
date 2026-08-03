@@ -57,9 +57,10 @@ export function CastAbout({ person, credits }: CastAboutProps) {
     return items;
   }, [person, credits]);
 
-  const hasBiography = person.biography && person.biography.trim() !== '';
-  const paragraphs = hasBiography ? person.biography.split('\n').filter(p => p.trim() !== '') : [];
-  const isLongBio = paragraphs.length > 2 || person.biography.length > 500;
+  const bio = person.biography || '';
+  const hasBiography = bio.trim() !== '';
+  const paragraphs = hasBiography ? bio.split('\n').filter(p => p.trim() !== '') : [];
+  const isLongBio = paragraphs.length > 2 || bio.length > 500;
   const displayParagraphs = expanded ? paragraphs : paragraphs.slice(0, 2);
 
   // If no stats and no biography, hide gracefully
