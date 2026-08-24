@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { clearProfileCookie } from "./lib/cookie-utils";
+import { csrfProtection, shouldProtectFromCSRF } from './lib/csrf';
+
+// Define paths that should bypass CSRF protection
+const CSRF_EXEMPT_PATHS = [
+  '/api/payment/webhook', // External webhooks validate their own signatures
+  '/api/auth',            // Next-auth handles its own CSRF
+];
 
 const PROFILE_SKIP = [
   "/profiles",
@@ -115,6 +122,22 @@ export async function proxy(req: NextRequest) {
   const clientIp = getClientIp(req);
 
   try {
+    // 1. Enforce CSRF protection on API routes
+    if (pathname.startsWith('/api/') && shouldProtectFromCSRF(req.method)) {
+      const isExempt = CSRF_EXEMPT_PATHS.some(path => pathname.startsWith(path));
+      if (!isExempt) {
+        const csrfResult = csrfProtection(req as unknown as Request);
+        if (!csrfResult.valid) {
+          return applySecurityHeaders(
+            NextResponse.json(
+              { success: false, error: 'CSRF token validation failed. Request blocked for security reasons.' },
+              { status: 403 }
+            )
+          );
+        }
+      }
+    }
+
     const isNextAuthReadRoute =
       req.method === "GET" &&
       (pathname.startsWith("/api/auth/session") ||
