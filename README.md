@@ -78,15 +78,15 @@ graph TD
     subgraph Frontend
         UI[React UI Components]
         State[Zustand / SWR]
-        UI <--> State
-        State <--> Client
+        UI --> State
+        State --> Client
     end
 
     subgraph API Gateway
         NextAPI[Next.js API Routes]
     end
 
-    Client <-->|HTTP/REST| NextAPI
+    Client -->|HTTP/REST| NextAPI
 
     subgraph Backend Services
         DB[(MongoDB)]
@@ -94,9 +94,9 @@ graph TD
         Socket[Socket.io / Real-time]
     end
 
-    NextAPI <-->|Mongoose| DB
-    NextAPI <-->|ioredis| Cache
-    NextAPI <-->|WS| Socket
+    NextAPI -->|Mongoose| DB
+    NextAPI -->|ioredis| Cache
+    NextAPI -->|WS| Socket
 
     subgraph External APIs
         TMDB[TMDB API]
@@ -105,10 +105,10 @@ graph TD
         Cloudinary[Cloudinary]
     end
 
-    NextAPI <--> TMDB
-    NextAPI <--> GoogleAI
-    NextAPI <--> Payment
-    NextAPI <--> Cloudinary
+    NextAPI --> TMDB
+    NextAPI --> GoogleAI
+    NextAPI --> Payment
+    NextAPI --> Cloudinary
     
     %% Webhook flows
     Payment -.->|Webhooks| NextAPI
