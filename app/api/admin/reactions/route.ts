@@ -23,7 +23,9 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status') || 'pending';
     const limit = Number(searchParams.get('limit')) || 50;
 
-    const reactions = await ReactionClip.find({ status })
+    const query: any = status !== "all" ? { status } : {};
+    
+    const reactions = await ReactionClip.find(query)
       .sort({ createdAt: -1 })
       .limit(limit)
       .populate('userId', 'name avatar') // To show who posted it

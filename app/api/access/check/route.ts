@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     // Find active subscription
     const subscription = await Subscription.findOne({ 
       userId, 
-      status: 'ACTIVE' 
+      status: 'active' 
     }).populate('planId');
 
     if (!subscription) {
