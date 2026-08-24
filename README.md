@@ -1,5 +1,5 @@
 # 🎬 MovieFlix
-[![Cypress E2E Tests](https://github.com/nareshchandu17/movieflix/actions/workflows/cypress.yml/badge.svg)](https://github.com/nareshchandu17/movieflix/actions/workflows/cypress.yml)
+[![Cypress E2E Tests](https://github.com/nareshchandu17/movieflix/actions/workflows/cypress.yml/badge.svg)](https://github.com/nareshchandu17/movieflix/actions/workflows/cypress.yml) [![Lint & Type Check](https://github.com/nareshchandu17/movieflix/actions/workflows/ci.yml/badge.svg)](https://github.com/nareshchandu17/movieflix/actions/workflows/ci.yml)
 
 > **Your Premium Netflix-Style Streaming Experience** - A modern OTT platform with AI-powered insights and cinematic browsing
 
