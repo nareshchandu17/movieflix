@@ -40,3 +40,7 @@ jobs:
           CSRF_SECRET: test-secret-only-for-ci
           NEXTAUTH_SECRET: test-secret-only-for-ci
           NEXTAUTH_URL: http://localhost:3000
+          DISABLE_CSRF_FOR_TESTING: 'true'
+          GOOGLE_CLIENT_ID: dummy-client-id-for-testing
+          GOOGLE_CLIENT_SECRET: dummy-client-secret-for-testing
+          TMDB_API_KEY: dummy-tmdb-api-key-for-testing

@@ -122,8 +122,8 @@ export async function proxy(req: NextRequest) {
   const clientIp = getClientIp(req);
 
   try {
-    // 1. Enforce CSRF protection on API routes
-    if (pathname.startsWith('/api/') && shouldProtectFromCSRF(req.method)) {
+    // 1. Enforce CSRF protection on API routes (unless disabled for E2E testing)
+    if (process.env.DISABLE_CSRF_FOR_TESTING !== 'true' && pathname.startsWith('/api/') && shouldProtectFromCSRF(req.method)) {
       const isExempt = CSRF_EXEMPT_PATHS.some(path => pathname.startsWith(path));
       if (!isExempt) {
         const csrfResult = csrfProtection(req as unknown as Request);

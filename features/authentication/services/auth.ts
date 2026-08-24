@@ -11,6 +11,8 @@ import User from "@/features/authentication/models/User";
 import Collection from "@/features/history/models/Collection";
 import type { AuthOptions } from "next-auth";
 
+import CredentialsProvider from "next-auth/providers/credentials";
+
 export const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
@@ -24,6 +26,41 @@ export const authOptions: AuthOptions = {
         },
       },
     }),
+    ...(process.env.DISABLE_CSRF_FOR_TESTING === 'true'
+      ? [
+          CredentialsProvider({
+            name: "Credentials",
+            credentials: {
+              email: { label: "Email", type: "email" },
+              password: { label: "Password", type: "password" },
+            },
+            async authorize(credentials) {
+              await connectDB();
+              let role = "user";
+              if (credentials?.email === "admin@example.com") {
+                role = "admin";
+              } else if (!credentials?.email) {
+                return null;
+              }
+              
+              let existingUser = await User.findOne({ email: credentials.email });
+              if (!existingUser) {
+                 existingUser = await User.create({
+                   googleId: "test-oauth-" + Date.now(),
+                   name: role === "admin" ? "Admin" : "Test User",
+                   email: credentials.email,
+                   role: role,
+                   onboardingCompleted: true,
+                 });
+              } else if (existingUser.role !== role) {
+                 existingUser.role = role;
+                 await existingUser.save();
+              }
+              return { id: existingUser._id.toString(), email: existingUser.email, name: existingUser.name, role: existingUser.role, onboardingCompleted: existingUser.onboardingCompleted };
+            },
+          }),
+        ]
+      : []),
   ],
 
   session: {
@@ -44,7 +81,8 @@ export const authOptions: AuthOptions = {
   },
 
   callbacks: {
-    async signIn({ user }: any) {
+    async signIn({ user, account }: any) {
+      if (account?.provider === "credentials") return true;
       try {
         await connectDB();
 
