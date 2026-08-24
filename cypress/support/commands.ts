@@ -7,28 +7,35 @@ declare namespace Cypress {
 }
 
 Cypress.Commands.add('login', () => {
-  cy.request({
-    method: 'POST',
-    url: '/api/auth/login',
-    body: {
-      email: 'test@example.com',
-      password: 'TestPassword123!'
-    }
-  }).then((response) => {
-    window.localStorage.setItem('token', response.body.token);
+  cy.request('/api/auth/csrf').then((csrfResponse) => {
+    cy.request({
+      method: 'POST',
+      url: '/api/auth/callback/credentials',
+      form: true,
+      body: {
+        email: 'test@example.com',
+        password: 'TestPassword123!',
+        csrfToken: csrfResponse.body.csrfToken,
+        json: 'true'
+      }
+    });
   });
 });
 
 Cypress.Commands.add('loginAsAdmin', () => {
-  cy.request({
-    method: 'POST',
-    url: '/api/auth/login',
-    body: {
-      email: 'admin@example.com',
-      password: 'AdminPassword123!'
-    }
-  }).then((response) => {
-    window.localStorage.setItem('token', response.body.token);
-    window.localStorage.setItem('role', 'admin');
+  cy.request('/api/auth/csrf').then((csrfResponse) => {
+    cy.request({
+      method: 'POST',
+      url: '/api/auth/callback/credentials',
+      form: true,
+      body: {
+        email: 'admin@example.com',
+        password: 'AdminPassword123!',
+        csrfToken: csrfResponse.body.csrfToken,
+        json: 'true'
+      }
+    }).then(() => {
+      window.localStorage.setItem('role', 'admin');
+    });
   });
 });
