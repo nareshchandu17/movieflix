@@ -3,8 +3,6 @@
  * Provides CSRF token generation and validation for state-changing operations
  */
 
-import crypto from 'crypto';
-
 if (!process.env.CSRF_SECRET) {
   throw new Error('CSRF_SECRET environment variable is missing. This is a critical security risk.');
 }
@@ -17,7 +15,9 @@ const CSRF_HEADER_NAME = 'x-csrf-token';
  * Generate a random CSRF token
  */
 export function generateCSRFToken(): string {
-  return crypto.randomBytes(CSRF_TOKEN_LENGTH).toString('hex');
+  const array = new Uint8Array(CSRF_TOKEN_LENGTH);
+  globalThis.crypto.getRandomValues(array);
+  return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**

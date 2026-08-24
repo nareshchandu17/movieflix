@@ -120,16 +120,16 @@ export default function WatchPartyPage() {
       />
 
       {/* 2. Main Body Grid */}
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-y-auto lg:overflow-hidden">
 
         {/* Left Section: Video + Dashboard + Footer Stats */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="w-full lg:flex-1 flex flex-col lg:min-h-0 shrink-0">
 
           {/* Internal Scrollable for Dashboard */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden p-0 flex flex-col">
 
             {/* The Cinematic Player Section */}
-            <div className="relative flex-1 w-full bg-black shadow-2xl overflow-hidden min-h-[500px]">
+            <div className="relative flex-none lg:flex-1 w-full bg-black shadow-2xl overflow-hidden min-h-[300px] sm:min-h-[400px] lg:min-h-[500px]">
               <WatchPartyPlayer
                 watchParty={movieData}
                 userId={userId}
@@ -172,7 +172,7 @@ export default function WatchPartyPage() {
         </div>
 
         {/* Right Section: Interactive Side Panel (Chat, Participants, Activity) */}
-        <div className="hidden lg:block">
+        <div className="w-full lg:w-[400px] xl:w-[450px] h-[500px] lg:h-full border-t lg:border-t-0 lg:border-l border-white/10 shrink-0">
           <WatchPartySidePanel
             messages={chatMessages}
             participants={socketState.participants}

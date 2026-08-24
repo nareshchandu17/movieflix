@@ -151,6 +151,12 @@ async function handleRefundCreated(refund: any) {
 
 }
 
+/**
+ * Handles the `subscription.charged` webhook.
+ * Lifecycle: Upgrade / Renewal
+ * When a subscription is successfully charged (either an initial charge, a renewal, or an upgrade),
+ * this updates the user's billing cycle, sets the status to 'active', and provisions access to the new plan.
+ */
 async function handleSubscriptionCharged(sub: any) {
   const sessionMongoose = await mongoose.startSession();
   try {
@@ -187,6 +193,12 @@ async function handleSubscriptionCharged(sub: any) {
   }
 }
 
+/**
+ * Handles the `subscription.cancelled` webhook.
+ * Lifecycle: Cancellation / Downgrade to Free
+ * This event fires when a subscription officially ends (either immediately or at the end of a billed period).
+ * We revoke access by setting the status to 'cancelled', which drops the user back to the free tier limitations.
+ */
 async function handleSubscriptionCancelled(sub: any) {
   const sessionMongoose = await mongoose.startSession();
   try {

@@ -170,11 +170,21 @@ function PaymentOverlay({ state, error, planName, onRetry, onDismiss }: {
                 <h3 className="text-xl font-bold text-white mb-2">
                   {state === "creating" ? "Preparing checkout…" : "Confirming payment…"}
                 </h3>
-                <p className="text-zinc-400 text-sm">
+                <p className="text-zinc-400 text-sm mb-6">
                   {state === "creating"
                     ? "Setting up your secure payment"
                     : "Verifying your transaction with our servers"}
                 </p>
+                <div className="flex flex-col gap-3 p-4 bg-zinc-950/50 rounded-xl border border-white/5">
+                  <div className="flex items-center gap-3 text-xs text-zinc-300 font-medium">
+                    <Shield className="w-4 h-4 text-emerald-500" />
+                    <span>256-bit SSL encrypted connection</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-zinc-300 font-medium">
+                    <Check className="w-4 h-4 text-emerald-500" />
+                    <span>Cancel anytime from settings</span>
+                  </div>
+                </div>
               </>
             )}
 
@@ -586,46 +596,48 @@ export default function PricingPage() {
           Full plan comparison
         </h2>
 
-        <div className="rounded-2xl border border-zinc-800 overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-4 bg-zinc-900/80">
-            <div className="p-5 col-span-1 border-r border-zinc-800" />
-            {PLANS.map((plan) => (
-              <div
-                key={plan.id}
-                className="p-5 text-center border-r last:border-r-0 border-zinc-800"
-              >
-                <p className="font-bold text-white">{plan.name}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">{plan.tagline}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Rows */}
-          {FEATURE_ROWS.map((row, i) => {
-            const Icon = row.icon;
-            return (
-              <div
-                key={row.key}
-                className={`grid grid-cols-4 border-t border-zinc-800 ${
-                  i % 2 === 0 ? "bg-zinc-900/20" : "bg-transparent"
-                }`}
-              >
-                <div className="p-4 col-span-1 border-r border-zinc-800 flex items-center gap-2.5">
-                  <Icon className="w-4 h-4 text-zinc-500 flex-shrink-0" />
-                  <span className="text-sm text-zinc-300">{row.label}</span>
+        <div className="rounded-2xl border border-zinc-800 overflow-x-auto">
+          <div className="min-w-[800px]">
+            {/* Header */}
+            <div className="grid grid-cols-4 bg-zinc-900/80">
+              <div className="p-5 col-span-1 border-r border-zinc-800" />
+              {PLANS.map((plan) => (
+                <div
+                  key={plan.id}
+                  className="p-5 text-center border-r last:border-r-0 border-zinc-800"
+                >
+                  <p className="font-bold text-white">{plan.name}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">{plan.tagline}</p>
                 </div>
-                {PLANS.map((plan) => (
-                  <div
-                    key={plan.id}
-                    className="p-4 text-center border-r last:border-r-0 border-zinc-800 flex items-center justify-center"
-                  >
-                    {renderFeatureCell(getFeatureValue(plan, row.key))}
+              ))}
+            </div>
+
+            {/* Rows */}
+            {FEATURE_ROWS.map((row, i) => {
+              const Icon = row.icon;
+              return (
+                <div
+                  key={row.key}
+                  className={`grid grid-cols-4 border-t border-zinc-800 ${
+                    i % 2 === 0 ? "bg-zinc-900/20" : "bg-transparent"
+                  }`}
+                >
+                  <div className="p-4 col-span-1 border-r border-zinc-800 flex items-center gap-2.5">
+                    <Icon className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+                    <span className="text-sm text-zinc-300">{row.label}</span>
                   </div>
-                ))}
-              </div>
-            );
-          })}
+                  {PLANS.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className="p-4 text-center border-r last:border-r-0 border-zinc-800 flex items-center justify-center"
+                    >
+                      {renderFeatureCell(getFeatureValue(plan, row.key))}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

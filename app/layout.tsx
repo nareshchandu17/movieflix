@@ -13,9 +13,48 @@ import ProfileLoadingBlocker from "@/features/profile/components/ProfileLoadingB
 import { Providers } from "./providers";
 import { Analytics } from "@vercel/analytics/next";
 
-export const metadata = {
-  title: "MovieFlix",
-  description: "Your ultimate movie and series destination",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://movieflix-nareshchandu.vercel.app'),
+  title: {
+    default: "MovieFlix | Premium Streaming",
+    template: "%s | MovieFlix",
+  },
+  description: "Your ultimate movie and series destination. Watch parties, AI insights, and personalized recommendations.",
+  openGraph: {
+    title: "MovieFlix | Premium Streaming",
+    description: "Your ultimate movie and series destination. Watch parties, AI insights, and personalized recommendations.",
+    url: "/",
+    siteName: "MovieFlix",
+    images: [
+      {
+        url: "/og-image.jpg", // Placeholder for a real OG image you can add later
+        width: 1200,
+        height: 630,
+        alt: "MovieFlix Premium Streaming Experience",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MovieFlix | Premium Streaming",
+    description: "Your ultimate movie and series destination. Watch parties, AI insights, and personalized recommendations.",
+    images: ["/og-image.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 interface RootLayoutProps {

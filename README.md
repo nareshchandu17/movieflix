@@ -70,6 +70,51 @@
 
 ## 🏗 Application Architecture
 
+### System Flow
+```mermaid
+graph TD
+    Client[Client (Next.js App Router)]
+    
+    subgraph Frontend
+        UI[React UI Components]
+        State[Zustand / SWR]
+        UI <--> State
+        State <--> Client
+    end
+
+    subgraph API Gateway
+        NextAPI[Next.js API Routes]
+    end
+
+    Client <-->|HTTP/REST| NextAPI
+
+    subgraph Backend Services
+        DB[(MongoDB)]
+        Cache[(Redis Cache)]
+        Socket[Socket.io / Real-time]
+    end
+
+    NextAPI <-->|Mongoose| DB
+    NextAPI <-->|ioredis| Cache
+    NextAPI <-->|WS| Socket
+
+    subgraph External APIs
+        TMDB[TMDB API]
+        GoogleAI[Google AI]
+        Payment[Stripe / Razorpay]
+        Cloudinary[Cloudinary]
+    end
+
+    NextAPI <--> TMDB
+    NextAPI <--> GoogleAI
+    NextAPI <--> Payment
+    NextAPI <--> Cloudinary
+    
+    %% Webhook flows
+    Payment -.->|Webhooks| NextAPI
+```
+
+### Directory Structure
 ```
 movieflix-nextjs/
 ├── app/                          # Next.js App Router
@@ -220,7 +265,41 @@ CMD ["npm", "start"]
 
 ---
 
+## 💳 Subscription Lifecycle
 
+MovieFlix implements a robust, production-ready SaaS billing lifecycle ensuring users get exactly what they pay for without immediate cut-offs.
+
+1. **Upgrade / Renewal (`subscription.charged`)**: 
+   - When a successful charge occurs, the user's `subscriptionExpiry` is extended (monthly or yearly).
+   - Status immediately becomes `active`.
+2. **Cancellation (`cancelAtPeriodEnd`)**: 
+   - When a user cancels, they are **not** immediately downgraded. 
+   - The database flags the subscription to cancel at the end of the current billing cycle (`cancelAtPeriodEnd: true`).
+   - The user retains premium access until `currentPeriodEnd`.
+3. **Downgrade to Free (`subscription.cancelled`)**: 
+   - Only when the billing period completely ends, the payment provider sends a webhook.
+   - We catch this webhook to finalize the cancellation, dropping the user back to the free tier limitations.
+
+---
+
+## ⚠️ Known Limitations
+
+While MovieFlix is a robust platform, there are a few intentional constraints in this current version:
+
+- **AI Generation Quotas**: The Google AI integration (for moods and insights) uses a shared API key in the demo. Heavy traffic might lead to rate-limiting or fallback to standard TMDB descriptions.
+- **Watch Party Scale**: The current Socket.io implementation uses a single Node.js instance. For true production scale (10,000+ concurrent users), this would need to be migrated to a Redis adapter or a managed service like Pusher.
+- **Video Storage Limits**: Uploaded user avatars or custom watch party clips are stored on a free-tier Cloudinary account, which has strict bandwidth and storage limits.
+
+## 🛡 Security Architecture
+
+MovieFlix prioritizes security by implementing best practices across the full stack:
+
+- **Global CSRF Protection**: All state-changing API routes (`POST`, `PUT`, `DELETE`) are protected against Cross-Site Request Forgery via a custom Next.js `middleware.ts`. This middleware intercepts requests at the Edge and validates tokens securely using the Web Crypto API.
+- **Strict Session Management**: `next-auth` securely handles session cookies (`HttpOnly`, `Secure` in production) and API routes strictly enforce `getServerSession()` before interacting with the database.
+- **Webhook Integrity**: Webhooks from Razorpay bypass standard CSRF checks but require cryptographic signature verification before applying subscription changes.
+- **Hardened HTTP Headers**: The global middleware enforces `X-XSS-Protection`, `X-Frame-Options`, and `X-Content-Type-Options` on all responses.
+
+---
 
 ## 🤝 Contributing Guidelines
 

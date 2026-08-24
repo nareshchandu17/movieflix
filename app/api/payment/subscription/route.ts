@@ -69,11 +69,16 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ============================================================
-// DELETE /api/payment/subscription
-// Cancel subscription at period end
-// ============================================================
-
+/**
+ * DELETE /api/payment/subscription
+ * 
+ * Subscription Cancellation Lifecycle:
+ * 1. User requests cancellation via the billing portal.
+ * 2. We do NOT cancel the subscription immediately to ensure they get what they paid for.
+ * 3. We set `cancelAtPeriodEnd: true` in our database and (in a full implementation) notify Razorpay/Stripe to not renew.
+ * 4. The user retains 'active' status until the `currentPeriodEnd` date is reached.
+ * 5. Once the period ends, a webhook (`subscription.cancelled`) will fire to officially transition the status to 'cancelled'.
+ */
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
