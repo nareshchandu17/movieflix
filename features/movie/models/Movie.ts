@@ -37,7 +37,6 @@ const MovieSchema = new mongoose.Schema(
 );
 
 // Index for efficient cache lookups and cleanup
-MovieSchema.index({ tmdbId: 1 }, { unique: true });
 MovieSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // MongoDB TTL index for auto-cleanup
 
 // Ensure any cached model is replaced in development

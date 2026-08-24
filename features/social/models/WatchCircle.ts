@@ -209,8 +209,6 @@ const WatchSessionSchema = new mongoose.Schema({
 WatchCircleSchema.index({ 'members.userId': 1 });
 WatchCircleSchema.index({ createdBy: 1 });
 WatchPartySchema.index({ circleId: 1, status: 1 });
-WatchPartySchema.index({ roomCode: 1 });
-CircleStreakSchema.index({ circleId: 1 });
 WatchSessionSchema.index({ userId: 1, watchDate: -1 });
 WatchSessionSchema.index({ circleId: 1, watchDate: -1 });
 

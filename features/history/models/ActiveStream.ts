@@ -4,7 +4,7 @@ const ActiveStreamSchema = new mongoose.Schema({
   userId: { type: String, required: true, index: true },
   deviceId: { type: String, required: true },
   startedAt: { type: Date, default: Date.now },
-  lastHeartbeat: { type: Date, default: Date.now, index: true }
+  lastHeartbeat: { type: Date, default: Date.now }
 }, { timestamps: true });
 
 // Auto-expire inactive streams after 2 minutes
