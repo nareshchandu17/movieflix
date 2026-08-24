@@ -5,7 +5,10 @@
 
 import crypto from 'crypto';
 
-const CSRF_SECRET = process.env.CSRF_SECRET || 'default-csrf-secret-change-in-production';
+if (!process.env.CSRF_SECRET) {
+  throw new Error('CSRF_SECRET environment variable is missing. This is a critical security risk.');
+}
+const CSRF_SECRET = process.env.CSRF_SECRET;
 const CSRF_TOKEN_LENGTH = 32;
 const CSRF_COOKIE_NAME = 'csrf_token';
 const CSRF_HEADER_NAME = 'x-csrf-token';
