@@ -41,3 +41,7 @@ testsprite_tests\tmp\config.json
 # ai tools
 .codex/
 .kiro/
+
+# generated artifacts
+eslint-report.json
+audit_results.json
