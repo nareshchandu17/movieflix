@@ -37,3 +37,7 @@ next-env.d.ts
 
 
 testsprite_tests\tmp\config.json
+
+# ai tools
+.codex/
+.kiro/
