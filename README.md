@@ -71,48 +71,7 @@
 ## 🏗 Application Architecture
 
 ### System Flow
-```mermaid
-graph TD
-    Client[Client (Next.js App Router)]
-    
-    subgraph Frontend
-        UI[React UI Components]
-        State[Zustand / SWR]
-        UI --> State
-        State --> Client
-    end
-
-    subgraph API Gateway
-        NextAPI[Next.js API Routes]
-    end
-
-    Client -->|HTTP/REST| NextAPI
-
-    subgraph Backend Services
-        DB[(MongoDB)]
-        Cache[(Redis Cache)]
-        Socket[Socket.io / Real-time]
-    end
-
-    NextAPI -->|Mongoose| DB
-    NextAPI -->|ioredis| Cache
-    NextAPI -->|WS| Socket
-
-    subgraph External APIs
-        TMDB[TMDB API]
-        GoogleAI[Google AI]
-        Payment[Stripe / Razorpay]
-        Cloudinary[Cloudinary]
-    end
-
-    NextAPI --> TMDB
-    NextAPI --> GoogleAI
-    NextAPI --> Payment
-    NextAPI --> Cloudinary
-    
-    %% Webhook flows
-    Payment -.->|Webhooks| NextAPI
-```
+![Application Architecture Diagram](https://mermaid.ink/img/pako:eJx9U01vozAQ_SsjpEqptCT3HipB6AeHrhBQRaqbgwvTxBvwIGO2TUv_e2VMglWkcrDNvJl5743sT6-gEr0rb6d4s4c8epYAAOtKoNTMbrD4i-96-a-FoGkgpU6jutzaRLu23Yutv1UkNcrShs33GLMUeaHhMYY11Q1JlLrdTgmZ5hrZU9dqLktYQbZJt245-P61TfpRMwBWoUUG3h-CgiSGO67xjR-ncmMnSGJ2tpXE1tZJl9NpHIHvX_f3eZ6s0pss708dZnQhLw4oS8hQ_RcFthNnFLLFA8kdReGl42_Niz2yRYqlaO2Pi2ZUHFAzuy0FwQpS5JWvRY1zqaOoQetARS32EIVzVJAyhL1lnOObrB-5Zw5v3jUqySszNMde_hCFzCwm7ji4I9pVGMTMHiBwwYQfa3PNMq1Eg8Yc_yDV8KM7oIq6Ukiujmw6_up90DKPnpTMkVHGHJgI3ct-cQEbfNkTHeC1ordxCGMT8JdmfhZvzxfF--PVqGouSu_q09N7rM2bK_GVd5X2vr6-AblfFQ0=)
 
 ### Directory Structure
 ```
