@@ -204,19 +204,9 @@ const SearchPageContent = () => {
     if (typedValue.trim().length > 0 && typedValue.trim().length < MIN_SEARCH_LENGTH) {
       return `Type at least ${MIN_SEARCH_LENGTH} characters to search.`;
     }
-    if (isLoading) {
-      return `Searching for "${typedValue}"...`;
-    }
-    if (activeSource === "search") {
-      if (isFallback) {
-        return `No results found for "${typedValue}". Showing trending content instead.`;
-      }
-      if (searchResults.length > 0) {
-        return `Found ${searchResults.length} ranked result(s) for "${typedValue}"`;
-      }
-    }
+    // We now rely on PremiumSearchDisplay for loading, empty, and success states
     return null;
-  }, [activeSource, isFallback, isLoading, searchError, searchResults.length, typedValue]);
+  }, [searchError, typedValue]);
 
   return (
     <div className="container mx-auto px-4 pb-12 mt-4">

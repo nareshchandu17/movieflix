@@ -117,8 +117,22 @@ const LandingContent = () => {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-[hsl(240,20%,4%)] flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[hsl(240,20%,4%)] relative overflow-hidden flex items-center justify-center">
+        {/* Ambient background effects */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-red-500/5 blur-[120px]" />
+        </div>
+        <div className="relative z-10 w-full max-w-lg px-6">
+          <div className="text-center mb-12 animate-pulse">
+            <div className="inline-block w-48 h-8 rounded-full bg-white/5 mb-8" />
+            <div className="h-16 w-3/4 bg-white/5 rounded-2xl mx-auto mb-4" />
+            <div className="h-4 w-2/3 bg-white/5 rounded mx-auto" />
+          </div>
+          <div className="space-y-4 animate-pulse">
+            <div className="w-full h-24 rounded-xl bg-white/5 border border-white/5" />
+            <div className="w-full h-24 rounded-xl bg-white/5 border border-white/5" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -164,17 +178,25 @@ const LandingContent = () => {
           </p>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-        >
-          {errorMessage && (
-            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            {errorMessage && (
+              <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-start justify-between gap-3 shadow-[0_0_20px_rgba(229,9,20,0.1)]">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <span className="font-medium leading-relaxed">{errorMessage}</span>
+                </div>
+                <button 
+                  onClick={() => setErrorMessage(null)}
+                  className="text-red-400 hover:text-red-300 transition-colors shrink-0 px-2 py-0.5 rounded-md hover:bg-red-500/20"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
 
           {status === "unauthenticated" ? (
             <div className="glass rounded-xl p-8 text-center space-y-6">
@@ -246,7 +268,9 @@ const LandingContent = () => {
                   <div className="space-y-2">
                     <label className="text-xs font-semibold uppercase tracking-wider text-white/60">Choose Content</label>
                     {isLoadingMovies ? (
-                      <div className="h-12 glass rounded-lg flex items-center justify-center text-xs text-white/40">Loading movies...</div>
+                      <div className="h-12 w-full rounded-lg bg-zinc-900 border border-white/5 animate-pulse relative overflow-hidden">
+                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+                      </div>
                     ) : (
                       <select
                         value={selectedMovieId}

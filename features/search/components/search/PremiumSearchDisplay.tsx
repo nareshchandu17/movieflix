@@ -3,7 +3,7 @@ import React, { useState, useMemo } from "react";
 import { SearchResult } from "@/features/search/components/search/SmartSearch";
 import { TMDBMovie, TMDBTVShow } from "@/lib/types";
 import EnhancedMediaCard from "@/features/shared/components/display/EnhancedMediaCard";
-import { Play, Star, Calendar, Clock, TrendingUp, Film, Tv, User } from "lucide-react";
+import { Play, Star, Calendar, Clock, TrendingUp, Film, Tv, User, Search } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -84,6 +84,8 @@ const ActorSection: React.FC<{ actor: NonNullable<PremiumSearchDisplayProps['act
   );
 };
 
+import SearchSkeleton from "./SearchSkeleton";
+
 const PremiumSearchDisplay: React.FC<PremiumSearchDisplayProps> = ({
   results,
   query,
@@ -133,30 +135,51 @@ const PremiumSearchDisplay: React.FC<PremiumSearchDisplayProps> = ({
 
   if (isLoading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4 shadow-[0_0_15px_rgba(229,9,20,0.4)]"></div>
-          <p className="text-gray-400 animate-pulse italic">Decoding cinematic DNA for "{query}"...</p>
+      <div className="w-full">
+        <div className="mb-6">
+          <h2 className="text-2xl md:text-3xl font-black italic text-white/50 tracking-tighter flex items-center gap-3">
+            <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+            DECODING SIGNAL...
+          </h2>
         </div>
+        <SearchSkeleton />
       </div>
     );
   }
 
   if (results.length === 0 && !actor) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 bg-gray-900 border border-white/5 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
-            <Film className="w-10 h-10 text-red-600/50" />
+      <div className="min-h-[50vh] flex flex-col items-center justify-center relative rounded-3xl overflow-hidden border border-white/5 bg-gradient-to-b from-black via-zinc-900/20 to-black mt-8">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=75&w=1600')] bg-cover bg-center opacity-5 mix-blend-overlay pointer-events-none" />
+        
+        <div className="relative z-10 text-center max-w-lg px-6">
+          <div className="w-24 h-24 bg-red-950/30 border border-red-500/20 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_50px_rgba(229,9,20,0.15)] relative">
+            <div className="absolute inset-0 rounded-full border border-red-500/30 animate-ping opacity-20" />
+            <Search className="w-10 h-10 text-red-500/80" />
+            {/* Added a subtle glitch slash */}
+            <div className="absolute -inset-2 bg-gradient-to-tr from-transparent via-red-500/10 to-transparent rotate-45 transform origin-center mix-blend-overlay" />
           </div>
-          <h3 className="text-2xl font-black italic text-white mb-2 tracking-tighter">SIGNAL LOST</h3>
-          <p className="text-gray-400 mb-6 font-medium">
-            We couldn't find a cinematic match for "{query}"
+          
+          <h3 className="text-3xl font-black text-white mb-3 tracking-tight">
+            NO <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800">MATCHES</span> FOUND
+          </h3>
+          
+          <p className="text-zinc-400 text-lg mb-8 font-medium leading-relaxed">
+            Our systems couldn't locate any movies, shows, or actors matching "<span className="text-white">{(query || '').trim()}</span>".
           </p>
-          <div className="grid grid-cols-1 gap-2 text-sm text-gray-500">
-            <div className="bg-white/5 p-3 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">Check your spelling</div>
-            <div className="bg-white/5 p-3 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">Try different keywords</div>
-            <div className="bg-white/5 p-3 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">Use more general terms</div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-zinc-300">
+            <div className="bg-zinc-900/50 backdrop-blur-md p-4 rounded-xl border border-white/5 flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-red-500" />
+              Check for typos
+            </div>
+            <div className="bg-zinc-900/50 backdrop-blur-md p-4 rounded-xl border border-white/5 flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-red-500" />
+              Try broader keywords
+            </div>
+            <div className="bg-zinc-900/50 backdrop-blur-md p-4 rounded-xl border border-white/5 flex items-center gap-3 sm:col-span-2 justify-center hover:bg-zinc-800/50 transition-colors cursor-pointer" onClick={() => window.location.href = '/search'}>
+              <span className="font-semibold">Clear Search & Browse Trending</span>
+            </div>
           </div>
         </div>
       </div>
