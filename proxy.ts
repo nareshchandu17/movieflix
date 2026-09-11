@@ -7,6 +7,7 @@ import { csrfProtection, shouldProtectFromCSRF } from './lib/csrf';
 const CSRF_EXEMPT_PATHS = [
   '/api/payment/webhook', // External webhooks validate their own signatures
   '/api/auth',            // Next-auth handles its own CSRF
+  '/api/content-engine/allocate', // Content allocation doesn't mutate state
 ];
 
 const PROFILE_SKIP = [
@@ -37,7 +38,7 @@ function getSecurityHeaders(): Record<string, string> {
     "X-Frame-Options": "DENY",
     "X-XSS-Protection": "1; mode=block",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; form-action 'self' https://accounts.google.com; frame-src 'self' https://www.youtube.com;",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.pusher.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; form-action 'self' https://accounts.google.com; frame-src 'self' https://www.youtube.com;",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   };
@@ -113,7 +114,7 @@ function isAllowedApiOrigin(req: NextRequest) {
     "http://localhost:3000",
   ];
 
-  return allowedOrigins.includes(origin);
+  return allowedOrigins.includes(origin) || origin.endsWith(".vercel.app");
 }
 
 export async function proxy(req: NextRequest) {
