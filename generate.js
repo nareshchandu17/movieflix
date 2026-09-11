@@ -1,5 +1,5 @@
 const zlib = require('zlib');
-const text = \graph TD
+const text = `graph TD
     Client[Client (Next.js App Router)]
     
     subgraph Frontend
@@ -37,7 +37,7 @@ const text = \graph TD
     NextAPI --> Payment
     NextAPI --> Cloudinary
     
-    Payment -.->|Webhooks| NextAPI\;
+    Payment -.->|Webhooks| NextAPI`;
 
 const data = JSON.stringify({ code: text, mermaid: { theme: 'default' } });
 const compressed = zlib.deflateSync(Buffer.from(data, 'utf8'));
