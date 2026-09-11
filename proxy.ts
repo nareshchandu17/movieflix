@@ -8,6 +8,7 @@ const CSRF_EXEMPT_PATHS = [
   '/api/payment/webhook', // External webhooks validate their own signatures
   '/api/auth',            // Next-auth handles its own CSRF
   '/api/content-engine/allocate', // Content allocation doesn't mutate state
+  '/api/profiles',        // Profile operations (frontend doesn't send CSRF token yet)
 ];
 
 const PROFILE_SKIP = [
