@@ -47,7 +47,7 @@ export default function ProfileSelectPage() {
         // Cinematic flash
         setFlashOut(true);
         setTimeout(() => {
-          router.push("/");
+          window.location.href = "/";
         }, 600);
       } catch {
         setSelectingProfile(null);
@@ -106,14 +106,18 @@ export default function ProfileSelectPage() {
     if (!loading && !error && profiles.length > 0) {
       // If only one profile, auto-select and redirect
       if (profiles.length === 1) {
-        selectProfile(profiles[0]);
+        selectProfile(profiles[0]).then(() => {
+          window.location.href = "/";
+        });
         return;
       }
       
       // If multiple profiles and default exists, auto-select and redirect
       const defaultProfile = profiles.find(p => p.isDefault);
       if (defaultProfile) {
-        selectProfile(defaultProfile);
+        selectProfile(defaultProfile).then(() => {
+          window.location.href = "/";
+        });
         return;
       }
     }
