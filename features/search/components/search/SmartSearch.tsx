@@ -100,6 +100,7 @@ const SmartSearch = () => {
   const [isListening, setIsListening] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [magicExplanation, setMagicExplanation] = useState<string | null>(null);
   const [inputWidth, setInputWidth] = useState("w-32");
   const searchRef = useRef<HTMLDivElement>(null);
   const resultsGridRef = useRef<HTMLDivElement>(null);
@@ -406,11 +407,17 @@ const SmartSearch = () => {
       } else {
         verbalSummary = `Searching for ${searchQuery}.`;
         const [searchResponse, collectionResponse, personResponse] = await Promise.all([
-          api.search(searchQuery),
+          fetch(`/api/search?query=${encodeURIComponent(searchQuery)}`).then(r => r.json()),
           fetch(`/api/tmdb/search/collection?query=${encodeURIComponent(searchQuery)}`).then(r => r.json()),
           fetch(`/api/tmdb/search/person?query=${encodeURIComponent(searchQuery)}`).then(r => r.json())
         ]);
-        rawResults = searchResponse.results;
+        rawResults = searchResponse.results || [];
+        
+        if (searchResponse?.semantic_context?.magic_explanation) {
+           setMagicExplanation(searchResponse.semantic_context.magic_explanation);
+        } else {
+           setMagicExplanation(null);
+        }
         
         if (collectionResponse?.results) {
           collectionResults = collectionResponse.results.slice(0, 6).map((c: any) => ({
@@ -524,11 +531,11 @@ const SmartSearch = () => {
 
   const handleFocus = () => { setIsFocused(true); setShowResults(true); setInputWidth("w-64 sm:w-72"); };
   const handleBlur = () => { setTimeout(() => { setIsFocused(false); setIsSearching(false); }, 150); setTimeout(() => setShowResults(false), 200); };
-  const closeResults = () => { setShowResults(false); setQuery(""); setResults([]); setInputWidth("w-44"); };
+  const closeResults = () => { setShowResults(false); setQuery(""); setResults([]); setInputWidth("w-44"); setMagicExplanation(null); };
 
   return (
     <div ref={searchRef} className="relative hidden sm:flex items-center">
-      <div style={{ backdropFilter: "blur(10px)" }} className={`flex items-center bg-black/40 border rounded-full px-4 py-2 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] z-[95] ${isFocused ? "bg-black/70 border-white/40 shadow-[0_0_25px_rgba(229,9,20,0.3)] scale-105" : "border-white/15 hover:border-white/30 hover:bg-black/50"}`}>
+      <div style={{ backdropFilter: "blur(10px)" }} className={`flex items-center bg-black/40 border rounded-full px-4 py-2 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] z-[95] ${isFocused ? (magicExplanation ? "bg-black/70 border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.4)] scale-105" : "bg-black/70 border-white/40 shadow-[0_0_25px_rgba(229,9,20,0.3)] scale-105") : "border-white/15 hover:border-white/30 hover:bg-black/50"}`}>
         {isListening && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="flex items-center gap-1">
@@ -550,8 +557,8 @@ const SmartSearch = () => {
             </div>
           </div>
         )}
-        <BiSearch className={`w-5 h-5 transition-all duration-300 ${isFocused ? 'text-primary scale-110' : 'text-white/70'}`} />
-        <input ref={inputRef} type="text" placeholder="Search movies, series, actors..." value={query} onChange={handleSearchChange} onFocus={handleFocus} onBlur={handleBlur} className={`bg-transparent outline-none text-white text-sm ml-3 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] placeholder:text-white/40 ${inputWidth}`} />
+        <BiSearch className={`w-5 h-5 transition-all duration-300 ${isFocused ? (magicExplanation ? 'text-purple-500 scale-110' : 'text-primary scale-110') : 'text-white/70'}`} />
+        <input ref={inputRef} type="text" placeholder="Search movies, series, actors, or try 'Interstellar + Matrix'..." value={query} onChange={handleSearchChange} onFocus={handleFocus} onBlur={handleBlur} className={`bg-transparent outline-none text-white text-sm ml-3 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] placeholder:text-white/40 ${inputWidth}`} />
         {query.length > 0 && <button onClick={closeResults} className="ml-2 text-white/40 hover:text-white transition-colors"><X className="w-4 h-4" /></button>}
         <button onClick={toggleVoiceSearch} className={`ml-2 p-1 rounded-full transition-colors ${isListening ? "bg-red-500/20 text-red-400 animate-pulse" : "text-white/50 hover:text-white"}`}>{isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}</button>
       </div>
@@ -581,6 +588,18 @@ const SmartSearch = () => {
                   <div className="flex flex-col items-center justify-center py-20"><Loader2 className="w-12 h-12 text-primary animate-spin mb-4" /><p className="text-white/60">Searching...</p></div>
                 ) : (
                   <div className="space-y-16">
+                    {magicExplanation && (
+                      <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/30 rounded-2xl p-4 mb-8">
+                        <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
+                          <Star className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-white">✨ AI Search Powered</h3>
+                          <p className="text-xs text-purple-200 mt-0.5">{magicExplanation}</p>
+                        </div>
+                      </div>
+                    )}
+                    
                     {query && results.length > 0 && (
                       <section>
                         <div className="flex items-center gap-2 mb-6 text-primary"><TrendingUp className="w-6 h-6" /><h2 className="text-2xl font-bold">

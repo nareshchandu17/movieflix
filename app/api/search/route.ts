@@ -30,11 +30,31 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // 3. Execution (Parallel TMDB + Gemini for semantic intelligence)
-    const [tmdbResults, geminiResults] = await Promise.all([
-      GatewayClients.tmdb.search(query, type as any, page),
-      query.length > 10 ? GatewayClients.gemini.search(query) : Promise.resolve(null),
-    ]);
+    // 3. Execution (Gemini first for semantic intelligence)
+    const geminiResults = query.length > 10 ? await GatewayClients.gemini.search(query) : null;
+    
+    let tmdbResults;
+
+    if (geminiResults?.intent && ['FORMULA', 'SCENE', 'VIBE'].includes(geminiResults.intent) && geminiResults.suggested_movie_titles?.length > 0) {
+      // Magic Search: Fetch exact titles suggested by AI
+      const moviePromises = geminiResults.suggested_movie_titles.map((title: string) => 
+        GatewayClients.tmdb.search(title, 'movie', 1)
+      );
+      const specificMovieResults = await Promise.all(moviePromises);
+      
+      // Combine results taking the top hit from each search
+      const combinedResults = specificMovieResults.map(res => res.results[0]).filter(Boolean);
+      
+      tmdbResults = {
+        results: combinedResults,
+        page: 1,
+        total_pages: 1,
+        total_results: combinedResults.length
+      };
+    } else {
+      // Standard Search Fallback
+      tmdbResults = await GatewayClients.tmdb.search(query, type as any, page);
+    }
 
     const data = {
       results: tmdbResults.results,

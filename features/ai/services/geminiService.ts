@@ -741,23 +741,25 @@ export async function geminiSearch(query: string): Promise<any> {
   try {
     const service = getGeminiService();
     // Use the model to categorize the query and suggest intents
-    const prompt = `Analyze this search query for a movie streaming platform: "${query}"
+    const prompt = `Analyze this movie search query: "${query}"
     
-    1. Identify the likely intent (KEYWORD, SEMANTIC, MOOD, PERSON, GENRE, TRENDING, HYBRID).
-    2. Extract key entities (movies, actors, directors, genres).
-    3. If it's a mood query, map it to TMDB genres.
+    1. Identify the likely intent. It MUST be one of:
+       - FORMULA: Math-like additive/subtractive queries (e.g. "Interstellar + Matrix - Romance").
+       - SCENE: Describing a specific scene or plot point (e.g. "guy fights in a hallway with a hammer").
+       - VIBE: Aesthetic, mood, or feeling (e.g. "rainy sunday cyberpunk").
+       - KEYWORD: Standard search.
+    2. If intent is FORMULA, SCENE, or VIBE, you MUST provide an array of exactly 3 'suggested_movie_titles' that perfectly match the request.
+    3. Provide a 'magic_explanation' string (max 15 words) explaining what you did (e.g. "Combined Interstellar and Matrix without Romance").
     
-    Return ONLY JSON:
+    Return ONLY JSON in this exact format:
     {
-      "intent": "...",
+      "intent": "FORMULA | SCENE | VIBE | KEYWORD",
+      "magic_explanation": "...",
+      "suggested_movie_titles": ["Title 1", "Title 2", "Title 3"],
       "entities": {
         "movies": [],
         "people": [],
         "genres": []
-      },
-      "mood_analysis": {
-        "emotion": "...",
-        "suggested_genres": []
       }
     }`;
 
