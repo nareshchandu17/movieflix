@@ -7,7 +7,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts";
 import "@/styles/movie-insights.css";
 import { MovieReactionsSection } from "../fan-reactions/MovieReactionsSection";
 import PremiumReactionClip from "../reaction/PremiumReactionClip";
@@ -1666,7 +1666,7 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
                                                             fillOpacity={0.8}
                                                             style={{ filter: 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.4))' }}
                                                         />
-                                                        <Tooltip
+                                                        <RechartsTooltip
                                                             contentStyle={{ backgroundColor: '#1E293B', border: 'none', borderRadius: '8px', fontSize: '12px' }}
                                                             itemStyle={{ color: '#E6EAF2' }}
                                                         />
