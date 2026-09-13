@@ -168,6 +168,7 @@ export default function WatchPartyPage() {
                  onPlay={() => play(playbackState.currentTime)}
                  onPause={() => pause(playbackState.currentTime)}
                  movieTitle={movieData?.movieTitle}
+                 hostName={socketState.hostId ? (socketState.participants.find(p => p.socketId === socketState.hostId)?.userName || 'Host') : 'Host'}
                />
             </div>
           </div>

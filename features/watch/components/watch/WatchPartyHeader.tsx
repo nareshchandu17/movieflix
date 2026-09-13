@@ -28,20 +28,20 @@ export const WatchPartyHeader = ({
   const [reportText, setReportText] = useState("");
 
   return (
-    <div className="w-full h-[84px] bg-[#0A0A0A] border-b border-white/5 flex items-center justify-between px-10 z-[100] relative">
+    <div className="w-full min-h-16 md:h-[84px] bg-[#0A0A0A] border-b border-white/5 flex items-center justify-between px-4 md:px-8 lg:px-10 py-3 md:py-0 z-[100] relative">
       {/* Left: Movie Info */}
-      <div className="flex items-center gap-6">
-        <div className="flex flex-col">
-          <h1 className="text-xl font-bold text-white tracking-tight leading-tight uppercase">
+      <div className="flex items-center gap-6 min-w-0 flex-1 md:flex-none">
+        <div className="flex flex-col min-w-0 max-w-full">
+          <h1 className="text-sm md:text-xl font-bold text-white tracking-tight leading-tight uppercase truncate">
             {title}
           </h1>
-          <div className="flex items-center gap-3 mt-1">
-             <div className="flex items-center gap-2">
-                <MessageSquare size={14} className="text-zinc-500" />
-                <span className="text-xs font-medium text-zinc-500">Party Chat</span>
+          <div className="flex items-center gap-2 md:gap-3 mt-0.5 md:mt-1">
+             <div className="flex items-center gap-1.5 md:gap-2">
+                <MessageSquare size={12} className="text-zinc-500 md:w-3.5 md:h-3.5" />
+                <span className="text-[10px] md:text-xs font-medium text-zinc-500 hidden sm:inline">Party Chat</span>
              </div>
-             <div className="w-1 h-1 rounded-full bg-zinc-800" />
-             <span className="text-xs font-medium text-zinc-500">{participantsCount} members connected</span>
+             <div className="w-1 h-1 rounded-full bg-zinc-800 hidden sm:block" />
+             <span className="text-[10px] md:text-xs font-medium text-zinc-500 truncate">{participantsCount} members</span>
           </div>
         </div>
       </div>

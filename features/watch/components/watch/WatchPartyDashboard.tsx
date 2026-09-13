@@ -14,6 +14,7 @@ interface WatchPartyDashboardProps {
   onPause?: () => void;
   onSeek?: (time: number) => void;
   movieTitle?: string;
+  hostName?: string;
 }
 
 export const WatchPartyDashboard = React.memo(({ 
@@ -24,13 +25,14 @@ export const WatchPartyDashboard = React.memo(({
   onPlay,
   onPause,
   onSeek,
-  movieTitle
+  movieTitle,
+  hostName = 'Host'
 }: WatchPartyDashboardProps) => {
   const cards = [
     {
       id: 'host',
       title: 'Host Controls',
-      subtitle: isHost ? 'You are the host' : 'Naresh is hosting',
+      subtitle: isHost ? 'You are the host' : `${hostName} is hosting`,
       icon: <Shield className="text-red-500" size={20} />,
       action: isHost ? 'Manage' : null,
       bg: 'bg-red-500/5',
@@ -65,7 +67,7 @@ export const WatchPartyDashboard = React.memo(({
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-4 px-8 mt-4 mb-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-4 md:px-8 mt-4 mb-4">
       {cards.map((card) => (
         <motion.div
           key={card.id}
@@ -87,7 +89,7 @@ export const WatchPartyDashboard = React.memo(({
             <h3 className="text-xs font-bold text-white tracking-tight truncate">
               {card.title}
             </h3>
-            <p className="text-[10px] font-medium text-zinc-500 mt-0.5 line-clamp-1">
+            <p className="text-[11px] sm:text-xs font-medium text-zinc-500 mt-0.5 line-clamp-1">
               {card.subtitle}
             </p>
           </div>

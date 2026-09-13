@@ -76,14 +76,14 @@ export const WatchPartySidePanel = ({
   ];
 
   return (
-    <div className="w-[320px] h-full bg-[#0A0A0A] border-l border-white/5 flex flex-col z-[90]">
+    <div className="w-full h-full bg-[#0A0A0A] border-l border-white/5 flex flex-col z-[90]">
       {/* Tabs */}
-      <div className="px-8 pt-8 flex items-center gap-6 border-b border-white/5">
+      <div className="px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 flex items-center gap-4 sm:gap-6 border-b border-white/5 overflow-x-auto scrollbar-hide">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 pb-4 text-xs font-bold transition-all relative ${
+            className={`flex items-center gap-1.5 sm:gap-2 pb-3 sm:pb-4 text-[11px] sm:text-xs font-bold transition-all relative whitespace-nowrap ${
               activeTab === tab.id ? 'text-red-500' : 'text-zinc-500 hover:text-zinc-300'
             }`}
           >
@@ -97,7 +97,7 @@ export const WatchPartySidePanel = ({
 
       {/* Content Area */}
       <div 
-        className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar"
+        className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 custom-scrollbar"
         onScroll={handleScroll}
         ref={chatContainerRef}
       >
