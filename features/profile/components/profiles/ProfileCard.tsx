@@ -90,7 +90,7 @@ export default function ProfileCard({
         `}
       >
         {/* Card container with square design */}
-        <div className="relative bg-white/[0.03] backdrop-blur-sm rounded-xl p-4 border border-white/5 group-hover:border-[#E50914] group-hover:bg-white/[0.06] transition-all duration-300">
+        <div className="relative bg-white/[0.03] backdrop-blur-sm rounded-xl p-4 border border-white/5 group-hover:border-transparent group-hover:bg-white/[0.06] transition-all duration-300 group-hover:shadow-[0_0_30px_rgba(229,9,20,0.3)]">
           {/* Avatar Area */}
           <div
             className={`
@@ -101,7 +101,7 @@ export default function ProfileCard({
               relative overflow-hidden
             `}
           >
-            <span className="text-[56px] md:text-[64px] select-none z-10" style={{ lineHeight: 1 }}>
+            <span className="text-[56px] md:text-[64px] select-none z-10 transition-transform duration-300 group-hover:scale-110" style={{ lineHeight: 1 }}>
               {avatar?.emoji || "👤"}
             </span>
 
@@ -109,8 +109,16 @@ export default function ProfileCard({
             <div className={`absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
           </div>
 
-          {/* Red Border Overlay on Hover */}
-          <div className="absolute inset-0 rounded-xl group-hover:ring-2 group-hover:ring-[#E50914] transition-all duration-300 pointer-events-none" />
+          {/* Red Border Overlay on Hover (Animated Ring) */}
+          <motion.div 
+             className="absolute inset-0 rounded-xl border-2 border-[#E50914] pointer-events-none opacity-0"
+             variants={{
+                hover: { opacity: 1, scale: 1, transition: { duration: 0.3 } },
+                initial: { opacity: 0, scale: 0.95 }
+             }}
+             initial="initial"
+             whileHover="hover"
+          />
 
           {/* Kids badge */}
           {profile.isKids && (

@@ -40,9 +40,21 @@ export const WatchPartySidePanel = ({
   const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'activity'>('chat');
   const [chatInput, setChatInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const isScrolledToBottomRef = useRef(true);
+
+  const handleScroll = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      const isBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 50;
+      isScrolledToBottomRef.current = isBottom;
+    }
+  };
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isScrolledToBottomRef.current) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, activeTab]);
 
   const handleSend = (e: React.FormEvent) => {
@@ -50,6 +62,11 @@ export const WatchPartySidePanel = ({
     if (!chatInput.trim()) return;
     onSendMessage(chatInput.trim());
     setChatInput("");
+    // After sending a message, auto scroll to bottom
+    isScrolledToBottomRef.current = true;
+    setTimeout(() => {
+       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
 
   const tabs = [
@@ -79,7 +96,11 @@ export const WatchPartySidePanel = ({
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
+      <div 
+        className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar"
+        onScroll={handleScroll}
+        ref={chatContainerRef}
+      >
         <AnimatePresence mode="wait">
           {activeTab === 'chat' && (
             <motion.div 
@@ -89,16 +110,9 @@ export const WatchPartySidePanel = ({
               exit={{ opacity: 0 }}
               className="space-y-6"
             >
-              {/* Dummy "Joined" message from image */}
-              <div className="flex items-center gap-3 py-2 px-4 bg-zinc-900/40 rounded-2xl border border-white/5 opacity-80">
-                 <Users size={14} className="text-emerald-500" />
-                 <span className="text-xs font-medium text-zinc-300">Alex joined the party</span>
-                 <span className="ml-auto text-[10px] text-zinc-600">9:43 PM</span>
-              </div>
-
               {messages.map((msg, i) => {
-                const isHost = participants.find(p => p.userId === msg.userId)?.isHost;
-                const role = isHost ? 'HOST' : (Math.random() > 0.8 ? 'Buffering' : '');
+                const participant = participants.find(p => p.userId === msg.userId);
+                const role = participant?.isHost ? 'HOST' : (participant?.status === 'buffering' ? 'Buffering' : 'Member');
                 
                 return (
                   <div key={msg.id} className="flex gap-4">
@@ -131,13 +145,6 @@ export const WatchPartySidePanel = ({
                   </div>
                 );
               })}
-
-              {/* Dummy Reaction from image */}
-              <div className="flex items-center gap-3 py-2 px-4 bg-zinc-900/40 rounded-2xl border border-white/5 opacity-80">
-                 <ImageIcon size={14} className="text-red-500" />
-                 <span className="text-xs font-medium text-zinc-300">John reacted ❤️</span>
-                 <span className="ml-auto text-[10px] text-zinc-600">9:44 PM</span>
-              </div>
 
               <div ref={chatEndRef} />
             </motion.div>

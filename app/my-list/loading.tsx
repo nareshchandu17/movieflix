@@ -1,5 +1,5 @@
-import React from "react";
 import { Library } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MyListLoading() {
   return (
@@ -23,19 +23,17 @@ export default function MyListLoading() {
 
       {/* Action Button Skeleton */}
       <div className="flex justify-end px-4 sm:px-6 md:px-12 lg:px-20 mb-8 -mt-6 relative z-20">
-        <div className="h-10 w-40 bg-zinc-900 rounded-lg animate-pulse border border-white/5"></div>
+        <Skeleton className="h-10 w-40" />
       </div>
 
       {/* Collection Carousels Skeleton */}
       <div className="relative z-20 px-4 sm:px-6 md:px-12 lg:px-20 space-y-12">
         {Array.from({ length: 2 }).map((_, idx) => (
           <div key={idx} className="w-full">
-            <div className="h-8 w-48 bg-zinc-900 rounded animate-pulse mb-4"></div>
+            <Skeleton className="h-8 w-48 mb-4" />
             <div className="flex gap-4 overflow-hidden">
               {Array.from({ length: 6 }).map((_, cardIdx) => (
-                <div key={cardIdx} className="w-40 sm:w-48 md:w-56 lg:w-64 aspect-[16/9] rounded-xl bg-zinc-900 animate-pulse border border-white/5 flex-shrink-0 relative overflow-hidden">
-                  <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-zinc-800/30 to-transparent" />
-                </div>
+                <Skeleton key={cardIdx} className="w-40 sm:w-48 md:w-56 lg:w-64 aspect-[16/9] rounded-xl flex-shrink-0" />
               ))}
             </div>
           </div>

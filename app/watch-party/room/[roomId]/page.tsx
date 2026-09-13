@@ -9,6 +9,7 @@ import { WatchPartyDashboard } from "@/features/watch/components/watch/WatchPart
 import { WatchPartySidePanel } from "@/features/watch/components/watch/WatchPartySidePanel";
 import { WatchPartyFooter } from "@/features/watch/components/watch/WatchPartyFooter";
 import { NameModal } from "@/features/watch/components/watch/NameModal";
+import { toast, Toaster } from "sonner";
 
 interface WatchPartyData {
   _id: string;
@@ -35,6 +36,7 @@ export default function WatchPartyPage() {
   const [isAskingName, setIsAskingName] = useState(true);
   const [movieData, setMovieData] = useState<WatchPartyData | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [latency, setLatency] = useState(42);
 
   useEffect(() => {
     setIsMounted(true);
@@ -44,6 +46,12 @@ export default function WatchPartyPage() {
       setUserName(storedName);
       setIsAskingName(false);
     }
+    
+    // Simulate ping latency calculation
+    const pingInterval = setInterval(() => {
+       setLatency(Math.floor(Math.random() * 20) + 30); // 30-50ms ping
+    }, 5000);
+    return () => clearInterval(pingInterval);
   }, []);
 
   // Pusher Hook
@@ -91,7 +99,7 @@ export default function WatchPartyPage() {
   const handleInvite = () => {
     const url = window.location.href;
     navigator.clipboard.writeText(url);
-    alert('Invite link copied to clipboard!');
+    toast.success('Invite link copied to clipboard!');
   };
 
   if (!isMounted) {
@@ -107,7 +115,8 @@ export default function WatchPartyPage() {
   }
 
   return (
-    <div className="h-screen bg-[#050505] text-white flex flex-col overflow-hidden selection:bg-red-500/30">
+    <div className="h-[100dvh] bg-[#050505] text-white flex flex-col overflow-hidden selection:bg-red-500/30">
+      <Toaster theme="dark" position="top-right" />
       {/* 1. Header (Premium Top Bar) */}
       <WatchPartyHeader
         title={movieData?.movieTitle || "Watch Party"}
@@ -120,16 +129,16 @@ export default function WatchPartyPage() {
       />
 
       {/* 2. Main Body Grid */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-y-auto lg:overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
 
         {/* Left Section: Video + Dashboard + Footer Stats */}
-        <div className="w-full lg:flex-1 flex flex-col lg:min-h-0 shrink-0">
+        <div className="w-full lg:flex-1 flex flex-col min-h-0 shrink-0 bg-black">
 
           {/* Internal Scrollable for Dashboard */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-0 flex flex-col">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-0 flex flex-col scrollbar-hide">
 
             {/* The Cinematic Player Section */}
-            <div className="relative flex-none lg:flex-1 w-full bg-black shadow-2xl overflow-hidden min-h-[300px] sm:min-h-[400px] lg:min-h-[500px]">
+            <div className="relative flex-none w-full bg-black shadow-2xl overflow-hidden aspect-video max-h-[60vh] lg:max-h-none lg:h-full lg:flex-1">
               <WatchPartyPlayer
                 watchParty={movieData}
                 userId={userId}
@@ -150,29 +159,33 @@ export default function WatchPartyPage() {
             </div>
 
             {/* Dashboard: Controls, Sync info, Host details */}
-            <WatchPartyDashboard
-              isHost={socketState.isHost}
-              isPlaying={playbackState.isPlaying}
-              latency={42}
-              quality={playbackState.quality || 'Auto'}
-              onPlay={() => play(playbackState.currentTime)}
-              onPause={() => pause(playbackState.currentTime)}
-              movieTitle={movieData?.movieTitle}
-            />
+            <div className="hidden lg:block shrink-0">
+               <WatchPartyDashboard
+                 isHost={socketState.isHost}
+                 isPlaying={playbackState.isPlaying}
+                 latency={socketState.isConnected ? latency : 0}
+                 quality={playbackState.quality || 'Auto'}
+                 onPlay={() => play(playbackState.currentTime)}
+                 onPause={() => pause(playbackState.currentTime)}
+                 movieTitle={movieData?.movieTitle}
+               />
+            </div>
           </div>
 
           {/* Footer: Live Stats (Bitrate, Sync Health, Buffer) */}
-          <WatchPartyFooter
-            participantsCount={socketState.participants.length}
-            hostName={socketState.hostId ? (socketState.participants.find(p => p.socketId === socketState.hostId)?.userName || 'Host') : 'Host'}
-            startTime="Just now"
-            onLeave={handleLeave}
-            onReport={() => { }}
-          />
+          <div className="hidden lg:block shrink-0">
+             <WatchPartyFooter
+               participantsCount={socketState.participants.length}
+               hostName={socketState.hostId ? (socketState.participants.find(p => p.socketId === socketState.hostId)?.userName || 'Host') : 'Host'}
+               startTime="Just now"
+               onLeave={handleLeave}
+               onReport={() => { }}
+             />
+          </div>
         </div>
 
         {/* Right Section: Interactive Side Panel (Chat, Participants, Activity) */}
-        <div className="w-full lg:w-[400px] xl:w-[450px] h-[500px] lg:h-full border-t lg:border-t-0 lg:border-l border-white/10 shrink-0">
+        <div className="w-full lg:w-[400px] xl:w-[450px] flex-1 lg:h-full border-t lg:border-t-0 lg:border-l border-white/10 shrink-0 bg-[#0A0A0A] flex flex-col min-h-[300px]">
           <WatchPartySidePanel
             messages={chatMessages}
             participants={socketState.participants}

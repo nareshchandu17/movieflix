@@ -26,6 +26,7 @@ interface PlaybackState {
   volume: number;
   isBuffering: boolean;
   quality: string;
+  lastSyncTimestamp?: number;
 }
 
 interface ChatMessage {
@@ -62,10 +63,20 @@ export const useWatchPartyPusher = (
     volume: 1,
     isBuffering: false,
     quality: "auto",
+    lastSyncTimestamp: Date.now(),
   });
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [reactions, setReactions] = useState<Reaction[]>([]);
+
+  // Reaction cleanup
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setReactions((prev) => prev.filter((r) => now - r.timestamp < 5000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch initial room state on mount
   useEffect(() => {
@@ -109,11 +120,15 @@ export const useWatchPartyPusher = (
 
   // Bind Pusher presence events
   const handlePlayerControl = useCallback((data: any) => {
-    setPlaybackState((prev) => ({
-      ...prev,
-      isPlaying: data.action === "play",
-      currentTime: data.time !== undefined ? data.time : prev.currentTime,
-    }));
+    setPlaybackState((prev) => {
+      const isPlaying = data.action === "play" ? true : data.action === "pause" ? false : prev.isPlaying;
+      return {
+        ...prev,
+        isPlaying,
+        currentTime: data.time !== undefined ? data.time : prev.currentTime,
+        lastSyncTimestamp: Date.now(),
+      };
+    });
   }, []);
   usePusherEvent(channel, "player-control", handlePlayerControl);
 
@@ -139,11 +154,18 @@ export const useWatchPartyPusher = (
       timestamp: data.timestamp || Date.now(),
     };
     setReactions((prev) => [...prev, newReaction]);
-    setTimeout(() => {
-      setReactions((prev) => prev.filter((r) => r.id !== newReaction.id));
-    }, 3000);
   }, []);
   usePusherEvent(channel, "reaction", handleReaction);
+
+  const handleStatusChange = useCallback((data: any) => {
+    // A user changed status (e.g. buffering)
+    // We could show a toast here if we want, or handle it in the UI via participants state
+    if (data.status === 'buffering' && data.userId !== myId) {
+       // A quick hack: force a 'pause' local state if someone else buffers
+       setPlaybackState((prev) => ({ ...prev, isPlaying: false }));
+    }
+  }, [myId]);
+  usePusherEvent(channel, "status-change", handleStatusChange);
 
   // Map reactively from presence channel members list
   const participantsList: Participant[] = Object.entries(members).map(([mId, info]) => ({
@@ -215,9 +237,9 @@ export const useWatchPartyPusher = (
   const updateProgress = useCallback(async (currentTime: number) => {
     if (!roomCode || !isHost) return;
     
-    // Throttle sync to once every 5 seconds to prevent network storms
+    // Throttle sync to once every 2 seconds to prevent network storms but improve sync precision
     const now = Date.now();
-    if (now - lastSyncTime.current < 5000) return;
+    if (now - lastSyncTime.current < 2000) return;
     lastSyncTime.current = now;
 
     try {
@@ -231,9 +253,30 @@ export const useWatchPartyPusher = (
     }
   }, [roomCode, isHost]);
 
-  const setStatus = useCallback((status: "watching" | "buffering" | "lagging") => {
-    // Optional status update endpoint or client-side only tracking
-  }, []);
+  const setStatus = useCallback(async (status: "watching" | "buffering" | "lagging") => {
+    if (!roomCode) return;
+    try {
+      // In a real app, you would have an endpoint for status broadcast:
+      // await fetch("/api/pusher/watchparty/status", { ... })
+      // For now, if someone is buffering, we pause the stream
+      if (status === "buffering") {
+        await fetch("/api/pusher/watchparty/player-control", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomId: roomCode, action: "pause", time: playbackState.currentTime }),
+        });
+        
+        // Also send a system chat message
+        await fetch("/api/pusher/watchparty/chat", {
+           method: "POST",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify({ roomId: roomCode, message: `${userName} is buffering. Pausing...`, isSystem: true }),
+        });
+      }
+    } catch (err) {
+      console.error("❌ Failed to set status:", err);
+    }
+  }, [roomCode, playbackState.currentTime, userName]);
 
   const setQuality = useCallback((quality: string) => {
     setPlaybackState((prev) => ({ ...prev, quality }));

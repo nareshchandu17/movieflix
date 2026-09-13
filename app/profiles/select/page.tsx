@@ -10,6 +10,7 @@ import { AVATAR_MAP } from "@/features/profile/utils/avatars";
 import { useProfiles } from "@/features/profile/hooks/useProfiles";
 import type { Profile } from "@/features/profile/types/profiles";
 import PinModal from "@/features/profile/components/profiles/PinModal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function ProfileSelectPage() {
   const router = useRouter();
@@ -347,31 +348,48 @@ export default function ProfileSelectPage() {
       </AnimatePresence>
 
       {/* ── Footer Link Footer ── */}
-      <motion.div 
-        className="absolute bottom-12 w-full max-w-lg px-6 flex items-center justify-between z-10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8, duration: 0.6 }}
-      >
-        <div className="flex items-center gap-2 text-[#555] hover:text-white transition-colors cursor-pointer group">
-          <ShieldCheck className="w-4 h-4 text-[#E50914]/60 group-hover:text-[#E50914]" />
-          <span className="text-[12px] font-medium tracking-wide">Parental Controls</span>
-        </div>
-        
-        <div className="h-4 w-[1px] bg-white/10" />
+      <TooltipProvider>
+        <motion.div 
+          className="absolute bottom-12 w-full max-w-lg px-6 flex items-center justify-between z-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 text-[#555] hover:text-white transition-colors cursor-pointer group">
+                <ShieldCheck className="w-4 h-4 text-[#E50914]/60 group-hover:text-[#E50914]" />
+                <span className="text-[12px] font-medium tracking-wide">Parental Controls</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Manage access for kids</TooltipContent>
+          </Tooltip>
+          
+          <div className="h-4 w-[1px] bg-white/10" />
 
-        <div className="flex items-center gap-2 text-[#555] hover:text-white transition-colors cursor-pointer group" onClick={() => router.push("/settings/privacy")}>
-          <Lock className="w-4 h-4 text-[#E50914]/60 group-hover:text-[#E50914]" />
-          <span className="text-[12px] font-medium tracking-wide">Privacy</span>
-        </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 text-[#555] hover:text-white transition-colors cursor-pointer group" onClick={() => router.push("/settings/privacy")}>
+                <Lock className="w-4 h-4 text-[#E50914]/60 group-hover:text-[#E50914]" />
+                <span className="text-[12px] font-medium tracking-wide">Privacy</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>View privacy policy</TooltipContent>
+          </Tooltip>
 
-        <div className="h-4 w-[1px] bg-white/10" />
+          <div className="h-4 w-[1px] bg-white/10" />
 
-        <div className="flex items-center gap-2 text-[#555] hover:text-white transition-colors cursor-pointer group">
-          <HelpCircle className="w-4 h-4 text-[#E50914]/60 group-hover:text-[#E50914]" />
-          <span className="text-[12px] font-medium tracking-wide">Help Center</span>
-        </div>
-      </motion.div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 text-[#555] hover:text-white transition-colors cursor-pointer group">
+                <HelpCircle className="w-4 h-4 text-[#E50914]/60 group-hover:text-[#E50914]" />
+                <span className="text-[12px] font-medium tracking-wide">Help Center</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Get support</TooltipContent>
+          </Tooltip>
+        </motion.div>
+      </TooltipProvider>
     </div>
   );
 }

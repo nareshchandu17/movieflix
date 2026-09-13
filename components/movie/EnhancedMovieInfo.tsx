@@ -12,6 +12,7 @@ import "@/styles/movie-insights.css";
 import { MovieReactionsSection } from "../fan-reactions/MovieReactionsSection";
 import PremiumReactionClip from "../reaction/PremiumReactionClip";
 import CollectionPopup from "../collections/CollectionPopup";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useComments } from "@/lib/useComments";
 import { useSession } from "next-auth/react";
 import { Trash2 } from "lucide-react";
@@ -1067,10 +1068,22 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
 
                             {/* Movie Details */}
                             <div className="flex-1">
-                                <h1 className="text-4xl lg:text-6xl font-bold mb-4">{movieData.title}</h1>
+                                <motion.h1 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, ease: "easeOut" }}
+                                    className="text-4xl lg:text-6xl font-bold mb-4"
+                                >
+                                    {movieData.title}
+                                </motion.h1>
 
                                 {/* Meta Info */}
-                                <div className="flex items-center gap-4 mb-4 text-gray-300">
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+                                    className="flex items-center gap-4 mb-4 text-gray-300"
+                                >
                                     <div className="flex items-center gap-1">
                                         <Star className="w-5 h-5 text-yellow-500 fill-current" />
                                         <span>{movieData.vote_average.toFixed(1)}</span>
@@ -1085,10 +1098,15 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
                                         <Clock className="w-5 h-5" />
                                         <span>{movieData.runtime ? `${movieData.runtime} min` : 'N/A'}</span>
                                     </div>
-                                </div>
+                                </motion.div>
 
                                 {/* Description */}
-                                <div className="max-w-3xl mb-6">
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+                                    className="max-w-3xl mb-6"
+                                >
                                     <p className="text-gray-300 text-lg leading-relaxed">
                                         {showFullDescription ? description : `${description.slice(0, 200)}${shouldShowMore ? '...' : ''}`}
                                     </p>
@@ -1100,72 +1118,104 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
                                             {showFullDescription ? 'Show less' : 'more...'}
                                         </button>
                                     )}
-                                </div>
+                                </motion.div>
 
                                 {/* Action Buttons */}
-                                <div className="flex items-center gap-4">
-                                    <button
-                                        onClick={() => router.push(`/watch/${movieData?.id}`)}
-                                        className="px-8 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors flex items-center gap-2"
-                                    >
-                                        <Play className="w-5 h-5 fill-current" />
-                                        Play Now
-                                    </button>
-                                    <button
-                                        onClick={() => router.push('/watch-party')}
-                                        className="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-colors flex items-center gap-2"
-                                    >
-                                        <Play className="w-5 h-5" />
-                                        Watch Party
-                                    </button>
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
+                                    className="flex items-center gap-4"
+                                >
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <motion.button
+                                                    whileHover={{ scale: 1.05 }}
+                                                    whileTap={{ scale: 0.95 }}
+                                                    onClick={() => router.push(`/watch/${movieData?.id}`)}
+                                                    className="px-8 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                                                >
+                                                    <Play className="w-5 h-5 fill-current" />
+                                                    Play Now
+                                                </motion.button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Watch full movie</TooltipContent>
+                                        </Tooltip>
 
-                                    {/* Icon Buttons with Tooltips */}
-                                    <div className="flex items-center gap-2">
-                                        {/* Share Button */}
-                                        <div className="relative group">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    const rect = e.currentTarget.getBoundingClientRect();
-                                                    const menuWidth = 192; // w-48 = 12rem = 192px
-                                                    const leftPosition = rect.right - menuWidth; // Align to right edge
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <motion.button
+                                                    whileHover={{ scale: 1.05 }}
+                                                    whileTap={{ scale: 0.95 }}
+                                                    onClick={() => router.push('/watch-party')}
+                                                    className="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                                                >
+                                                    <Play className="w-5 h-5" />
+                                                    Watch Party
+                                                </motion.button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Watch with friends</TooltipContent>
+                                        </Tooltip>
 
-                                                    setShareButtonPosition({
-                                                        top: rect.bottom + 8,
-                                                        left: leftPosition < 0 ? rect.left : leftPosition // Prevent going off left edge
-                                                    });
-                                                    setShowShareMenu(!showShareMenu);
-                                                }}
-                                                className="p-3 bg-[rgba(255,255,255,0.1)] backdrop-blur-md border border-white/20 hover:bg-[rgba(255,255,255,0.2)] rounded-full transition-all duration-300"
-                                            >
-                                                <Share2 className="w-5 h-5" />
-                                            </button>
-                                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                                Share
-                                            </span>
-                                        </div>
+                                        {/* Icon Buttons with Tooltips */}
+                                        <div className="flex items-center gap-2">
+                                            {/* Share Button */}
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.1 }}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const rect = (e.currentTarget as Element).getBoundingClientRect();
+                                                            const menuWidth = 192;
+                                                            const leftPosition = rect.right - menuWidth;
+        
+                                                            setShareButtonPosition({
+                                                                top: rect.bottom + 8,
+                                                                left: leftPosition < 0 ? rect.left : leftPosition
+                                                            });
+                                                            setShowShareMenu(!showShareMenu);
+                                                        }}
+                                                        className="p-3 bg-[rgba(255,255,255,0.1)] backdrop-blur-md border border-white/20 hover:bg-[rgba(255,255,255,0.2)] rounded-full transition-all duration-300"
+                                                    >
+                                                        <Share2 className="w-5 h-5" />
+                                                    </motion.button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Share</TooltipContent>
+                                            </Tooltip>
 
-                                        <div className="relative group">
-                                            <button className="p-3 bg-[rgba(255,255,255,0.1)] backdrop-blur-md border border-white/20 hover:bg-[rgba(255,255,255,0.2)] rounded-full transition-all duration-300">
-                                                <Download className="w-5 h-5" />
-                                            </button>
-                                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                                Download
-                                            </span>
-                                        </div>
+                                            {/* Download Button */}
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <motion.button 
+                                                        whileHover={{ scale: 1.1 }}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        className="p-3 bg-[rgba(255,255,255,0.1)] backdrop-blur-md border border-white/20 hover:bg-[rgba(255,255,255,0.2)] rounded-full transition-all duration-300"
+                                                    >
+                                                        <Download className="w-5 h-5" />
+                                                    </motion.button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Download</TooltipContent>
+                                            </Tooltip>
 
-                                        {/* Watchlist Button */}
-                                        <div className="relative group">
-                                            <button
-                                                ref={plusButtonRef}
-                                                onClick={handleAddClick}
-                                                title="add to watchlist"
-                                                className="p-3 bg-[rgba(255,255,255,0.1)] backdrop-blur-md border border-white/20 hover:bg-[rgba(255,255,255,0.2)] rounded-full transition-all duration-300">
-                                                <Plus className="w-5 h-5" />
-                                            </button>
-                                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                                Add to Watchlist
-                                            </span>
+                                            {/* Watchlist Button */}
+                                            <div className="relative">
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.1 }}
+                                                            whileTap={{ scale: 0.9 }}
+                                                            ref={plusButtonRef}
+                                                            onClick={handleAddClick}
+                                                            className="p-3 bg-[rgba(255,255,255,0.1)] backdrop-blur-md border border-white/20 hover:bg-[rgba(255,255,255,0.2)] rounded-full transition-all duration-300"
+                                                        >
+                                                            <Plus className="w-5 h-5" />
+                                                        </motion.button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Add to Watchlist</TooltipContent>
+                                                </Tooltip>
 
                                             <AnimatePresence>
                                                 {isPopupOpen && movieData && (
@@ -1186,7 +1236,8 @@ const EnhancedMovieInfo = ({ id }: EnhancedMovieInfoProps) => {
                                             </AnimatePresence>
                                         </div>
                                     </div>
-                                </div>
+                                    </TooltipProvider>
+                                </motion.div>
                             </div>
                         </div>
                     </div>

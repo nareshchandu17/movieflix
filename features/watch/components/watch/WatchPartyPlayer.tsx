@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Volume2, Maximize2, X, Link as LinkIcon, Info, Users, Heart, Smile, Zap, Layers, Monitor, Subtitles, Settings, PictureInPicture2 } from 'lucide-react';
 import Image from 'next/image';
+import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
@@ -119,14 +121,21 @@ export const WatchPartyPlayer = ({
   useEffect(() => {
     if (!playerRef.current || !isReady || socketState.isHost) return;
 
-    // If local time is more than 2 seconds away from socket time, sync it
+    // If local time is more than 2 seconds away from server calculated time, sync it
     const localTime = playerRef.current.getCurrentTime();
-    const serverTime = playbackState.currentTime;
+    
+    // Calculate how much time has passed since the last sync event
+    const timeSinceLastSync = playbackState.lastSyncTimestamp ? (Date.now() - playbackState.lastSyncTimestamp) / 1000 : 0;
+    
+    // Extrapolate where the server is now (if playing)
+    const serverCalculatedTime = playbackState.isPlaying 
+        ? playbackState.currentTime + timeSinceLastSync 
+        : playbackState.currentTime;
 
-    if (Math.abs(localTime - serverTime) > 2) {
-      playerRef.current.seekTo(serverTime, 'seconds');
+    if (Math.abs(localTime - serverCalculatedTime) > 2) {
+      playerRef.current.seekTo(serverCalculatedTime, 'seconds');
     }
-  }, [playbackState.currentTime, isReady, socketState.isHost]);
+  }, [playbackState.currentTime, playbackState.isPlaying, playbackState.lastSyncTimestamp, isReady, socketState.isHost]);
 
   const resetUITimer = useCallback(() => {
     setShowUI(true);
@@ -151,17 +160,24 @@ export const WatchPartyPlayer = ({
   }, [reactions]);
 
   const removeReaction = (id: string) => {
+    // handled globally in useWatchPartyPusher, just remove from local array when anim completes
     setLocalReactions(prev => prev.filter(r => r.id !== id));
   };
 
   const handleTogglePlay = () => {
-    if (!socketState.isHost) return; // Only host can toggle for everyone
+    if (!socketState.isHost) {
+        toast.error("Only the host can control playback");
+        return;
+    }
     const t = playerRef.current?.getCurrentTime() || 0;
     playbackState.isPlaying ? pause(t) : play(t);
   };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!socketState.isHost) return;
+    if (!socketState.isHost) {
+        toast.error("Only the host can seek");
+        return;
+    }
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percentage = x / rect.width;
@@ -230,7 +246,7 @@ export const WatchPartyPlayer = ({
                      <button 
                        onClick={() => {
                          navigator.clipboard.writeText(window.location.href);
-                         alert('Link Copied!');
+                         toast.success('Link Copied!');
                        }}
                        className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-all"
                      >
@@ -251,7 +267,7 @@ export const WatchPartyPlayer = ({
                </div>
             </div>
 
-            <div className="flex-1 flex items-center pointer-events-none mt-20">
+            <div className="flex-1 hidden md:flex items-center pointer-events-none mt-8">
                <motion.div 
                  initial={{ x: -20, opacity: 0 }}
                  animate={{ x: 0, opacity: 1 }}
@@ -330,7 +346,7 @@ export const WatchPartyPlayer = ({
 
                <div className="w-full bg-black/60 backdrop-blur-3xl border border-white/5 rounded-[32px] p-6 flex flex-col gap-6 pointer-events-auto shadow-2xl">
                   <div 
-                    className="group/progress relative h-1.5 w-full bg-white/5 rounded-full cursor-pointer"
+                    className={`group/progress relative h-1.5 w-full bg-white/5 rounded-full ${socketState.isHost ? 'cursor-pointer' : 'cursor-default pointer-events-none opacity-80'}`}
                     onClick={handleSeek}
                   >
                      <div 
@@ -375,10 +391,35 @@ export const WatchPartyPlayer = ({
                      </div>
 
                      <div className="flex items-center gap-6 text-zinc-500">
-                        <button className="px-3 py-1 bg-white/5 border border-white/5 rounded-lg text-[10px] font-black text-white hover:bg-white/10 transition-colors">HD</button>
-                        <button className="p-1 hover:text-white transition-colors"><Subtitles size={20} /></button>
-                        <button className="p-1 hover:text-white transition-colors"><PictureInPicture2 size={20} /></button>
-                        <button onClick={() => playerRef.current?.getInternalPlayer()?.requestFullscreen()} className="p-1 hover:text-white transition-colors"><Maximize2 size={20} /></button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                               <button className="px-3 py-1 bg-white/5 border border-white/5 rounded-lg text-[10px] font-black text-white hover:bg-white/10 transition-colors">HD</button>
+                            </TooltipTrigger>
+                            <TooltipContent>Quality</TooltipContent>
+                          </Tooltip>
+                          
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                               <button className="p-1 hover:text-white transition-colors"><Subtitles size={20} /></button>
+                            </TooltipTrigger>
+                            <TooltipContent>Subtitles</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                               <button className="p-1 hover:text-white transition-colors"><PictureInPicture2 size={20} /></button>
+                            </TooltipTrigger>
+                            <TooltipContent>Picture in Picture</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                               <button onClick={() => playerRef.current?.getInternalPlayer()?.requestFullscreen()} className="p-1 hover:text-white transition-colors"><Maximize2 size={20} /></button>
+                            </TooltipTrigger>
+                            <TooltipContent>Fullscreen</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                      </div>
                   </div>
                </div>
