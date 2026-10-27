@@ -1,23 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, UserPlus, Users, Share2, AlertTriangle, LogOut, MessageSquare, X } from "lucide-react";
+import { Share2, AlertTriangle, LogOut, MessageSquare, X, Copy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { toast } from "sonner";
 
 interface WatchPartyHeaderProps {
   title: string;
-  subtitle?: string;
+  poster?: string;
+  participants: Array<{
+    userId: string;
+    userName: string;
+    avatarUrl?: string;
+    isHost: boolean;
+  }>;
   participantsCount: number;
+  isConnected: boolean;
+  roomApiResponseMs: number | null;
   onLeave: () => void;
   onInvite: () => void;
-  isHost: boolean;
   roomCode: string;
 }
 
 export const WatchPartyHeader = ({
   title,
-  subtitle = "S1 E2 • The Kingsroad",
+  poster,
+  participants,
+  isConnected,
+  roomApiResponseMs,
   onLeave,
   onInvite,
   participantsCount,
@@ -27,59 +38,102 @@ export const WatchPartyHeader = ({
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportText, setReportText] = useState("");
 
+  const handleCopyRoomCode = async () => {
+    try {
+      await navigator.clipboard.writeText(roomCode);
+      toast.success("Room code copied to clipboard.");
+    } catch {
+      toast.error("Could not copy the room code.");
+    }
+  };
+
   return (
-    <div className="w-full min-h-16 md:h-[84px] bg-[#0A0A0A] border-b border-white/5 flex items-center justify-between px-4 md:px-8 lg:px-10 py-3 md:py-0 z-[100] relative">
+    <div className="relative z-[100] flex w-full flex-col items-stretch gap-3 border-b border-white/5 bg-[#0A0A0A] px-4 py-3 md:px-8 lg:h-[84px] lg:flex-row lg:items-center lg:justify-between lg:gap-0 lg:px-10 lg:py-0">
       {/* Left: Movie Info */}
-      <div className="flex items-center gap-6 min-w-0 flex-1 md:flex-none">
-        <div className="flex flex-col min-w-0 max-w-full">
-          <h1 className="text-sm md:text-xl font-bold text-white tracking-tight leading-tight uppercase truncate">
-            {title}
-          </h1>
+      <div className="flex min-w-0 items-center gap-3 lg:flex-none">
+        <div className="relative hidden h-12 w-9 shrink-0 overflow-hidden rounded-md border border-white/10 bg-zinc-900 sm:block">
+          {poster ? (
+            <Image src={poster} alt="" fill unoptimized className="object-cover" />
+          ) : (
+            <div className="flex h-full items-center justify-center text-[9px] font-semibold text-zinc-600">No poster</div>
+          )}
+        </div>
+        <div className="flex min-w-0 max-w-full flex-col">
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="min-w-0 flex-1 truncate text-sm font-bold uppercase leading-tight tracking-tight text-white md:text-xl">
+              {title}
+            </h1>
+            <div className="flex shrink-0 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] py-1 pl-2 pr-1.5">
+              <span className="text-[9px] md:text-[10px] font-medium text-zinc-500">Room code:</span>
+              <code className="text-[10px] md:text-xs font-semibold tracking-wider text-zinc-200">{roomCode}</code>
+              <button
+                type="button"
+                onClick={handleCopyRoomCode}
+                aria-label={`Copy room code ${roomCode}`}
+                title="Copy room code"
+                className="ml-0.5 rounded p-1 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                <Copy size={12} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
           <div className="flex items-center gap-2 md:gap-3 mt-0.5 md:mt-1">
              <div className="flex items-center gap-1.5 md:gap-2">
                 <MessageSquare size={12} className="text-zinc-500 md:w-3.5 md:h-3.5" />
                 <span className="text-[10px] md:text-xs font-medium text-zinc-500 hidden sm:inline">Party Chat</span>
              </div>
              <div className="w-1 h-1 rounded-full bg-zinc-800 hidden sm:block" />
-             <span className="text-[10px] md:text-xs font-medium text-zinc-500 truncate">{participantsCount} members</span>
+             <span className="text-[10px] md:text-xs font-medium text-zinc-500 truncate">
+               {participantsCount} {participantsCount === 1 ? "participant" : "participants"} online
+             </span>
           </div>
         </div>
       </div>
 
       {/* Center: Sync Status & Avatars */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-6">
-        <div className="bg-zinc-900/80 border border-white/5 rounded-full py-2 px-3 flex items-center gap-4">
+      <div className="relative flex w-full min-w-0 flex-wrap items-center justify-between gap-3 lg:absolute lg:left-1/2 lg:top-1/2 lg:w-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:flex-nowrap lg:justify-center lg:gap-6">
+        <div className="flex min-w-0 items-center gap-3 rounded-full border border-white/5 bg-zinc-900/80 px-3 py-2 sm:gap-4">
           <div className="flex -space-x-3">
-            {[1, 2, 3].map((i) => (
+            {participants.slice(0, 3).map((participant) => (
               <div
-                key={i}
-                className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 relative overflow-hidden"
+                key={participant.userId}
+                className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border-2 border-zinc-900 bg-zinc-800 sm:h-8 sm:w-8"
+                title={`${participant.userName}${participant.isHost ? " · Host" : ""}`}
               >
-                <Image
-                  src={`https://i.pravatar.cc/100?u=user${i}`}
-                  alt="User"
-                  fill
-                  className="object-cover"
-                />
+                {participant.avatarUrl ? (
+                  <Image src={participant.avatarUrl} alt="" fill unoptimized className="object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-white/80">
+                    {(participant.userName.trim()[0] || "?").toUpperCase()}
+                  </span>
+                )}
               </div>
             ))}
-            <div className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-emerald-500 z-10">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse" />
-            </div>
+            {participantsCount > 3 && (
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-zinc-900 bg-zinc-800 text-[10px] font-bold text-white/80 sm:h-8 sm:w-8">
+                +{participantsCount - 3}
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-col pr-2">
-            <span className="text-[11px] font-bold text-white leading-tight uppercase truncate max-w-[120px]">{title}</span>
-            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider flex items-center gap-1">
-              <span className="w-1 h-1 rounded-full bg-emerald-500" />
-              In Sync
+          <div className="flex min-w-0 flex-col pr-1 sm:pr-2">
+            <span className="max-w-[120px] truncate text-[11px] font-bold uppercase leading-tight text-white">{title}</span>
+            <span className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${isConnected ? "text-emerald-500" : "text-amber-400"}`}>
+              <span className={`h-1 w-1 rounded-full ${isConnected ? "bg-emerald-500" : "bg-amber-400"}`} />
+              {isConnected ? "Connected" : "Reconnecting"}
             </span>
+            {isConnected && (
+              <span className="text-[9px] font-medium text-zinc-500">
+                {roomApiResponseMs === null ? "API response not measured" : `Room API response · ${roomApiResponseMs}ms`}
+              </span>
+            )}
           </div>
         </div>
 
         <button
+          type="button"
           onClick={onInvite}
-          className="h-11 px-6 bg-zinc-900/80 border border-white/10 rounded-2xl flex items-center gap-2.5 hover:bg-zinc-800 transition-all font-bold text-sm text-white/90 active:scale-95"
+          className="flex h-10 shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-zinc-900/80 px-4 text-sm font-bold text-white/90 transition-all hover:bg-zinc-800 active:scale-95 sm:h-11 sm:gap-2.5 sm:px-6"
         >
           <Share2 size={18} className="text-zinc-400" />
           Invite
@@ -87,9 +141,10 @@ export const WatchPartyHeader = ({
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-8 relative">
+      <div className="relative flex flex-wrap items-center justify-between gap-x-4 gap-y-2 lg:justify-end lg:gap-8 lg:pl-4">
         <div className="relative">
-          <button 
+          <button
+            type="button"
             onClick={() => setShowReportModal(!showReportModal)}
             className={`flex items-center gap-2 text-xs font-medium transition-colors ${showReportModal ? 'text-white' : 'text-zinc-600 hover:text-zinc-300'}`}
           >
@@ -128,7 +183,8 @@ export const WatchPartyHeader = ({
           </AnimatePresence>
         </div>
         
-        <button 
+        <button
+          type="button"
           onClick={() => setShowLeaveConfirm(true)}
           className="flex items-center gap-2 text-xs font-bold text-red-500 hover:text-red-400 transition-all active:scale-95 group"
         >

@@ -12,32 +12,50 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { roomId, targetUserId, type, sdp, candidate } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+    const { roomId, targetUserId, type, offer, answer, candidate } = body;
 
-    if (!roomId || !targetUserId || !type) {
-      return NextResponse.json({ error: "Missing roomId, targetUserId, or type" }, { status: 400 });
+    if (
+      typeof roomId !== "string" ||
+      !/^[A-Z0-9]{6,12}$/.test(roomId) ||
+      typeof targetUserId !== "string" ||
+      !["offer", "answer", "ice-candidate"].includes(type)
+    ) {
+      return NextResponse.json({ error: "Invalid signaling request" }, { status: 400 });
+    }
+    if (JSON.stringify({ offer, answer, candidate }).length > 64_000) {
+      return NextResponse.json({ error: "Signaling payload is too large" }, { status: 413 });
+    }
+    const signalValue = type === "offer" ? offer : type === "answer" ? answer : candidate;
+    if (!signalValue || typeof signalValue !== "object" || Array.isArray(signalValue)) {
+      return NextResponse.json({ error: "Missing signaling data" }, { status: 400 });
     }
 
     await connectDB();
 
-    const room = await WatchPartyRoom.findOne({ roomId });
+    const room = await WatchPartyRoom.findOne({ roomId, isActive: true });
     if (!room) {
       return NextResponse.json({ error: "Room not found" }, { status: 404 });
     }
 
     // Verify sender is a participant in this room
     const isParticipant = room.participants.some((p: any) => p.userId === session.user.id);
-    if (!isParticipant) {
-      return NextResponse.json({ error: "Forbidden: You are not in this Watch Party room" }, { status: 403 });
+    const targetIsParticipant = room.participants.some((p: any) => p.userId === targetUserId);
+    if (!isParticipant || !targetIsParticipant) {
+      return NextResponse.json({ error: "Both users must be active room participants" }, { status: 403 });
     }
 
     // Trigger signaling event to target user via private signal channel
     await triggerSignalEvent(targetUserId, "signaling", {
       type,
-      sdp,
+      offer,
+      answer,
       candidate,
       senderId: session.user.id,
-      senderName: session.user.name || "User",
+      senderName: session.user.name || "Member",
       roomId,
     });
 

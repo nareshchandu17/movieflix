@@ -219,34 +219,26 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Watch party not found' }, { status: 404 });
       }
 
-      // Fetch the movie/series details
-      const Movie = mongoose.models.Movie || (await import("@/features/movie/models/Movie")).default;
-      const Series = mongoose.models.Series || (await import("@/features/series/models/Series")).default;
-      let movie = await Movie.findOne({ $or: [{ _id: room.movieId }, { tmdbId: parseInt(room.movieId) || 0 }] });
-      if (!movie) {
-        movie = await Series.findOne({ $or: [{ _id: room.movieId }, { tmdbId: parseInt(room.movieId) || 0 }] });
-      }
-
-      const videoUrl = movie?.videoUrl || "";
-      const movieTitle = movie?.title || room.name || "Watch Party";
-      const moviePoster = movie?.posterUrl || "";
+      const media = await findRoomMediaDetails(room.movieId);
 
       return NextResponse.json({
         success: true,
         watchParty: {
           _id: room._id.toString(),
           movieId: room.movieId,
-          movieTitle,
-          moviePoster,
+          movieTitle: media?.title || "",
+          moviePoster: media?.posterUrl || "",
+          movieBackdrop: media?.backdropUrl || "",
           roomCode: room.roomId,
           circleId: null,
           hostId: room.hostId.toString(),
+          createdAt: room.createdAt,
           participants: room.participants.map((p: any) => ({
             userId: p.userId,
             userName: p.userName,
-            userImage: ""
+            userImage: p.userImage || ""
           })),
-          videoUrl
+          videoUrl: media?.videoUrl || ""
         }
       });
     }
@@ -260,24 +252,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Not authorized to join this watch party' }, { status: 403 });
     }
 
-    // Fetch video URL from Movie or Series
-    const Movie = mongoose.models.Movie;
-    const Series = mongoose.models.Series;
-    
-    let videoUrl = "";
-    const movie = await Movie.findOne({ $or: [{ _id: watchParty.movieId }, { tmdbId: parseInt(watchParty.movieId) }] });
-    if (movie) {
-      videoUrl = movie.videoUrl;
-    } else {
-      const series = await Series.findOne({ $or: [{ _id: watchParty.movieId }, { tmdbId: parseInt(watchParty.movieId) }] });
-      if (series) videoUrl = series.videoUrl;
-    }
+    const media = await findRoomMediaDetails(String(watchParty.movieId));
 
     return NextResponse.json({
       success: true,
       watchParty: {
         ...watchParty,
-        videoUrl
+        movieTitle: media?.title || watchParty.movieTitle || "",
+        moviePoster: media?.posterUrl || watchParty.moviePoster || "",
+        movieBackdrop: media?.backdropUrl || "",
+        videoUrl: media?.videoUrl || "",
+        createdAt: watchParty.createdAt
       }
     });
 
@@ -285,6 +270,37 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching watch party:', error);
     return NextResponse.json({ error: 'Failed to fetch watch party' }, { status: 500 });
   }
+}
+
+async function findRoomMediaDetails(movieId: string) {
+  const filters: Record<string, unknown>[] = [];
+  if (mongoose.isValidObjectId(movieId)) {
+    filters.push({ _id: new mongoose.Types.ObjectId(movieId) });
+  }
+
+  const tmdbId = Number(movieId);
+  if (/^\d+$/.test(movieId) && Number.isSafeInteger(tmdbId)) {
+    filters.push({ tmdbId });
+  }
+  if (filters.length === 0) return null;
+
+  const Movie = mongoose.models.Movie || (await import("@/features/movie/models/Movie")).default;
+  const Series = mongoose.models.Series || (await import("@/features/series/models/Series")).default;
+  const query = { $or: filters };
+  const movie = await Movie.findOne(query).lean();
+  if (movie) return movie;
+
+  const series = await Series.findOne(query).lean();
+  if (!series) return null;
+
+  const firstAvailableEpisode = series.seasons
+    ?.flatMap((season: { episodes?: Array<{ videoUrl?: string }> }) => season.episodes || [])
+    .find((episode: { videoUrl?: string }) => Boolean(episode.videoUrl?.trim()));
+
+  return {
+    ...series,
+    videoUrl: firstAvailableEpisode?.videoUrl || "",
+  };
 }
 
 // Helper function to generate room code

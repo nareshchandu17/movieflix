@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/features/authentication/services/auth";
 import { pusherServer } from "@/lib/pusher/server";
+import connectDB from "@/lib/db";
+import WatchPartyRoom from "@/features/watch-party/models/WatchPartyRoom";
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,12 +33,31 @@ export async function POST(req: NextRequest) {
 
     // Authorization checks based on channel prefixes
     if (channelName.startsWith("presence-")) {
-      // Watch Party presence channel: presence-room-{roomId}
+      const roomId = channelName.startsWith("presence-room-")
+        ? channelName.slice("presence-room-".length)
+        : "";
+      if (!roomId) {
+        return NextResponse.json({ error: "Forbidden: Invalid presence channel" }, { status: 403 });
+      }
+
+      await connectDB();
+      const room = await WatchPartyRoom.findOne({
+        roomId,
+        isActive: true,
+        "participants.userId": session.user.id,
+      }).select("hostId participants");
+      const participant = room?.participants.find((item: any) => item.userId === session.user.id);
+
+      if (!room || !participant) {
+        return NextResponse.json({ error: "Forbidden: Not an active room participant" }, { status: 403 });
+      }
+
       const userData = {
         user_id: session.user.id,
         user_info: {
-          userName: session.user.name || "Anonymous",
-          isHost: false, // Default, will be updated based on DB in join route if needed
+          userName: participant.userName || session.user.name || "Anonymous",
+          isHost: room.hostId.toString() === session.user.id,
+          avatarUrl: session.user.image || "",
         },
       };
       const authResponse = pusherServer.authorizeChannel(socketId, channelName, userData);

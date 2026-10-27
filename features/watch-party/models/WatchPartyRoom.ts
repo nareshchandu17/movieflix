@@ -1,8 +1,11 @@
 import mongoose from "mongoose";
 
+export const MAX_WATCH_PARTY_PARTICIPANTS = 4;
+
 const ParticipantSchema = new mongoose.Schema({
   userId: { type: String, required: true },
   userName: { type: String },
+  userImage: { type: String, default: "" },
   /** @deprecated socketId is no longer used with Pusher presence channels */
   socketId: { type: String },
   joinedAt: { type: Date, default: Date.now },
@@ -41,9 +44,10 @@ const WatchPartyRoomSchema = new mongoose.Schema(
         id: String,
         userId: String,
         userName: String,
+        avatarUrl: String,
         message: String,
         timestamp: { type: Date, default: Date.now },
-        type: { type: String, default: "text" },
+        type: { type: String, enum: ["text", "system"], default: "text" },
       },
     ],
     isPrivate: {
@@ -56,7 +60,7 @@ const WatchPartyRoomSchema = new mongoose.Schema(
     },
     maxParticipants: {
       type: Number,
-      default: 10,
+      default: MAX_WATCH_PARTY_PARTICIPANTS,
     },
     isActive: {
       type: Boolean,

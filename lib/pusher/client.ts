@@ -8,6 +8,7 @@
  */
 
 import Pusher from "pusher-js";
+import { getCsrfHeaders } from "@/lib/csrf-client";
 
 let pusherClientInstance: Pusher | null = null;
 
@@ -25,8 +26,11 @@ export function getPusherClient(): Pusher {
 
     pusherClientInstance = new Pusher(key || "", {
       cluster: cluster || "",
-      authEndpoint: "/api/pusher/auth",
-      authTransport: "ajax",
+      channelAuthorization: {
+        endpoint: "/api/pusher/auth",
+        transport: "ajax",
+        headersProvider: getCsrfHeaders,
+      },
     });
   }
   return pusherClientInstance;

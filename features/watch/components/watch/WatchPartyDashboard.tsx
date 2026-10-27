@@ -2,14 +2,15 @@
 
 import React from "react";
 
-import { Shield, Play, Pause, Globe, Monitor, ChevronDown, Lock, Zap, Activity } from "lucide-react";
+import { Shield, Play, Pause, Lock, Zap, Activity, CircleOff } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface WatchPartyDashboardProps {
   isHost: boolean;
   isPlaying: boolean;
-  latency: number;
-  quality: string;
+  isConnected: boolean;
+  roomApiResponseMs: number | null;
+  hasVideoSource: boolean;
   onPlay?: () => void;
   onPause?: () => void;
   onSeek?: (time: number) => void;
@@ -20,8 +21,9 @@ interface WatchPartyDashboardProps {
 export const WatchPartyDashboard = React.memo(({ 
   isHost, 
   isPlaying, 
-  latency, 
-  quality,
+  isConnected,
+  roomApiResponseMs,
+  hasVideoSource,
   onPlay,
   onPause,
   onSeek,
@@ -41,44 +43,46 @@ export const WatchPartyDashboard = React.memo(({
     {
       id: 'playback',
       title: 'Playback',
-      subtitle: isHost ? 'Host is controlling playback' : 'Host is controlling playback',
-      icon: <Play className="text-violet-500" size={20} />,
-      locked: true,
+      subtitle: !hasVideoSource
+        ? 'No video source is configured'
+        : isPlaying ? 'Room playback state: playing' : 'Room playback state: paused',
+      icon: !hasVideoSource
+        ? <CircleOff className="text-zinc-500" size={20} />
+        : isPlaying
+          ? <Pause className="text-violet-500" size={20} />
+          : <Play className="text-violet-500" size={20} />,
+      locked: !isHost || !hasVideoSource,
       bg: 'bg-violet-500/5',
       border: 'border-violet-500/10'
     },
     {
-      id: 'sync',
-      title: 'Sync Status',
-      subtitle: 'All good! Everyone is in sync.',
-      icon: <Zap className="text-emerald-500" size={20} fill="currentColor" />,
-      bg: 'bg-emerald-500/5',
-      border: 'border-emerald-500/10'
-    },
-    {
-      id: 'quality',
-      title: 'Quality',
-      subtitle: `1080p - HD`,
-      icon: <Activity className="text-blue-500" size={20} />,
-      hasDropdown: true,
-      bg: 'bg-blue-500/5',
-      border: 'border-blue-500/10'
+      id: 'connection',
+      title: 'Room connection',
+      subtitle: isConnected
+        ? roomApiResponseMs === null ? 'API response not measured' : `Room API response · ${roomApiResponseMs}ms`
+        : 'Realtime connection unavailable',
+      icon: isConnected
+        ? <Zap className="text-emerald-500" size={20} />
+        : <Activity className="text-amber-400" size={20} />,
+      bg: isConnected ? 'bg-emerald-500/5' : 'bg-amber-500/5',
+      border: isConnected ? 'border-emerald-500/10' : 'border-amber-500/10'
     }
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-4 md:px-8 mt-4 mb-4">
+    <div className="grid grid-cols-1 gap-4 px-4 md:grid-cols-3 md:px-8 mt-4 mb-4">
       {cards.map((card) => (
         <motion.div
           key={card.id}
-          whileHover={{ y: -2, scale: 1.01 }}
+          whileHover={card.id !== 'playback' || (isHost && hasVideoSource) ? { y: -2, scale: 1.01 } : undefined}
           onClick={() => {
-            if (card.id === 'playback' && isHost) {
-              isPlaying ? onPause?.() : onPlay?.();
+            if (card.id === 'playback' && isHost && hasVideoSource) {
+              if (isPlaying) onPause?.();
+              else onPlay?.();
             }
           }}
-          className={`relative p-4 rounded-2xl bg-zinc-900/40 border border-white/5 flex items-center gap-4 group cursor-pointer transition-all shadow-xl ${
-            card.id === 'playback' && isHost ? 'hover:border-violet-500/30' : ''
+          className={`relative p-4 rounded-2xl bg-zinc-900/40 border border-white/5 flex items-center gap-4 group transition-all shadow-xl ${
+            card.id === 'playback' && isHost && hasVideoSource ? 'cursor-pointer hover:border-violet-500/30' : 'cursor-default'
           }`}
         >
           <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center shrink-0">
@@ -95,7 +99,7 @@ export const WatchPartyDashboard = React.memo(({
           </div>
 
           <div className="ml-auto">
-            {card.id === 'playback' && isHost && (
+            {card.id === 'playback' && isHost && hasVideoSource && (
                <div className="w-6 h-6 rounded-full bg-violet-500/10 flex items-center justify-center text-violet-500">
                   {isPlaying ? <Pause size={12} fill="currentColor" /> : <Play size={12} fill="currentColor" />}
                </div>
@@ -107,9 +111,6 @@ export const WatchPartyDashboard = React.memo(({
             )}
             {card.locked && !isHost && (
               <Lock size={12} className="text-zinc-600" />
-            )}
-            {card.hasDropdown && (
-              <ChevronDown size={14} className="text-zinc-600 group-hover:text-white transition-colors" />
             )}
           </div>
         </motion.div>

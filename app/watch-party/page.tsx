@@ -8,11 +8,33 @@ import { Play, Users, Tv, Sparkles, ArrowRight, AlertTriangle } from "lucide-rea
 import { Button } from "@/features/shared/components/ui/button";
 import { Input } from "@/features/shared/components/ui/input";
 
+type WatchableContent = {
+  id: string;
+  tmdbId?: number;
+  title: string;
+  year: number | null;
+  type: "movie" | "series";
+};
+
+function getCsrfToken(): string {
+  const cookie = document.cookie
+    .split(";")
+    .map((value) => value.trim())
+    .find((value) => value.startsWith("csrf_token="));
+  const token = cookie?.slice("csrf_token=".length);
+
+  if (!token) {
+    throw new Error("Security token is missing. Refresh the page and try again.");
+  }
+
+  return token;
+}
+
 const LandingContent = () => {
   const [mode, setMode] = useState<"idle" | "create" | "join">("idle");
   const [userName, setUserName] = useState("");
   const [roomCode, setRoomCode] = useState("");
-  const [movies, setMovies] = useState<any[]>([]);
+  const [movies, setMovies] = useState<WatchableContent[]>([]);
   const [selectedMovieId, setSelectedMovieId] = useState<string>("");
   const [isLoadingMovies, setIsLoadingMovies] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -20,6 +42,14 @@ const LandingContent = () => {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  useEffect(() => {
+    const queryRoomCode = searchParams?.get("roomCode")?.trim().toUpperCase();
+    if (queryRoomCode) {
+      setRoomCode(queryRoomCode);
+      setMode("join");
+    }
+  }, [searchParams]);
 
   // Load display name if available
   useEffect(() => {
@@ -36,16 +66,20 @@ const LandingContent = () => {
     const fetchMovies = async () => {
       setIsLoadingMovies(true);
       try {
-        const res = await fetch("/api/watchparty/movies");
+        const queryMovieId = searchParams ? (searchParams.get("movieId") || searchParams.get("id")) : null;
+        const queryRoomCode = searchParams?.get("roomCode");
+        const moviesUrl = queryMovieId
+          ? `/api/watchparty/movies?movieId=${encodeURIComponent(queryMovieId)}`
+          : "/api/watchparty/movies";
+        const res = await fetch(moviesUrl);
         const data = await res.json();
         if (data.success && data.items) {
           setMovies(data.items);
           
           // Check query parameters for pre-selected movie
-          const queryMovieId = searchParams ? (searchParams.get("movieId") || searchParams.get("id")) : null;
           if (queryMovieId) {
             setSelectedMovieId(queryMovieId);
-            setMode("create"); // Auto-switch to create if they came from details page
+            if (!queryRoomCode) setMode("create"); // Auto-switch to create if they came from details page
           } else if (data.items.length > 0) {
             setSelectedMovieId(data.items[0].id);
           }
@@ -60,17 +94,24 @@ const LandingContent = () => {
     fetchMovies();
   }, [status, searchParams]);
 
+  const selectedMovie = movies.find((movie) => (
+    movie.id === selectedMovieId || movie.tmdbId?.toString() === selectedMovieId
+  ));
+
   const handleCreate = async () => {
-    if (!userName.trim() || !selectedMovieId) return;
+    if (!userName.trim() || !selectedMovieId || !selectedMovie) return;
     setErrorMessage(null);
     try {
       const roomName = `${userName.trim()}'s Watch Party`;
       const response = await fetch("/api/pusher/watchparty/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": getCsrfToken(),
+        },
         body: JSON.stringify({
           roomName,
-          movieId: selectedMovieId,
+          movieId: selectedMovie.id,
         }),
       });
 
@@ -95,7 +136,10 @@ const LandingContent = () => {
     try {
       const response = await fetch("/api/pusher/watchparty/join", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": getCsrfToken(),
+        },
         body: JSON.stringify({
           roomId: code,
           userName: userName.trim(),
@@ -174,7 +218,7 @@ const LandingContent = () => {
             <span className="text-red-500 drop-shadow-lg drop-shadow-red-500/50"> Party</span>
           </h1>
           <p className="text-white/90 text-lg max-w-md mx-auto" style={{ textWrap: 'balance' }}>
-            Stream movies together in perfect sync. Create a room, invite friends, and enjoy the show.
+            Share a room, chat in real time, and watch together.
           </p>
         </motion.div>
 
@@ -266,23 +310,28 @@ const LandingContent = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-white/60">Choose Content</label>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-white/60">Selected Content</label>
                     {isLoadingMovies ? (
                       <div className="h-12 w-full rounded-lg bg-zinc-900 border border-white/5 animate-pulse relative overflow-hidden">
                         <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
                       </div>
                     ) : (
-                      <select
-                        value={selectedMovieId}
-                        onChange={(e) => setSelectedMovieId(e.target.value)}
-                        className="w-full h-12 bg-zinc-900 border border-white/10 rounded-lg px-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/20 text-sm"
+                      <div
+                        role="group"
+                        aria-label="Selected content"
+                        className="w-full min-h-12 rounded-lg border border-white/10 bg-zinc-900 px-4 py-3"
                       >
-                        {movies.map((m) => (
-                          <option key={m.id} value={m.id} className="bg-zinc-950">
-                            {m.title} ({m.year}) - {m.type === "series" ? "Series" : "Movie"}
-                          </option>
-                        ))}
-                      </select>
+                        {selectedMovie ? (
+                          <>
+                            <p className="text-sm font-semibold text-white">{selectedMovie.title}</p>
+                            <p className="mt-1 text-xs text-white/65">
+                              {selectedMovie.year ?? "Year unavailable"} · {selectedMovie.type === "series" ? "Series" : "Movie"}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-white/65">Selected content is unavailable.</p>
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -293,7 +342,7 @@ const LandingContent = () => {
                       value={userName}
                       onChange={(e) => setUserName(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-                      className="glass border-border/50 h-12 text-foreground placeholder:text-muted-foreground focus:border-red-500/50 focus:ring-red-500/20"
+                      className="glass border-border/50 h-12 bg-zinc-900/80 text-white placeholder:text-white/50 focus:bg-zinc-900 focus:text-white focus:border-red-500/50 focus:ring-red-500/20 disabled:bg-zinc-900/60 disabled:text-white/60"
                     />
                   </div>
 
@@ -301,7 +350,7 @@ const LandingContent = () => {
                     <Button variant="ghost" onClick={() => setMode("idle")} className="flex-1 h-12 text-white/80 hover:text-white">
                       Back
                     </Button>
-                    <Button onClick={handleCreate} disabled={!userName.trim() || !selectedMovieId} className="flex-1 h-12 bg-red-500 text-white hover:bg-red-600 glow-primary-sm font-semibold">
+                    <Button onClick={handleCreate} disabled={!userName.trim() || !selectedMovieId || !selectedMovie} className="flex-1 h-12 bg-red-500 text-white hover:bg-red-600 glow-primary-sm font-semibold">
                       <Play className="w-4 h-4 mr-2" />
                       Create Room
                     </Button>
@@ -324,7 +373,7 @@ const LandingContent = () => {
                     value={roomCode}
                     onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                     className="glass border-border/50 h-12 text-foreground placeholder:text-muted-foreground focus:border-red-500/50 focus:ring-red-500/20 font-mono tracking-widest"
-                    maxLength={6}
+                    maxLength={8}
                   />
                   <Input
                     placeholder="Your display name"
@@ -348,22 +397,6 @@ const LandingContent = () => {
           )}
         </motion.div>
 
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="flex items-center justify-center gap-8 mt-12 text-sm text-white/80"
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-soft" />
-            <span>1.2k watching now</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            <span>342 active rooms</span>
-          </div>
-        </motion.div>
       </div>
     </div>
   );

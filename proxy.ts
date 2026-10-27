@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { clearProfileCookie } from "./lib/cookie-utils";
-import { csrfProtection, shouldProtectFromCSRF } from './lib/csrf';
+import {
+  CSRF_COOKIE_NAME,
+  csrfProtection,
+  generateCSRFToken,
+  shouldProtectFromCSRF,
+  validateCSRFToken,
+} from "./lib/csrf";
 
 // Define paths that should bypass CSRF protection
 const CSRF_EXEMPT_PATHS = [
@@ -89,6 +95,21 @@ function createEdgeRateLimiter(maxRequests: number, windowMs: number) {
 
 const authRateLimiter = createEdgeRateLimiter(15, 15 * 60 * 1000);
 const generalRateLimiter = createEdgeRateLimiter(100, 60 * 1000);
+
+function setCsrfCookie(response: NextResponse, request: NextRequest) {
+  const existingToken = request.cookies.get(CSRF_COOKIE_NAME)?.value ?? null;
+  if (!validateCSRFToken(existingToken)) {
+    response.cookies.set(CSRF_COOKIE_NAME, generateCSRFToken(), {
+      httpOnly: false,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
+  }
+
+  return response;
+}
 
 function isAllowedApiOrigin(req: NextRequest) {
   const origin = req.headers.get("origin");
@@ -225,7 +246,7 @@ export async function proxy(req: NextRequest) {
       }
     }
 
-    const response = applySecurityHeaders(NextResponse.next());
+    const response = setCsrfCookie(applySecurityHeaders(NextResponse.next()), req);
     const duration = Date.now() - startTime;
     if (duration > 1000) {
       console.warn("Slow proxy request detected", { path: pathname, duration, ip: clientIp });

@@ -12,19 +12,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { roomId, action, time } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+    const { roomId, action, time } = body;
 
-    if (!roomId || !action) {
-      return NextResponse.json({ error: "Missing roomId or action" }, { status: 400 });
+    if (
+      typeof roomId !== "string" ||
+      !/^[A-Z0-9]{6,12}$/.test(roomId) ||
+      !["play", "pause", "seek"].includes(action)
+    ) {
+      return NextResponse.json({ error: "Invalid room control request" }, { status: 400 });
     }
 
-    if (action === "seek" && (time === undefined || time === null)) {
-      return NextResponse.json({ error: "Missing time for seek action" }, { status: 400 });
+    if (
+      (action === "seek" && (typeof time !== "number" || !Number.isFinite(time) || time < 0)) ||
+      (time !== undefined && (typeof time !== "number" || !Number.isFinite(time) || time < 0))
+    ) {
+      return NextResponse.json({ error: "Invalid playback time" }, { status: 400 });
     }
 
     await connectDB();
 
-    const room = await WatchPartyRoom.findOne({ roomId });
+    const room = await WatchPartyRoom.findOne({
+      roomId,
+      isActive: true,
+      "participants.userId": session.user.id,
+    });
     if (!room) {
       return NextResponse.json({ error: "Room not found" }, { status: 404 });
     }
@@ -45,7 +60,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
-    await WatchPartyRoom.findByIdAndUpdate(room._id, updateData);
+    const updatedRoom = await WatchPartyRoom.findOneAndUpdate(
+      {
+        _id: room._id,
+        isActive: true,
+        hostId: session.user.id,
+        "participants.userId": session.user.id,
+      },
+      updateData,
+      { new: true }
+    );
+    if (!updatedRoom) {
+      return NextResponse.json({ error: "You are no longer an active room host" }, { status: 403 });
+    }
 
     // Trigger Pusher player-control event
     await triggerRoomEvent(roomId, "player-control", {

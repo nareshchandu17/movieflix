@@ -56,6 +56,7 @@ export function usePusherEvent<T = unknown>(
 interface MemberInfo {
   userName: string;
   isHost: boolean;
+  avatarUrl?: string;
 }
 
 /**
@@ -67,17 +68,44 @@ export function usePresenceChannel(roomId: string) {
   const [members, setMembers] = useState<Record<string, MemberInfo>>({});
   const [myId, setMyId] = useState<string | null>(null);
   const [error, setError] = useState<unknown | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    setChannel(null);
+    setIsSubscribed(false);
+    setIsConnected(false);
+    setMembers({});
+    setMyId(null);
+    setError(null);
     if (!roomId) return;
 
-    const pusher = getPusherClient();
+    let pusher: ReturnType<typeof getPusherClient>;
+    try {
+      pusher = getPusherClient();
+    } catch (subscriptionError) {
+      setError(subscriptionError);
+      return;
+    }
+
     const channelName = `presence-room-${roomId}`;
     const presChannel = pusher.subscribe(channelName) as PresenceChannel;
+    const handleConnectionChange = (states: { current: string }) => {
+      setIsConnected(states.current === "connected");
+      if (states.current === "connected") {
+        setError(null);
+      } else if (states.current === "failed" || states.current === "unavailable") {
+        setError(new Error("Realtime connection is unavailable. Check your connection and try again."));
+      }
+    };
+    pusher.connection.bind("state_change", handleConnectionChange);
+    setIsConnected(pusher.connection.state === "connected");
 
     setChannel(presChannel);
 
     const handleSuccess = () => {
+      setIsSubscribed(true);
+      setError(null);
       setMyId(presChannel.members.myID);
       const liveMembers: Record<string, MemberInfo> = {};
       presChannel.members.each((member: any) => {
@@ -102,8 +130,10 @@ export function usePresenceChannel(roomId: string) {
     };
 
     const handleError = (err: unknown) => {
-      console.error(`❌ Pusher presence subscription error on ${channelName}:`, err);
-      setError(err);
+      const details = err instanceof Error ? err.message : JSON.stringify(err);
+      console.error(`❌ Pusher presence subscription error on ${channelName}: ${details}`);
+      setError(new Error("Could not authorize the room connection. Sign in and rejoin the party."));
+      setIsSubscribed(false);
     };
 
     presChannel.bind("pusher:subscription_succeeded", handleSuccess);
@@ -116,9 +146,10 @@ export function usePresenceChannel(roomId: string) {
       presChannel.unbind("pusher:member_added", handleMemberAdded);
       presChannel.unbind("pusher:member_removed", handleMemberRemoved);
       presChannel.unbind("pusher:subscription_error", handleError);
+      pusher.connection.unbind("state_change", handleConnectionChange);
       pusher.unsubscribe(channelName);
     };
   }, [roomId]);
 
-  return { channel, members, myId, error };
+  return { channel, members, myId, error, isSubscribed, isConnected };
 }

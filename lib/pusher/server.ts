@@ -46,8 +46,7 @@ function getPusherServer(): Pusher {
 export const pusherServer = {
   trigger: async (channelName: string, event: string, data: any) => {
     if (!appId || !key || !secret || !cluster) {
-      console.warn("❌ Pusher is not configured. Skipping trigger.");
-      return;
+      throw new Error("Pusher is not configured; real-time delivery is unavailable.");
     }
     return getPusherServer().trigger(channelName, event, data);
   },

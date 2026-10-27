@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Volume2, Maximize2, X, Link as LinkIcon, Info, Users, Heart, Smile, Zap, Layers, Monitor, Subtitles, Settings, PictureInPicture2 } from 'lucide-react';
+import { Play, Pause, Volume2, Maximize2, Link as LinkIcon, Users, Smile, Zap, Layers } from 'lucide-react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -16,9 +16,9 @@ interface WatchPartyPlayerProps {
     movieId: string;
     movieTitle: string;
     moviePoster: string;
+    movieBackdrop?: string;
     videoUrl?: string;
     roomCode: string;
-    circleId: string;
     hostId: string;
     participants: Array<{
       userId: string;
@@ -28,7 +28,7 @@ interface WatchPartyPlayerProps {
   } | null;
   userId: string;
   userName: string;
-  userImage: string;
+  roomApiResponseMs: number | null;
   onLeave: () => void;
   socketState: any;
   playbackState: any;
@@ -77,6 +77,7 @@ export const WatchPartyPlayer = ({
   watchParty, 
   userId, 
   userName, 
+  roomApiResponseMs,
   onLeave,
   socketState,
   playbackState,
@@ -99,8 +100,6 @@ export const WatchPartyPlayer = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  const TRAILER_URL = "https://www.youtube.com/watch?v=4uP2U_O6z5Q";
-
   // 1. Local time updates
   useEffect(() => {
     if (!playerRef.current || !isReady) return;
@@ -117,7 +116,7 @@ export const WatchPartyPlayer = ({
     return () => clearInterval(interval);
   }, [isReady, socketState.isHost, playbackState.isPlaying, updateProgress]);
 
-  // 2. Playback Sync Logic (Crucial for 100% functionality)
+  // Keep participants near the latest room playback state.
   useEffect(() => {
     if (!playerRef.current || !isReady || socketState.isHost) return;
 
@@ -170,7 +169,8 @@ export const WatchPartyPlayer = ({
         return;
     }
     const t = playerRef.current?.getCurrentTime() || 0;
-    playbackState.isPlaying ? pause(t) : play(t);
+    if (playbackState.isPlaying) pause(t);
+    else play(t);
   };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -198,23 +198,45 @@ export const WatchPartyPlayer = ({
 
   return (
     <div className="relative w-full h-full bg-black group/player overflow-hidden selection:bg-none" onMouseMove={resetUITimer}>
-      <div className="absolute inset-0 z-0 scale-[1.01]">
-        <ReactPlayer
-          ref={playerRef}
-          url={watchParty?.videoUrl || TRAILER_URL}
-          width="100%"
-          height="100%"
-          playing={playbackState.isPlaying}
-          volume={currentVolume}
-          muted={isMuted}
-          onReady={() => setIsReady(true)}
-          onBuffer={() => setStatus('buffering')}
-          onBufferEnd={() => setStatus('watching')}
-          config={{
-            youtube: { playerVars: { controls: 0, modestbranding: 1, rel: 0, disablekb: 1 } }
-          }}
-        />
-      </div>
+      {watchParty?.videoUrl ? (
+        <div className="absolute inset-0 z-0 scale-[1.01]">
+          <ReactPlayer
+            ref={playerRef}
+            url={watchParty.videoUrl}
+            width="100%"
+            height="100%"
+            playing={playbackState.isPlaying}
+            volume={currentVolume}
+            muted={isMuted}
+            onReady={() => setIsReady(true)}
+            onBuffer={() => setStatus('buffering')}
+            onBufferEnd={() => setStatus('watching')}
+            config={{
+              youtube: { playerVars: { controls: 0, modestbranding: 1, rel: 0, disablekb: 1 } }
+            }}
+          />
+        </div>
+      ) : (
+        <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden bg-zinc-950">
+          {(watchParty?.movieBackdrop || watchParty?.moviePoster) && (
+            <Image
+              src={watchParty.movieBackdrop || watchParty.moviePoster}
+              alt={watchParty.movieTitle}
+              fill
+              unoptimized
+              className="object-cover opacity-45"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/20" />
+          <div className="relative z-10 max-w-md px-6 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-400">Playback unavailable</p>
+            <h2 className="mt-3 text-2xl font-semibold text-white">{watchParty?.movieTitle || "Movie details unavailable"}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-white/70">
+              No video source is configured for this title. You can still chat and react with the room.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="absolute inset-0 pointer-events-none z-30">
         <AnimatePresence>
@@ -234,19 +256,34 @@ export const WatchPartyPlayer = ({
           >
             <div className="flex justify-between items-start pointer-events-none">
                <div className="flex flex-col gap-3 pointer-events-auto">
+                  {watchParty?.roomCode && (
                   <div className="flex items-center gap-2 p-1.5 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl">
                      <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-xl border border-white/5">
                         <Users size={14} className="text-red-500" />
                         <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Room Code:</span>
-                        <span className="text-xs font-black text-white">{watchParty?.roomCode || '0000'}</span>
-                        <button className="ml-1 text-zinc-500 hover:text-white transition-colors">
+                        <span className="text-xs font-black text-white">{watchParty.roomCode}</span>
+                        <button
+                          type="button"
+                          aria-label="Copy room code"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(watchParty.roomCode);
+                              toast.success("Room code copied.");
+                            } catch {
+                              toast.error("Could not copy the room code.");
+                            }
+                          }}
+                          className="ml-1 text-zinc-500 hover:text-white transition-colors"
+                        >
                            <Layers size={14} />
                         </button>
                      </div>
                      <button 
                        onClick={() => {
-                         navigator.clipboard.writeText(window.location.href);
-                         toast.success('Link Copied!');
+                         const inviteUrl = `${window.location.origin}/watch-party?roomCode=${encodeURIComponent(watchParty.roomCode)}`;
+                         void navigator.clipboard.writeText(inviteUrl)
+                           .then(() => toast.success('Invite link copied!'))
+                           .catch(() => toast.error('Could not copy the invite link.'));
                        }}
                        className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-all"
                      >
@@ -254,42 +291,21 @@ export const WatchPartyPlayer = ({
                         Copy Link
                      </button>
                   </div>
+                  )}
                </div>
 
-               <div className="bg-emerald-500/10 backdrop-blur-2xl border border-emerald-500/20 rounded-[24px] p-4 flex items-center gap-4 pointer-events-auto">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(16,185,129,0.4)]">
-                     <Zap size={20} fill="currentColor" />
-                  </div>
+               <div className={`backdrop-blur-2xl border rounded-2xl px-4 py-3 pointer-events-auto ${socketState.isConnected ? "bg-emerald-500/10 border-emerald-500/20" : "bg-amber-500/10 border-amber-500/20"}`}>
                   <div className="flex flex-col">
-                     <span className="text-xs font-bold text-white leading-tight">Everyone is in sync</span>
-                     <span className="text-[10px] font-medium text-zinc-500 mt-0.5">Latency: 120ms</span>
+                     <span className="text-xs font-bold text-white leading-tight">
+                       {socketState.isConnected ? "Room connected" : "Reconnecting to room"}
+                     </span>
+                     <span className="text-[10px] font-medium text-zinc-300/70 mt-0.5">
+                       {socketState.isConnected
+                         ? roomApiResponseMs === null ? "API response not measured" : `Room API response · ${roomApiResponseMs}ms`
+                         : "Realtime connection unavailable"}
+                     </span>
                   </div>
                </div>
-            </div>
-
-            <div className="flex-1 hidden md:flex items-center pointer-events-none mt-8">
-               <motion.div 
-                 initial={{ x: -20, opacity: 0 }}
-                 animate={{ x: 0, opacity: 1 }}
-                 className="w-72 bg-black/60 backdrop-blur-2xl border border-white/5 rounded-[32px] p-6 flex flex-col gap-4 pointer-events-auto shadow-2xl"
-               >
-                  <span className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em]">Up Next</span>
-                  <div className="flex gap-4">
-                     <div className="w-20 h-24 rounded-2xl overflow-hidden relative border border-white/10">
-                        <Image 
-                           src={watchParty?.moviePoster || "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0"}
-                           alt="Next"
-                           fill
-                           className="object-cover"
-                        />
-                     </div>
-                     <div className="flex flex-col justify-center gap-1">
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase">S1 E3</span>
-                        <h4 className="text-sm font-bold text-white line-clamp-2 leading-tight">The Hidden Truth</h4>
-                        <span className="text-[10px] font-medium text-zinc-600 mt-1">23:45</span>
-                     </div>
-                  </div>
-               </motion.div>
             </div>
 
             <div className="mt-auto flex flex-col gap-8 pointer-events-none items-center">
@@ -312,16 +328,17 @@ export const WatchPartyPlayer = ({
 
                   <div className="flex items-center gap-4 pointer-events-auto">
                      <div className="flex -space-x-4">
-                        {socketState.participants.slice(0, 4).map((p: any, i: number) => (
-                           <div key={i} className="flex flex-col items-center gap-2 group/avatar relative">
+                        {socketState.participants.filter((participant: any) => participant.status === "online").slice(0, 4).map((p: any) => (
+                           <div key={p.userId} className="flex flex-col items-center gap-2 group/avatar relative">
                               <div className={`w-12 h-12 rounded-full border-4 border-zinc-900 bg-zinc-800 relative overflow-hidden ring-2 ${p.isHost ? 'ring-amber-500/50' : 'ring-emerald-500/50'}`}>
-                                 <Image 
-                                    src={`https://i.pravatar.cc/100?u=${p.userId}`}
-                                    alt={p.userName}
-                                    fill
-                                    className="object-cover"
-                                 />
-                                 <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-zinc-900 ${p.status === 'watching' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                 {p.avatarUrl ? (
+                                   <Image src={p.avatarUrl} alt="" fill unoptimized className="object-cover" />
+                                 ) : (
+                                   <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-white/80">
+                                     {(p.userName.trim()[0] || "?").toUpperCase()}
+                                   </span>
+                                 )}
+                                 <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-zinc-900 bg-emerald-500" />
                               </div>
                               <div className="flex flex-col items-center absolute -top-10 opacity-0 group-hover/avatar:opacity-100 transition-opacity">
                                  <span className="text-[9px] font-bold text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-md uppercase tracking-tighter whitespace-nowrap">
@@ -331,10 +348,10 @@ export const WatchPartyPlayer = ({
                               </div>
                            </div>
                         ))}
-                        {socketState.participants.length > 4 && (
+                        {socketState.participants.filter((participant: any) => participant.status === "online").length > 4 && (
                            <div className="flex flex-col items-center gap-2">
                               <div className="w-12 h-12 rounded-full border-4 border-zinc-900 bg-zinc-900 flex items-center justify-center text-xs font-black text-white ring-2 ring-white/10">
-                                 +{socketState.participants.length - 4}
+                                 +{socketState.participants.filter((participant: any) => participant.status === "online").length - 4}
                               </div>
                            </div>
                         )}
@@ -344,7 +361,7 @@ export const WatchPartyPlayer = ({
                   <div className="w-20" />
                </div>
 
-               <div className="w-full bg-black/60 backdrop-blur-3xl border border-white/5 rounded-[32px] p-6 flex flex-col gap-6 pointer-events-auto shadow-2xl">
+               {watchParty?.videoUrl && <div className="w-full bg-black/60 backdrop-blur-3xl border border-white/5 rounded-[32px] p-6 flex flex-col gap-6 pointer-events-auto shadow-2xl">
                   <div 
                     className={`group/progress relative h-1.5 w-full bg-white/5 rounded-full ${socketState.isHost ? 'cursor-pointer' : 'cursor-default pointer-events-none opacity-80'}`}
                     onClick={handleSeek}
@@ -391,38 +408,17 @@ export const WatchPartyPlayer = ({
                      </div>
 
                      <div className="flex items-center gap-6 text-zinc-500">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                               <button className="px-3 py-1 bg-white/5 border border-white/5 rounded-lg text-[10px] font-black text-white hover:bg-white/10 transition-colors">HD</button>
-                            </TooltipTrigger>
-                            <TooltipContent>Quality</TooltipContent>
-                          </Tooltip>
-                          
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                               <button className="p-1 hover:text-white transition-colors"><Subtitles size={20} /></button>
-                            </TooltipTrigger>
-                            <TooltipContent>Subtitles</TooltipContent>
-                          </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                               <button className="p-1 hover:text-white transition-colors"><PictureInPicture2 size={20} /></button>
-                            </TooltipTrigger>
-                            <TooltipContent>Picture in Picture</TooltipContent>
-                          </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                               <button onClick={() => playerRef.current?.getInternalPlayer()?.requestFullscreen()} className="p-1 hover:text-white transition-colors"><Maximize2 size={20} /></button>
+                     <TooltipProvider>
+                       <Tooltip>
+                         <TooltipTrigger asChild>
+                            <button onClick={() => playerRef.current?.getInternalPlayer()?.requestFullscreen()} className="p-1 hover:text-white transition-colors"><Maximize2 size={20} /></button>
                             </TooltipTrigger>
                             <TooltipContent>Fullscreen</TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                      </div>
                   </div>
-               </div>
+               </div>}
             </div>
           </motion.div>
         )}
@@ -430,4 +426,3 @@ export const WatchPartyPlayer = ({
     </div>
   );
 };
-
