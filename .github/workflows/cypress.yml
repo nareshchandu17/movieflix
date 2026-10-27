@@ -33,8 +33,8 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           build: npm run build
-          start: npm start
-          wait-on: 'http://localhost:3000'
+          start: npm start -- --hostname 127.0.0.1
+          wait-on: 'http://127.0.0.1:3000'
         env:
           MONGODB_URI: mongodb://localhost:27017/movieflix-test
           CSRF_SECRET: test-secret-only-for-ci
