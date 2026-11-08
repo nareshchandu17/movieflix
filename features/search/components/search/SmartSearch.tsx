@@ -423,6 +423,21 @@ const SmartSearch = () => {
           fetch(`/api/tmdb/search/person?query=${encodeURIComponent(searchQuery)}`).then(r => r.json())
         ]);
         rawResults = searchResponse.results || [];
+        personResults = (searchResponse.people || []).map((person: any) => ({
+          id: String(person.id),
+          title: person.name || "",
+          type: "actor" as const,
+          isDirector: person.role === "director" || person.known_for_department === "Directing",
+          poster: person.profile_path
+            ? `https://image.tmdb.org/t/p/w500${person.profile_path}`
+            : "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500",
+          year: 0,
+          rating: 0,
+          description: person.known_for_department || "",
+          genres: [],
+          popularity: person.popularity || 0,
+          knownFor: (person.known_for || []).map((item: any) => item.title || item.name).filter(Boolean).slice(0, 3),
+        }));
         
         if (searchResponse?.semantic_context?.magic_explanation) {
            setMagicExplanation(searchResponse.semantic_context.magic_explanation);
@@ -440,13 +455,14 @@ const SmartSearch = () => {
         }
 
         if (personResponse?.results) {
-          personResults = (personResponse.results || []).filter((p: any) => !!p.profile_path).map((p: any) => ({
+          const additionalPeople = (personResponse.results || []).filter((p: any) => !!p.profile_path).map((p: any) => ({
             id: p.id.toString(), title: p.name || "", type: p.known_for_department === 'Directing' ? 'movie' : 'actor',
             isDirector: p.known_for_department === 'Directing',
             poster: `https://image.tmdb.org/t/p/w500${p.profile_path}`,
             year: 0, rating: 0, description: p.known_for_department || "", genres: [], popularity: p.popularity,
             knownFor: p.known_for?.map((kf: any) => kf.title || kf.name).slice(0, 3) || []
           }));
+          personResults = [...personResults, ...additionalPeople];
         }
       }
 
