@@ -45,7 +45,7 @@ const ActorSection: React.FC<{ actor: NonNullable<PremiumSearchDisplayProps['act
             )}
           </div>
           <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-1 rounded-full text-xs font-bold tracking-widest shadow-lg">
-            ACTOR
+            {actor.known_for_department === "Directing" ? "DIRECTOR" : "PERSON"}
           </div>
         </div>
 
@@ -69,7 +69,7 @@ const ActorSection: React.FC<{ actor: NonNullable<PremiumSearchDisplayProps['act
 
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
             <Link
-              href={`/person/${actor.id}`}
+              href={`/actors/${encodeURIComponent(actor.name)}`}
               className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold transition-all hover:scale-105 shadow-[0_0_20px_rgba(229,9,20,0.4)]"
             >
               View Full Profile
