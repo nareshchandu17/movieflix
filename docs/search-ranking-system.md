@@ -1,264 +1,66 @@
-# MovieFlix Search Ranking System (Production Design)
-
-## 0. Goal
-Transform search into an intelligent system that:
-- Understands user intent
-- Routes query to correct strategy
-- Applies type-specific ranking
-- Removes low-quality results
-- Returns high-confidence results in <500ms
-
----
-
-## 1. Search Pipeline Architecture
-
-QUERY → CLASSIFIER → STRATEGY → TMDB FETCH → FILTER → RANK → UI
-
----
-
-## 2. Query Classification
-
-## Types
-
-1. KEYWORD → "avatar", "interstellar"
-2. SEMANTIC → "movies like inception"
-3. MOOD → "sad movies"
-4. PERSON → "tom cruise movies"
-5. GENRE → "action movies"
-6. TRENDING → "latest movies"
-7. HYBRID → "sad romantic movies"
-
----
-
-## 3. Ranking Core Variables
-
-Each movie gets a score:
-
-score =
-  (ratingWeight * vote_average) +
-  (popularityWeight * popularity) +
-  (recencyWeight * release_year_score) +
-  (matchWeight * relevance_score)
-
----
-
-## 4. Global Filters (ALL TYPES)
-
-REMOVE:
-- vote_count < 100
-- missing poster
-- release_date null
-
-BOOST:
-- vote_average > 7
-- popularity high
-
----
-
-# 🔥 5. TYPE-SPECIFIC RANKING
-
----
-
-## 5.1 KEYWORD SEARCH
-
-Example:
-"interstellar"
-
-### Strategy
-- Direct TMDB search
-
-### Ranking
-
-score =
-  (exactMatchBoost * 100) +
-  (rating * 3) +
-  (popularity * 2)
-
-### Rules
-- Exact title match = top result
-- Partial match = secondary
-
----
-
-## 5.2 SEMANTIC SEARCH
-
-Example:
-"movies like inception"
-
-### Strategy
-1. Extract base movie ("inception")
-2. Get TMDB ID
-3. Fetch:
-   - similar movies
-   - recommendations
-
-### Ranking
-
-score =
-  (similarityScore * 5) +
-  (rating * 3) +
-  (popularity * 2)
-
-### Extra Boost
-- Same director
-- Same genres
-- Same keywords
-
----
-
-## 5.3 MOOD SEARCH
-
-Example:
-"sad movies"
-
-### Mood Mapping
-
-sad →
-  genres: [18]
-  keywords: ["loss", "death", "love", "tragedy"]
-
-happy →
-  genres: [35, 10751]
-
-thrilling →
-  genres: [28, 53]
-
-### Ranking
-
-score =
-  (emotionMatch * 5) +
-  (rating * 3) +
-  (popularity * 2)
-
-### Emotion Match
-
-emotionMatch =
-  genreMatch +
-  keywordMatch +
-  toneScore
-
----
-
-## 5.4 PERSON SEARCH
-
-Example:
-"tom cruise movies"
-
-### Strategy
-1. Search person
-2. Get person_id
-3. Fetch credits
-
-### Ranking
-
-score =
-  (roleWeight * 5) +   // actor vs cameo
-  (rating * 3) +
-  (popularity * 2)
-
----
-
-## 5.5 GENRE SEARCH
-
-Example:
-"action movies"
-
-### Strategy
-- Discover endpoint with genre
-
-### Ranking
-
-score =
-  (rating * 3) +
-  (popularity * 3) +
-  (recency * 2)
-
----
-
-## 5.6 TRENDING SEARCH
-
-Example:
-"latest movies"
-
-### Strategy
-- trending + now_playing
-
-### Ranking
-
-score =
-  (recency * 5) +
-  (popularity * 3)
-
----
-
-## 5.7 HYBRID SEARCH
-
-Example:
-"sad romantic movies"
-
-### Strategy
-- Combine multiple genres
-
-### Ranking
-
-score =
-  (multiMatch * 5) +
-  (rating * 3) +
-  (popularity * 2)
-
----
-
-# 🧠 6. RELEVANCE SCORE
-
-relevance_score =
-  title_match +
-  genre_match +
-  keyword_match +
-  semantic_similarity
-
----
-
-# ⚡ 7. FALLBACK SYSTEM
-
-If no results:
-
-1. Relax filters
-2. Switch to popular
-3. Show "Related results"
-
----
-
-# 🎯 8. UI OUTPUT
-
-## Sections
-
-- Top Match
-- Movies
-- Series
-- Actors
-
----
-
-# 🚀 9. PERFORMANCE
-
-- Cache queries (Redis optional)
-- Debounce 200ms
-- Parallel API calls
-
----
-
-# 🛡 10. ERROR HANDLING
-
-- Empty → show fallback
-- API fail → cached results
-
----
-
-# 🏁 11. SUCCESS CRITERIA
-
-✔ Correct results for:
-  - "movies like inception"
-  - "sad movies"
-✔ No garbage results
-✔ Fast response
-✔ High relevance top 3
+# MovieFlix TMDB Search Contract
+
+## Goal
+
+Return only records that are supported by TMDB and match the user's query intent. Search results must never be padded with unrelated popular titles or AI-invented titles.
+
+## Request flow
+
+\`/api/search?query=...\`
+1. Validate and normalize the query.
+2. Detect one of the supported intents.
+3. Call the corresponding TMDB endpoint.
+4. Resolve people before requesting filmography.
+5. Apply intent-specific validation and deduplication.
+6. Return the TMDB records with the resolved intent and person metadata.
+
+## Intent routing
+
+| Intent | TMDB route | Matching rule |
+|---|---|---|
+| Movie title | \`/search/movie\` or \`/search/multi\` | Exact title first, then TMDB relevance/popularity |
+| TV title | \`/search/tv\` or \`/search/multi\` | Exact name first, then TMDB relevance/popularity |
+| Actor / actress | \`/search/person\` → \`/person/{id}/movie_credits\` | Only cast credits for the resolved person |
+| Director | \`/search/person\` → \`/person/{id}/movie_credits\` | Only crew credits whose job is exactly \`Director\` |
+| Genre | \`/discover/movie\` | TMDB genre IDs; comma means AND, pipe means OR |
+| Mood | \`/discover/movie\` | Curated mood-to-genre mapping; results are heuristic mood matches |
+| Language / year / rating | \`/discover/movie\` | Apply actual TMDB filters |
+| Similar title | TMDB similar / recommendations | Resolve the source title first; never substitute trending titles |
+
+## Query examples
+
+- \`Interstellar\` → title search.
+- \`Prabhas\` → exact person resolution, then his movie cast credits.
+- \`movies of Samantha\` → person resolution, then cast credits.
+- \`Christopher Nolan movies\` → person resolution, then director credits.
+- \`movies directed by S. S. Rajamouli\` → director-only credits.
+- \`Telugu action movies after 2020\` → Discover with language, genre and release-date constraints.
+- \`mind bending movies\` → Discover using the curated mood genre set.
+
+## Relevance and quality rules
+
+- Never use a random first person hit as a resolved identity. Prefer exact normalized names; accept only safe meaningful partial-name matches.
+- Do not confuse cast credits with director credits.
+- Deduplicate by TMDB ID.
+- Exclude adult records.
+- Do not invent titles or fill result limits with popular/trending content.
+- Do not replace empty results with unrelated content. Return an honest empty state.
+- Popularity and vote data rank already-relevant results; they do not establish relevance by themselves.
+- A mood is not a native TMDB field. Mood results are genre-based approximations and should be described honestly.
+
+## Mood discovery
+
+The mood endpoint uses TMDB Discover with a curated genre set, adult filtering, a minimum vote-count floor, poster/date/overview validation, and stable popularity ordering. It returns however many valid records TMDB actually supplies. It must not fabricate a 100-item quota, shuffle the results randomly, or fill shortages from unrelated languages.
+
+## Security and reliability
+
+- Keep TMDB credentials server-side.
+- Use the configured TMDB API key or v4 bearer token.
+- Validate query length and pagination.
+- Return a clear error when TMDB is unavailable.
+- Cache TMDB responses for a bounded period.
+- UI components should consume the central \`/api/search\` response contract rather than implementing their own competing intent parsers.
+
+## Known limitation
+
+Mood labels such as “inspirational”, “dark”, or “feel-good” cannot be perfectly inferred from TMDB genre metadata alone. The current mapping is a transparent approximation. Higher precision requires verified TMDB keyword mappings or a curated editorial mood dataset, followed by result-level relevance checks.
