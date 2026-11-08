@@ -1,194 +1,120 @@
 import { NextRequest, NextResponse } from "next/server";
 import { RedisManager } from "@/lib/redis";
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
+const TMDB_ACCESS_TOKEN = process.env.TMDB_ACCESS_TOKEN;
 
-interface MoodMapping {
-  genres: string;
-  name: string;
-}
+type MoodConfig = { genres: number[]; name: string };
 
-const MOOD_CONFIG: Record<string, MoodMapping> = {
-  thrilling: {
-    genres: "53|80",
-    name: "Thrilling",
-  },
-  "feel-good": {
-    genres: "35|10751",
-    name: "Feel-Good",
-  },
-  romantic: {
-    genres: "10749|18",
-    name: "Romantic",
-  },
-  emotional: {
-    genres: "18",
-    name: "Emotional",
-  },
-  "action-packed": {
-    genres: "28|12",
-    name: "Action-Packed",
-  },
-  comedy: {
-    genres: "35",
-    name: "Comedy",
-  },
-  horror: {
-    genres: "27",
-    name: "Horror",
-  },
-  adventure: {
-    genres: "12|14",
-    name: "Adventure",
-  },
-  "sci-fi": {
-    genres: "878",
-    name: "Sci-Fi",
-  },
-  inspirational: {
-    genres: "18",
-    name: "Inspirational",
-  },
-  mystery: {
-    genres: "9648|53",
-    name: "Mystery",
-  },
-  family: {
-    genres: "10751|16",
-    name: "Family",
-  },
+const MOOD_CONFIG: Record<string, MoodConfig> = {
+  thrilling: { genres: [53, 9648], name: "Thrilling" },
+  "feel-good": { genres: [35, 10751], name: "Feel-Good" },
+  romantic: { genres: [10749], name: "Romantic" },
+  emotional: { genres: [18, 10749], name: "Emotional" },
+  "action-packed": { genres: [28, 12], name: "Action-Packed" },
+  comedy: { genres: [35], name: "Comedy" },
+  horror: { genres: [27], name: "Horror" },
+  adventure: { genres: [12, 14], name: "Adventure" },
+  "sci-fi": { genres: [878], name: "Sci-Fi" },
+  inspirational: { genres: [18, 10751], name: "Inspirational" },
+  mystery: { genres: [9648], name: "Mystery" },
+  family: { genres: [10751, 16], name: "Family" },
 };
 
-const LANGUAGE_DISTRIBUTION = [
-  { code: "te", percentage: 0.4, count: 40 },
-  { code: "hi", percentage: 0.2, count: 20 },
-  { code: "en", percentage: 0.2, count: 20 },
-  { code: "ta", percentage: 0.1, count: 10 },
-  { code: "kn", percentage: 0.1, count: 10 },
-];
+type TMDBMovie = {
+  id: number;
+  title: string;
+  poster_path: string | null;
+  backdrop_path?: string | null;
+  overview?: string;
+  release_date: string;
+  vote_average: number;
+  vote_count: number;
+  popularity: number;
+  adult?: boolean;
+  original_language?: string;
+  genre_ids?: number[];
+};
 
-async function fetchMoviesFromTMDB(language: string, genres: string, count: number) {
-  let movies: unknown[] = [];
-  let page = 1;
-  let currentVoteThreshold = 50;
+async function fetchMoodPage(mood: MoodConfig, page: number, language?: string) {
+  const url = new URL(TMDB_BASE_URL + "/discover/movie");
+  url.searchParams.set("with_genres", mood.genres.join("|"));
+  url.searchParams.set("include_adult", "false");
+  url.searchParams.set("sort_by", "popularity.desc");
+  url.searchParams.set("vote_count.gte", "30");
+  url.searchParams.set("page", String(page));
+  url.searchParams.set("language", "en-US");
+  if (language) url.searchParams.set("with_original_language", language);
+  if (!TMDB_ACCESS_TOKEN && TMDB_API_KEY) url.searchParams.set("api_key", TMDB_API_KEY);
 
-  const performFetch = async (threshold: number, startPage: number) => {
-    const url = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genres}&with_original_language=${language}&vote_count.gte=${threshold}&page=${startPage}&sort_by=popularity.desc`;
-    const response = await fetch(url);
-    if (!response.ok) return [];
-    const data = await response.json();
-    return data.results || [];
-  };
-
-  try {
-    // 1. Initial attempt with high quality (>= 50 votes)
-    while (movies.length < count && page <= 3) {
-      const results = await performFetch(currentVoteThreshold, page);
-      if (results.length === 0) break;
-
-      const filtered = results.filter((m: any) => m.poster_path && m.release_date);
-      movies = [...movies, ...filtered];
-      page++;
-    }
-
-    // 2. Fallback attempt with lower threshold (>= 20 votes) if we got NOTHING
-    if (movies.length === 0) {
-
-      currentVoteThreshold = 20;
-      page = 1; // Reset page for new search
-      while (movies.length < count && page <= 3) {
-        const results = await performFetch(currentVoteThreshold, page);
-        if (results.length === 0) break;
-
-        const filtered = results.filter((m: any) => m.poster_path && m.release_date);
-        movies = [...movies, ...filtered];
-        page++;
-      }
-    }
-    
-    return movies.slice(0, count);
-  } catch (error) {
-    console.error(`TMDB fetch failed for ${language}:`, error);
-    return [];
-  }
+  const response = await fetch(url.toString(), {
+    headers: {
+      Accept: "application/json",
+      ...(TMDB_ACCESS_TOKEN ? { Authorization: "Bearer " + TMDB_ACCESS_TOKEN } : {}),
+    },
+    next: { revalidate: 1800 },
+  });
+  if (!response.ok) throw new Error("TMDB mood discovery failed: " + response.status);
+  const data = await response.json();
+  return (data.results || []) as TMDBMovie[];
 }
 
-export async function GET(req: NextRequest) {
-  if (!TMDB_API_KEY) {
-    return NextResponse.json({ error: "TMDB API key is missing" }, { status: 500 });
+export async function GET(request: NextRequest) {
+  if (!TMDB_ACCESS_TOKEN && !TMDB_API_KEY) {
+    return NextResponse.json({ error: "TMDB credentials are not configured." }, { status: 500 });
   }
+
+  const params = new URL(request.url).searchParams;
+  const moodId = (params.get("mood") || "").toLowerCase().trim();
+  const language = (params.get("language") || "").toLowerCase().trim();
+  const mood = MOOD_CONFIG[moodId];
+
+  if (!mood) {
+    return NextResponse.json({ error: "Invalid or unsupported mood." }, { status: 400 });
+  }
+  if (language && !/^[a-z]{2}$/.test(language)) {
+    return NextResponse.json({ error: "Language must be a two-letter TMDB language code." }, { status: 400 });
+  }
+
+  const cacheKey = "tmdb_mood_v2:" + moodId + ":" + (language || "all");
   try {
-    const { searchParams } = new URL(req.url);
-    const rawMood = searchParams.get("mood") || "";
-    const mood = rawMood.toLowerCase();
+    const cached = await RedisManager.get(cacheKey);
+    if (cached) return NextResponse.json(cached);
 
-    if (!MOOD_CONFIG[mood]) {
-      return NextResponse.json({ error: "Invalid or unsupported mood" }, { status: 400 });
-    }
+    const pages = await Promise.all([1, 2].map((page) => fetchMoodPage(mood, page, language || undefined)));
+    const seen = new Set<number>();
+    const movies = pages.flat().filter((movie) => {
+      if (!Number.isInteger(movie.id) || movie.id <= 0 || seen.has(movie.id)) return false;
+      if (movie.adult || !movie.poster_path || !movie.release_date) return false;
+      if (!movie.title?.trim() || !movie.overview?.trim()) return false;
+      seen.add(movie.id);
+      return true;
+    }).slice(0, 40);
 
-    // 1. Check Cache
-    const cacheKey = `ai_mood:${mood}`;
-    const cachedData = await RedisManager.get(cacheKey);
-    if (cachedData) {
-
-      return NextResponse.json(cachedData);
-    }
-
-    // 2. Fetch concurrently
-
-    const genreIds = MOOD_CONFIG[mood].genres;
-    
-    const requests = LANGUAGE_DISTRIBUTION.map((lang) => 
-      fetchMoviesFromTMDB(lang.code, genreIds, lang.count)
-    );
-
-    const results = await Promise.all(requests);
-    
-    let finalMovies: unknown[] = [];
-    results.forEach((langResults, index) => {
-      finalMovies = [...finalMovies, ...langResults];
-    });
-
-    // 3. Safety Fallback (Ensure >= 100 movies)
-    if (finalMovies.length < 100) {
-
-      const filler = await fetchMoviesFromTMDB("en", genreIds, 100 - finalMovies.length);
-      finalMovies = [...finalMovies, ...filler];
-    }
-
-    // 4. Shuffle lightly
-    // Normal shuffle: finalMovies.sort(() => Math.random() - 0.5)
-    // Preserving popularity somewhat:
-    finalMovies.sort(() => Math.random() * 0.3 - 0.15);
-
-    const responsePayload = {
-      mood: MOOD_CONFIG[mood].name,
-      totalMovies: finalMovies.length,
-      distribution: {
-        telugu: results[0].length,
-        hindi: results[1].length,
-        english: results[2].length,
-        tamil: results[3].length,
-        kannada: results[4].length,
-      },
-      movies: finalMovies.map((m: any) => ({
-        id: m.id,
-        title: m.title,
-        poster_path: m.poster_path,
-        release_date: m.release_date,
-        vote_average: m.vote_average,
-        language: m.original_language
+    const payload = {
+      mood: mood.name,
+      totalMovies: movies.length,
+      distribution: language ? { [language]: movies.length } : { all: movies.length },
+      // Preserve the response fields used by MoodResults; every item is a real TMDB movie.
+      movies: movies.map((movie) => ({
+        id: movie.id,
+        title: movie.title,
+        poster_path: movie.poster_path,
+        backdrop_path: movie.backdrop_path || null,
+        overview: movie.overview || "",
+        release_date: movie.release_date,
+        vote_average: movie.vote_average || 0,
+        vote_count: movie.vote_count || 0,
+        popularity: movie.popularity || 0,
+        language: movie.original_language || "",
       })),
     };
 
-    // 5. Cache results (6 hours)
-    await RedisManager.set(cacheKey, responsePayload, 21600);
-
-    return NextResponse.json(responsePayload);
-
+    await RedisManager.set(cacheKey, payload, 1800);
+    return NextResponse.json(payload);
   } catch (error) {
-    console.error("AI Mood API failed:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("[TMDB Mood Discovery] Failed:", error);
+    return NextResponse.json({ error: "Mood discovery is temporarily unavailable." }, { status: 502 });
   }
 }
