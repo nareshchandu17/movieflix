@@ -129,8 +129,9 @@ function parseQuery(query: string) {
     }
   }
   if (genreIds.length) {
-    params.with_genres = genreIds.join(",");
-    if (moodKey) params.with_genres += "|" + MOODS[moodKey].genres.join("|");
+    params.with_genres = moodKey
+      ? MOODS[moodKey].genres.map((moodGenre) => [...genreIds, moodGenre].join(",")).join("|")
+      : genreIds.join(",");
   }
 
   const decade = remaining.match(/\b(19|20)\d0s\b/);
