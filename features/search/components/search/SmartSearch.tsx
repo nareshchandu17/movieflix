@@ -362,18 +362,29 @@ const SmartSearch = () => {
           rawResults = similarRes.results.map((r: any) => ({ ...r, media_type: 'movie' }));
         }
       } else if (intent.type === 'discover') {
-        verbalSummary = `Finding content matching ${intent.labels.join(', ')}.` + (intent.remainingQuery ? ` related to ${intent.remainingQuery}` : "");
-        
-        const searchParams = new URLSearchParams({ ...intent.filter, 'sort_by': 'popularity.desc' } as any);
-        const discoverRes = await fetch(`/api/tmdb/discover/movie?${searchParams}`).then(r => r.json());
-        let discoverResults = (discoverRes.results || []).map((r: any) => ({ ...r, media_type: 'movie' }));
-
-        if (intent.remainingQuery.trim().length > 0) {
-           const searchRes = await api.search(intent.remainingQuery);
-           rawResults = searchRes.results;
-        } else {
-           rawResults = discoverResults;
-        }
+        verbalSummary = `Finding movies matching ${intent.labels.join(', ')}.` + (intent.remainingQuery ? ` related to ${intent.remainingQuery}` : "");
+        // All intent parsing and TMDB endpoint selection live in the server search engine.
+        // Do not run a second, weaker client-side Discover implementation here.
+        const response = await fetch(`/api/search?query=${encodeURIComponent(searchQuery)}`);
+        if (!response.ok) throw new Error("Search request failed");
+        const searchResponse = await response.json();
+        rawResults = (searchResponse.results || []).map((item: any) => ({
+          ...item,
+          media_type: item.media_type || (item.title ? "movie" : "tv"),
+        }));
+        personResults = (searchResponse.people || []).map((person: any) => ({
+          id: String(person.id),
+          title: person.name || "",
+          type: "actor" as const,
+          isDirector: person.role === "director" || person.known_for_department === "Directing",
+          poster: person.profile_path ? `https://image.tmdb.org/t/p/w500${person.profile_path}` : "",
+          year: 0,
+          rating: 0,
+          description: person.known_for_department || "",
+          genres: [],
+          popularity: person.popularity || 0,
+          knownFor: (person.known_for || []).map((item: any) => item.title || item.name).filter(Boolean).slice(0, 3),
+        }));
       } else if (intent.type === 'nav') {
         verbalSummary = `Taking you to ${intent.label}.`;
         speak(verbalSummary);
