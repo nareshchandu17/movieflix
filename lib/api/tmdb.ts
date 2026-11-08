@@ -112,9 +112,18 @@ class TMDBAPI {
       const response: TMDBSearchResponse = await this.fetchWithCache(url, cacheKey);
       
       if (response.results && response.results.length > 0) {
-        return response.results[0];
+        const normalizeName = (value: string) => value.toLowerCase().normalize("NFKD")
+          .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+        const wanted = normalizeName(query);
+        const exact = response.results.find((person: TMDBPerson) => normalizeName(person.name || "") === wanted);
+        if (exact) return exact;
+        // Do not silently resolve an ambiguous query to an unrelated first result.
+        return response.results.find((person: TMDBPerson) => {
+          const candidate = normalizeName(person.name || "");
+          return wanted.length >= 4 && candidate.includes(wanted);
+        }) || null;
       }
-      
+
       return null;
     } catch (error) {
       console.error(`Error searching for person: ${query}`, error);
