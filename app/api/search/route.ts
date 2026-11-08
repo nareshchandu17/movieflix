@@ -268,6 +268,9 @@ export async function GET(request: NextRequest) {
       if (exactPerson) {
         const role = exactPerson.known_for_department === "Directing" ? "director" : "actor";
         people = [personCard(exactPerson, role)];
+        // A bare exact person-name query is a filmography request, not a movie-title search.
+        media = await getFilmography(exactPerson, role);
+        intent = role === "director" ? "director" : "person";
       }
       media.sort((a, b) => {
         const wanted = normalize(query);
