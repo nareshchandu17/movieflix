@@ -176,7 +176,14 @@ async function resolvePerson(name: string) {
   const response = await tmdb<ResponseData<Item>>("/search/person", { query: name, include_adult: "false", page: 1 });
   const people = response.results || [];
   const wanted = normalize(name);
-  return people.find((person) => normalize(person.name || "") === wanted) || people[0] || null;
+  const exact = people.find((person) => normalize(person.name || "") === wanted);
+  if (exact) return exact;
+  // Never turn a weak/ambiguous person-search hit into a confident filmography.
+  // A partial match is accepted only when the supplied name is a meaningful substring.
+  return people.find((person) => {
+    const candidate = normalize(person.name || "");
+    return wanted.length >= 4 && candidate.includes(wanted);
+  }) || null;
 }
 
 async function getFilmography(person: Item, role: "actor" | "director") {
@@ -217,7 +224,8 @@ function matchesFilters(item: Item, params: Record<string, string>, residual: st
 export async function GET(request: NextRequest) {
   const searchParams = new URL(request.url).searchParams;
   const query = (searchParams.get("query") || searchParams.get("q") || "").trim();
-  const page = Math.max(1, Math.min(500, Number(searchParams.get("page") || 1)));
+  const requestedPage = Number(searchParams.get("page") || 1);
+  const page = Number.isInteger(requestedPage) ? Math.max(1, Math.min(500, requestedPage)) : 1;
   const requestedType = searchParams.get("type") || "multi";
   if (!query || query.length > 100) {
     return NextResponse.json({ error: "Enter a search query between 1 and 100 characters." }, { status: 400 });
