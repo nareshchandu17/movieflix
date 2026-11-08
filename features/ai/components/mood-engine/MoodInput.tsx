@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Sparkles, Sliders, Play, Heart, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
 
 export default function MoodInput({ 
   onMatch,
@@ -167,7 +168,7 @@ export default function MoodInput({
     if (targetMood) {
       await handleMoodSelect(targetMood);
     } else {
-      await handleMoodSelect("thrilling");
+      toast.error("I couldn't identify that mood. Try describing a feeling such as suspense, romance, comedy, horror, or inspiration.");
     }
   };
 
