@@ -377,7 +377,7 @@ const SmartSearch = () => {
           title: person.name || "",
           type: "actor" as const,
           isDirector: person.role === "director" || person.known_for_department === "Directing",
-          poster: person.profile_path ? `https://image.tmdb.org/t/p/w500${person.profile_path}` : "",
+          poster: person.profile_path ? `https://image.tmdb.org/t/p/w500${person.profile_path}` : "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500",
           year: 0,
           rating: 0,
           description: person.known_for_department || "",
