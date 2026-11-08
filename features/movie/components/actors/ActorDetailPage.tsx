@@ -37,8 +37,13 @@ const ActorDetailPage: React.FC<ActorDetailPageProps> = ({ actorName }) => {
         }
         
         const data = await response.json();
-        const actorMovies = data.cast
-          .filter((movie: any) => movie.poster_path)
+        const isDirector = person.known_for_department === "Directing";
+        const credits = isDirector
+          ? (data.crew || []).filter((credit: any) => credit.job === "Director")
+          : (data.cast || []);
+        const actorMovies = credits
+          .filter((movie: any) => movie.poster_path && movie.adult !== true)
+          .sort((a: any, b: any) => (b.popularity || 0) - (a.popularity || 0))
           .slice(0, 20)
           .map((movie: any) => ({
             id: movie.id,
@@ -111,7 +116,7 @@ const ActorDetailPage: React.FC<ActorDetailPageProps> = ({ actorName }) => {
           className="flex items-center gap-2 text-white hover:text-red-400 transition-colors duration-300"
         >
           <span className="text-2xl">←</span>
-          <span className="text-xl font-bold">Back to Actors</span>
+          <span className="text-xl font-bold">Back to Search</span>
         </button>
       </div>
 
@@ -171,7 +176,7 @@ const ActorDetailPage: React.FC<ActorDetailPageProps> = ({ actorName }) => {
 
         <div className="mt-16">
           <h2 className="text-3xl font-bold text-white mb-8 border-b border-gray-800 pb-4">
-            Known For
+            {actor.known_for_department === "Directing" ? "Directed Movies" : "Known For"}
           </h2>
           {movies && movies.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -214,7 +219,7 @@ const ActorDetailPage: React.FC<ActorDetailPageProps> = ({ actorName }) => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-400">No movies found for this actor.</p>
+              <p className="text-gray-400">No movies found for this person.</p>
             </div>
           )}
         </div>
