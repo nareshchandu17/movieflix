@@ -125,20 +125,43 @@ const SearchPageContent = () => {
         if (!response.ok) throw new Error("Search request failed");
 
         const data = await response.json();
-        if (!data.success) throw new Error(data.error || "Search failed");
+        if (!response.ok) throw new Error(data.error || "Search failed");
 
-        const results = data.results || data.data?.results || [];
-        const actor = data.actor || data.data?.actor || null;
-        const empty = data.empty || data.data?.empty || results.length === 0;
+        const actorRecord = data.people?.[0] || null;
+        const actor = actorRecord ? {
+          id: actorRecord.id,
+          name: actorRecord.name,
+          profile_path: actorRecord.profile_path || "",
+          known_for_department: actorRecord.known_for_department || actorRecord.role || "Acting",
+        } : null;
 
+        const results: SearchResult[] = (data.results || []).map((item: any) => {
+          const isTV = item.media_type === "tv" || (!item.title && !!item.name);
+          const releaseDate = item.release_date || item.first_air_date || "";
+          return {
+            id: String(item.id),
+            title: item.title || item.name || item.original_title || item.original_name || "Untitled",
+            type: isTV ? "series" as const : "movie" as const,
+            poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : "",
+            backdrop: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : undefined,
+            year: releaseDate ? Number(releaseDate.slice(0, 4)) || 0 : 0,
+            rating: Number(item.vote_average || 0),
+            description: item.overview || "",
+            genres: item.genre_ids || [],
+            releaseDate,
+            popularity: Number(item.popularity || 0),
+            raw: item,
+          };
+        });
+
+        const empty = results.length === 0;
         setSearchResults(results);
         setActorData(actor);
         setDisplayResults(results);
         setIsFallback(empty);
 
-        if (results.length === 0 && !empty && !actor) {
-          setSearchError(`No results found for "${query}"`);
-          setActiveSource("none");
+        if (empty && !actor) {
+          setSearchError(`No relevant results found for "${query}"`);
         }
       } catch (error) {
         console.error("Search failed:", error);
